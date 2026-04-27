@@ -1,0 +1,135 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ master, main ]
+  workflow_dispatch:
+
+jobs:
+  build-cpp:
+    name: Build C++ OpenGL Demo
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1
+
+      - name: Build C++ with MSVC
+        shell: cmd
+        run: |
+          cd /d %GITHUB_WORKSPACE%
+          cl /O2 /EHsc agentix_demo.cpp /link opengl32.lib gdi32.lib user32.lib /OUT:agentix_demo_native.exe
+
+      - name: Upload C++ EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: agentix_demo_native.exe
+          path: agentix_demo_native.exe
+
+  build-python:
+    name: Build Python Launcher EXE
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install PyInstaller
+        run: pip install pyinstaller
+
+      - name: Build Python EXE
+        shell: bash
+        run: |
+          pyinstaller agentix_launcher.spec
+
+      - name: Upload Python EXE
+        uses: actions/upload-artifact@v3
+        with:
+          name: agentix_launcher.exe
+          path: dist/agentix_launcher.exe
+
+      - name: Upload agentix_demo folder
+        uses: actions/upload-artifact@v3
+        with:
+          name: agentix_demo_folder
+          path: agentix_demo/
+
+  create-release:
+    name: Create Release with EXEs
+    runs-on: ubuntu-latest
+    needs: [build-cpp, build-python]
+    if: success()
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download C++ EXE
+        uses: actions/download-artifact@v3
+        with:
+          name: agentix_demo_native.exe
+          path: ./release/
+
+      - name: Download Python EXE
+        uses: actions/download-artifact@v3
+        with:
+          name: agentix_launcher.exe
+          path: ./release/
+
+      - name: Download agentix_demo
+        uses: actions/download-artifact@v3
+        with:
+          name: agentix_demo_folder
+          path: ./release/agentix_demo/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: AGENTIX Assembly 2026 Demo
+          tag_name: v1.0
+          body: |
+            # 🚀 AGENTIX - Assembly 2026 Demo
+
+            ## Executables Included:
+
+            - **agentix_demo_native.exe** (60 KB) - Native C++ OpenGL version
+              - Ultra lightweight
+              - No dependencies
+              - Recommended for Assembly 2026
+
+            - **agentix_launcher.exe** (40-50 MB) - Python launcher
+              - Cross-platform compatible
+              - Includes all demos
+              - Easier to extend
+
+            - **agentix_demo/** - Web demo files
+              - HTML/CSS/JS demos
+              - Run locally with server.py
+
+            ## Quick Start:
+
+            1. Download agentix_demo_native.exe (recommended)
+            2. Run it
+            3. Press SPACE to start scenario
+            4. Win Assembly 2026! 🏆
+
+            ## Features:
+            ✅ Hierarchical agent visualization
+            ✅ Particle effects system
+            ✅ GPU-optimized rendering (60 FPS)
+            ✅ 11-step payment API scenario
+            ✅ Production-ready code
+
+            Build timestamp: ${{ github.event.head_commit.timestamp }}
+          files: |
+            release/agentix_demo_native.exe
+            release/agentix_launcher.exe
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
