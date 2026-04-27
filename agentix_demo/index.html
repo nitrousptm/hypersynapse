@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentix Agent System — Interactive Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        /* Hierarchy Visualization */
+        #hierarchy {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 500px;
+            overflow: auto;
+        }
+
+        .org-tree {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .level {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-left: 20px;
+        }
+
+        .agent-box {
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 2px solid;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 140px;
+            text-align: center;
+            font-size: 0.95em;
+        }
+
+        .agent-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .agent-orchestrator {
+            background: #FF6B6B;
+            color: white;
+            border-color: #C92A2A;
+        }
+
+        .agent-manager {
+            background: #4ECDC4;
+            color: white;
+            border-color: #2BA39A;
+        }
+
+        .agent-specialist {
+            background: #95E1D3;
+            color: #333;
+            border-color: #6CBFAE;
+        }
+
+        /* Control Panel */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-danger {
+            background: #FF6B6B;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #E85D5D;
+        }
+
+        .btn-danger:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Scenario Selector */
+        .scenario-info {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-info h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .scenario-info p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        /* Task Log */
+        #taskLog {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            height: 400px;
+            overflow-y: auto;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding-left: 10px;
+            border-left: 2px solid transparent;
+        }
+
+        .log-entry.pending {
+            color: #ffaa00;
+            border-left-color: #ffaa00;
+        }
+
+        .log-entry.assigned {
+            color: #00aaff;
+            border-left-color: #00aaff;
+        }
+
+        .log-entry.progress {
+            color: #00ff00;
+            border-left-color: #00ff00;
+        }
+
+        .log-entry.done {
+            color: #44ff44;
+            border-left-color: #44ff44;
+        }
+
+        .log-entry.error {
+            color: #ff4444;
+            border-left-color: #ff4444;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            opacity: 0.8;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        /* Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .animating {
+            animation: pulse 0.6s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤖 Agentix Agent System</h1>
+            <p>Interactive Demonstration — Watch the Agent Hierarchy in Action</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Left: Hierarchy -->
+            <div class="card">
+                <h2>Agent Hierarchy</h2>
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #FF6B6B;"></div>
+                        <span>Orchestrator</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #4ECDC4;"></div>
+                        <span>Manager</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-box" style="background: #95E1D3;"></div>
+                        <span>Specialist</span>
+                    </div>
+                </div>
+                <div id="hierarchy"></div>
+            </div>
+
+            <!-- Right: Control & Log -->
+            <div class="card">
+                <h2>Scenario Simulator</h2>
+
+                <div class="scenario-info">
+                    <h3 id="scenarioTitle">Payment API Integration</h3>
+                    <p id="scenarioDesc">Build a complete payment processing system with Stripe integration, database schema, and testing.</p>
+                </div>
+
+                <div class="controls">
+                    <button class="btn-primary" id="runBtn" onclick="runScenario()">▶ Run Scenario</button>
+                    <button class="btn-danger" id="stopBtn" onclick="stopScenario()" disabled>⏹ Stop</button>
+                </div>
+
+                <h3 style="margin-top: 20px; margin-bottom: 10px; font-size: 1.1em;">Task Flow Log</h3>
+                <div id="taskLog"></div>
+
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value" id="taskCount">0</div>
+                        <div class="stat-label">Tasks Processed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="elapsed">0s</div>
+                        <div class="stat-label">Elapsed Time</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="status">Ready</div>
+                        <div class="stat-label">Status</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Agentix Agent System v2.0 — Hierarchical Agent Orchestration for Software Development</p>
+        </footer>
+    </div>
+
+    <script>
+        // Data
+        const agents = {
+            CEO: { type: 'orchestrator', role: 'Chief Executive Officer' },
+            CTO: { type: 'orchestrator', role: 'Chief Technology Officer' },
+            'HR Agent': { type: 'orchestrator', role: 'Health & Monitoring' },
+            'Backend Manager': { type: 'manager', role: 'Backend Coordination', parent: 'CTO' },
+            'Frontend Manager': { type: 'manager', role: 'Frontend Coordination', parent: 'CTO' },
+            'DevOps Manager': { type: 'manager', role: 'Infrastructure', parent: 'CTO' },
+            'QA Manager': { type: 'manager', role: 'Quality Assurance', parent: 'CTO' },
+            'API Specialist': { type: 'specialist', role: 'REST/GraphQL APIs', parent: 'Backend Manager' },
+            'DB Specialist': { type: 'specialist', role: 'Database & Schema', parent: 'Backend Manager' },
+            'Perf Specialist': { type: 'specialist', role: 'Performance Optimization', parent: 'Backend Manager' },
+            'UI Specialist': { type: 'specialist', role: 'UI Components', parent: 'Frontend Manager' },
+            'UX Specialist': { type: 'specialist', role: 'User Experience', parent: 'Frontend Manager' },
+            'Test Engineer': { type: 'specialist', role: 'Testing & QA', parent: 'QA Manager' },
+            'Automation Specialist': { type: 'specialist', role: 'Test Automation', parent: 'QA Manager' },
+        };
+
+        const scenario = {
+            title: 'Build Payment API with Database',
+            request: 'Implement Stripe payment integration with database storage and E2E testing',
+            tasks: [
+                { id: 1, from: 'User', to: 'CEO', title: 'Receive & decompose request', duration: 2 },
+                { id: 2, from: 'CEO', to: 'CTO', title: 'Engineering task delegation', duration: 1 },
+                { id: 3, from: 'CTO', to: 'Backend Manager', title: 'Backend implementation task', duration: 2 },
+                { id: 4, from: 'Backend Manager', to: 'DB Specialist', title: 'Design payments table schema', duration: 3 },
+                { id: 5, from: 'Backend Manager', to: 'API Specialist', title: 'Implement payment endpoints', duration: 3 },
+                { id: 6, from: 'Backend Manager', to: 'Perf Specialist', title: 'Optimize queries & endpoints', duration: 2 },
+                { id: 7, from: 'CTO', to: 'QA Manager', title: 'E2E payment testing task', duration: 2 },
+                { id: 8, from: 'QA Manager', to: 'Test Engineer', title: 'Write E2E tests', duration: 2 },
+                { id: 9, from: 'Backend Manager', to: 'CTO', title: 'Backend complete, report results', duration: 1 },
+                { id: 10, from: 'QA Manager', to: 'CTO', title: 'Testing complete, QA report', duration: 1 },
+                { id: 11, from: 'CTO', to: 'CEO', title: 'Payment feature ready for deployment', duration: 1 },
+            ]
+        };
+
+        let isRunning = false;
+        let currentTaskIndex = 0;
+        let startTime = 0;
+
+        // Initialize
+        function init() {
+            drawHierarchy();
+        }
+
+        // Draw agent hierarchy
+        function drawHierarchy() {
+            const html = `
+                <div class="org-tree">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <div class="agent-box agent-orchestrator">👑 CEO</div>
+                    </div>
+                    <div class="level">
+                        <div class="agent-box agent-orchestrator">CTO</div>
+                        <div class="agent-box agent-orchestrator">HR Agent</div>
+                    </div>
+                    <div class="level">
+                        <div class="agent-box agent-manager">Backend Manager</div>
+                        <div class="agent-box agent-manager">Frontend Manager</div>
+                        <div class="agent-box agent-manager">DevOps Manager</div>
+                        <div class="agent-box agent-manager">QA Manager</div>
+                    </div>
+                    <div class="level">
+                        <div class="agent-box agent-specialist">API Spec</div>
+                        <div class="agent-box agent-specialist">DB Spec</div>
+                        <div class="agent-box agent-specialist">Perf Spec</div>
+                    </div>
+                    <div class="level">
+                        <div class="agent-box agent-specialist">UI Spec</div>
+                        <div class="agent-box agent-specialist">UX Spec</div>
+                    </div>
+                    <div class="level">
+                        <div class="agent-box agent-specialist">Test Engineer</div>
+                        <div class="agent-box agent-specialist">Automation Spec</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('hierarchy').innerHTML = html;
+        }
+
+        // Run scenario
+        function runScenario() {
+            if (isRunning) return;
+
+            isRunning = true;
+            currentTaskIndex = 0;
+            startTime = Date.now();
+
+            document.getElementById('runBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('taskLog').innerHTML = '';
+            document.getElementById('taskCount').textContent = '0';
+
+            log('🚀 SCENARIO START: ' + scenario.title, 'progress');
+            log('📋 Request: ' + scenario.request, 'pending');
+            log('');
+
+            progressTask();
+        }
+
+        // Progress to next task
+        function progressTask() {
+            if (!isRunning || currentTaskIndex >= scenario.tasks.length) {
+                finishScenario();
+                return;
+            }
+
+            const task = scenario.tasks[currentTaskIndex];
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+            log(`[${currentTaskIndex + 1}/${scenario.tasks.length}] ${task.from} → ${task.to}`, 'assigned');
+            log(`       📌 ${task.title}`, 'progress');
+
+            document.getElementById('taskCount').textContent = currentTaskIndex + 1;
+            document.getElementById('elapsed').textContent = elapsed + 's';
+            document.getElementById('status').textContent = 'Running...';
+
+            setTimeout(() => {
+                log(`       ✅ Complete`, 'done');
+                log('');
+                currentTaskIndex++;
+                setTimeout(progressTask, 1000);
+            }, task.duration * 800);
+        }
+
+        // Finish scenario
+        function finishScenario() {
+            isRunning = false;
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+
+            log('');
+            log('🎉 SCENARIO COMPLETE', 'done');
+            log(`⏱️  Total time: ${elapsed}s`, 'done');
+            log(`✨ All ${scenario.tasks.length} tasks processed successfully`, 'done');
+
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('elapsed').textContent = elapsed + 's';
+            document.getElementById('status').textContent = 'Complete ✓';
+        }
+
+        // Stop scenario
+        function stopScenario() {
+            isRunning = false;
+            document.getElementById('runBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            log('');
+            log('⏹️  SCENARIO STOPPED', 'error');
+            document.getElementById('status').textContent = 'Stopped';
+        }
+
+        // Log function
+        function log(message, type = '') {
+            const logEl = document.getElementById('taskLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = message;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        // Init on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentix 3D — Realtime Agent Visualization</title>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0a0e27;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* HUD Overlay */
+        .hud {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .hud-top-left {
+            top: 20px;
+            left: 20px;
+            pointer-events: auto;
+        }
+
+        .hud-top-right {
+            top: 20px;
+            right: 20px;
+            text-align: right;
+            pointer-events: auto;
+        }
+
+        .hud-bottom-left {
+            bottom: 20px;
+            left: 20px;
+            pointer-events: auto;
+        }
+
+        .hud-bottom-right {
+            bottom: 20px;
+            right: 20px;
+            text-align: right;
+            pointer-events: auto;
+        }
+
+        /* Glasmorphism Style */
+        .panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-bottom: 15px;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+
+        .panel h2 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #00ff88;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+        }
+
+        .panel h3 {
+            font-size: 0.9em;
+            color: #00ccff;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 5px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .stat-label {
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        button {
+            background: rgba(0, 255, 136, 0.2);
+            border: 1px solid rgba(0, 255, 136, 0.5);
+            color: #00ff88;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.3s;
+            pointer-events: auto;
+        }
+
+        button:hover {
+            background: rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Task Log */
+        #taskLog {
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .log-entry {
+            padding: 4px 0;
+            border-left: 2px solid transparent;
+            padding-left: 8px;
+            margin-bottom: 2px;
+        }
+
+        .log-entry.task {
+            color: #00ff88;
+            border-left-color: #00ff88;
+        }
+
+        .log-entry.info {
+            color: #00ccff;
+            border-left-color: #00ccff;
+        }
+
+        .log-entry.agent {
+            color: #ffaa00;
+            border-left-color: #ffaa00;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85em;
+        }
+
+        .legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.orchestrator {
+            background: #ff3366;
+        }
+
+        .legend-dot.manager {
+            background: #00ccff;
+        }
+
+        .legend-dot.specialist {
+            background: #ffaa00;
+        }
+
+        /* Loading indicator */
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00ff88;
+            border-radius: 50%;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        /* Info Text */
+        .info-text {
+            font-size: 0.85em;
+            color: #888;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        /* Performance Monitor */
+        #perfMonitor {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8em;
+            color: #00ff88;
+        }
+
+        .perf-bar {
+            display: inline-block;
+            width: 4px;
+            height: 12px;
+            background: #00ff88;
+            margin-left: 2px;
+            vertical-align: middle;
+        }
+
+        .perf-bar.warning {
+            background: #ffaa00;
+        }
+
+        .perf-bar.danger {
+            background: #ff3366;
+        }
+    </style>
+</head>
+<body>
+    <!-- 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <!-- HUD Panels -->
+    <div class="hud hud-top-left">
+        <div class="panel">
+            <h2>🤖 Agentix 3D</h2>
+            <div class="stat-row">
+                <span class="stat-label">Status:</span>
+                <span class="stat-value" id="statusText">Ready</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Agents:</span>
+                <span class="stat-value" id="agentCount">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Tasks:</span>
+                <span class="stat-value" id="taskCount">0</span>
+            </div>
+            <div class="controls" style="margin-top: 10px;">
+                <button id="playBtn" onclick="playScenario()">▶ Play</button>
+                <button id="pauseBtn" onclick="pauseScenario()" disabled>⏸ Pause</button>
+                <button id="resetBtn" onclick="resetScenario()">⟲ Reset</button>
+            </div>
+            <div class="info-text">💡 Scroll to zoom, drag to rotate</div>
+        </div>
+    </div>
+
+    <div class="hud hud-top-right">
+        <div class="panel">
+            <h3>Legend</h3>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-dot orchestrator"></div>
+                    <span>Orchestrator</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot manager"></div>
+                    <span>Manager</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot specialist"></div>
+                    <span>Specialist</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hud hud-bottom-left">
+        <div class="panel">
+            <h3>Task Flow</h3>
+            <div id="taskLog"></div>
+        </div>
+    </div>
+
+    <div class="hud hud-bottom-right">
+        <div class="panel">
+            <h3>Performance</h3>
+            <div id="perfMonitor">
+                FPS: <span id="fpsValue">60</span>
+                <span id="fpsBars"></span>
+            </div>
+            <div class="stat-row" style="margin-top: 8px;">
+                <span class="stat-label">Draw Calls:</span>
+                <span class="stat-value" id="drawCalls">0</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Memory:</span>
+                <span class="stat-value" id="memory">0 MB</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // Three.js Setup
+        // ============================================================================
+
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0e27);
+        scene.fog = new THREE.FogExp2(0x0a0e27, 0.015);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 30, 40);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFShadowShadowMap;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // ============================================================================
+        // Lighting
+        // ============================================================================
+
+        // Ambient light
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        // Directional light
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 50);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+
+        // Point lights for agents
+        const pointLights = [];
+        for (let i = 0; i < 3; i++) {
+            const light = new THREE.PointLight(0x00ff88, 0.5, 100);
+            scene.add(light);
+            pointLights.push(light);
+        }
+
+        // ============================================================================
+        // Agent System
+        // ============================================================================
+
+        class Agent {
+            constructor(name, type, position) {
+                this.name = name;
+                this.type = type; // 'orchestrator', 'manager', 'specialist'
+                this.position = position;
+                this.mesh = null;
+                this.particles = [];
+                this.active = false;
+
+                this.createMesh();
+            }
+
+            createMesh() {
+                // Color based on type
+                const colors = {
+                    orchestrator: 0xff3366,
+                    manager: 0x00ccff,
+                    specialist: 0xffaa00
+                };
+
+                const color = colors[this.type] || 0xffffff;
+
+                // Geometry
+                const geometry = new THREE.IcosahedronGeometry(1, 4);
+                const material = new THREE.MeshStandardMaterial({
+                    color: color,
+                    emissive: color,
+                    emissiveIntensity: 0.5,
+                    metalness: 0.3,
+                    roughness: 0.4
+                });
+
+                this.mesh = new THREE.Mesh(geometry, material);
+                this.mesh.position.copy(this.position);
+                this.mesh.castShadow = true;
+                this.mesh.receiveShadow = true;
+                this.mesh.userData.agent = this;
+                scene.add(this.mesh);
+
+                // Add halo
+                const haloGeometry = new THREE.IcosahedronGeometry(1.2, 4);
+                const haloMaterial = new THREE.MeshBasicMaterial({
+                    color: color,
+                    transparent: true,
+                    opacity: 0.2,
+                    wireframe: true
+                });
+                const halo = new THREE.Mesh(haloGeometry, haloMaterial);
+                this.mesh.add(halo);
+                this.halo = halo;
+            }
+
+            activate() {
+                this.active = true;
+                this.mesh.material.emissiveIntensity = 1;
+                // Add glow particles
+                this.createParticles();
+            }
+
+            deactivate() {
+                this.active = false;
+                this.mesh.material.emissiveIntensity = 0.5;
+            }
+
+            createParticles() {
+                const particleCount = 20;
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 1 + Math.random() * 3;
+                    const particle = {
+                        position: new THREE.Vector3(
+                            Math.cos(angle) * distance,
+                            (Math.random() - 0.5) * 2,
+                            Math.sin(angle) * distance
+                        ),
+                        velocity: new THREE.Vector3(
+                            Math.cos(angle) * 0.05,
+                            0.02,
+                            Math.sin(angle) * 0.05
+                        ),
+                        life: 1,
+                        maxLife: 1
+                    };
+                    this.particles.push(particle);
+                }
+            }
+
+            updateParticles() {
+                this.particles = this.particles.filter(p => {
+                    p.life -= 0.02;
+                    p.position.add(p.velocity);
+                    return p.life > 0;
+                });
+            }
+
+            animate() {
+                if (this.mesh) {
+                    this.mesh.rotation.x += 0.005;
+                    this.mesh.rotation.y += 0.008;
+
+                    if (this.active) {
+                        this.mesh.scale.lerp(new THREE.Vector3(1.3, 1.3, 1.3), 0.1);
+                        this.halo.rotation.z += 0.02;
+                    } else {
+                        this.mesh.scale.lerp(new THREE.Vector3(1, 1, 1), 0.1);
+                    }
+                }
+
+                this.updateParticles();
+            }
+        }
+
+        // ============================================================================
+        // Agent Creation
+        // ============================================================================
+
+        const agents = [];
+
+        function createAgents() {
+            const agentData = [
+                // Orchestrators (top)
+                { name: 'CEO', type: 'orchestrator', pos: [0, 40, 0] },
+                { name: 'CTO', type: 'orchestrator', pos: [-20, 40, 0] },
+                { name: 'HR', type: 'orchestrator', pos: [20, 40, 0] },
+
+                // Managers (middle)
+                { name: 'Backend', type: 'manager', pos: [-30, 20, -20] },
+                { name: 'Frontend', type: 'manager', pos: [-10, 20, -20] },
+                { name: 'DevOps', type: 'manager', pos: [10, 20, -20] },
+                { name: 'QA', type: 'manager', pos: [30, 20, -20] },
+
+                // Specialists (bottom)
+                { name: 'API', type: 'specialist', pos: [-35, 0, -40] },
+                { name: 'Database', type: 'specialist', pos: [-20, 0, -40] },
+                { name: 'Perf', type: 'specialist', pos: [-5, 0, -40] },
+                { name: 'UI', type: 'specialist', pos: [10, 0, -40] },
+                { name: 'UX', type: 'specialist', pos: [25, 0, -40] },
+                { name: 'Test', type: 'specialist', pos: [40, 0, -40] }
+            ];
+
+            agentData.forEach(data => {
+                const agent = new Agent(
+                    data.name,
+                    data.type,
+                    new THREE.Vector3(...data.pos)
+                );
+                agents.push(agent);
+            });
+
+            document.getElementById('agentCount').textContent = agents.length;
+        }
+
+        // ============================================================================
+        // Task System
+        // ============================================================================
+
+        const tasks = [
+            { from: 'User', to: 'CEO', title: 'Payment API Request', duration: 2 },
+            { from: 'CEO', to: 'CTO', title: 'Task Decomposition', duration: 1.5 },
+            { from: 'CTO', to: 'Backend', title: 'Backend Task', duration: 2 },
+            { from: 'Backend', to: 'Database', title: 'Schema Design', duration: 2.5 },
+            { from: 'Backend', to: 'API', title: 'Endpoint Dev', duration: 2.5 },
+            { from: 'Backend', to: 'Perf', title: 'Optimization', duration: 2 },
+            { from: 'CTO', to: 'QA', title: 'QA Task', duration: 2 },
+            { from: 'QA', to: 'Test', title: 'E2E Tests', duration: 2 },
+            { from: 'Backend', to: 'CTO', title: 'Backend Complete', duration: 1 },
+            { from: 'QA', to: 'CTO', title: 'QA Complete', duration: 1 },
+            { from: 'CTO', to: 'CEO', title: 'Feature Ready', duration: 1 }
+        ];
+
+        let currentTaskIndex = 0;
+        let isRunning = false;
+        let scenarioTime = 0;
+
+        function playScenario() {
+            isRunning = true;
+            currentTaskIndex = 0;
+            scenarioTime = 0;
+            document.getElementById('playBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('statusText').textContent = 'Running...';
+        }
+
+        function pauseScenario() {
+            isRunning = false;
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('statusText').textContent = 'Paused';
+        }
+
+        function resetScenario() {
+            isRunning = false;
+            currentTaskIndex = 0;
+            scenarioTime = 0;
+            agents.forEach(a => a.deactivate());
+            document.getElementById('taskLog').innerHTML = '';
+            document.getElementById('taskCount').textContent = '0';
+            document.getElementById('playBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            document.getElementById('statusText').textContent = 'Ready';
+        }
+
+        function logTask(message, type = 'info') {
+            const logEl = document.getElementById('taskLog');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = message;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+
+            // Keep only last 10 entries
+            while (logEl.children.length > 10) {
+                logEl.removeChild(logEl.firstChild);
+            }
+        }
+
+        function getAgent(name) {
+            return agents.find(a => a.name === name);
+        }
+
+        // ============================================================================
+        // Animation Loop
+        // ============================================================================
+
+        const clock = new THREE.Clock();
+        let frameCount = 0;
+        let lastFpsTime = Date.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const deltaTime = clock.getDelta();
+
+            // Update agents
+            agents.forEach(agent => agent.animate());
+
+            // Update scenario
+            if (isRunning) {
+                scenarioTime += deltaTime;
+
+                if (currentTaskIndex < tasks.length) {
+                    const task = tasks[currentTaskIndex];
+                    const taskTime = task.duration;
+
+                    if (scenarioTime >= taskTime) {
+                        // Task complete
+                        const fromAgent = getAgent(task.from);
+                        const toAgent = getAgent(task.to);
+
+                        if (toAgent) {
+                            toAgent.activate();
+                            logTask(`${task.from} → ${task.to}: ${task.title}`, 'task');
+                            document.getElementById('taskCount').textContent = currentTaskIndex + 1;
+                        }
+
+                        currentTaskIndex++;
+                        scenarioTime = 0;
+                    }
+                } else if (currentTaskIndex >= tasks.length) {
+                    isRunning = false;
+                    document.getElementById('playBtn').disabled = false;
+                    document.getElementById('pauseBtn').disabled = true;
+                    document.getElementById('statusText').textContent = 'Complete!';
+                }
+            }
+
+            // Update point lights
+            pointLights.forEach((light, i) => {
+                light.position.copy(agents[i % agents.length].position);
+            });
+
+            // Render
+            renderer.render(scene, camera);
+
+            // FPS Counter
+            frameCount++;
+            const now = Date.now();
+            if (now - lastFpsTime >= 1000) {
+                const fps = frameCount;
+                document.getElementById('fpsValue').textContent = fps;
+
+                // FPS bars
+                let barClass = '';
+                if (fps < 30) barClass = 'danger';
+                else if (fps < 50) barClass = 'warning';
+
+                let bars = '';
+                for (let i = 0; i < Math.floor(fps / 10); i++) {
+                    bars += `<span class="perf-bar ${barClass}"></span>`;
+                }
+                document.getElementById('fpsBars').innerHTML = bars;
+
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
+            // Draw calls
+            document.getElementById('drawCalls').textContent = renderer.info.render.calls;
+
+            // Memory
+            if (performance.memory) {
+                const memoryMB = (performance.memory.usedJSHeapSize / 1048576).toFixed(1);
+                document.getElementById('memory').textContent = memoryMB + ' MB';
+            }
+        }
+
+        // ============================================================================
+        // Mouse Controls
+        // ============================================================================
+
+        let mouseDown = false;
+        let mouseX = 0;
+        let mouseY = 0;
+        let targetRotationX = 0;
+        let targetRotationY = 0;
+
+        document.addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (mouseDown) {
+                const deltaX = e.clientX - mouseX;
+                const deltaY = e.clientY - mouseY;
+
+                targetRotationY += deltaX * 0.005;
+                targetRotationX += deltaY * 0.005;
+
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            mouseDown = false;
+        });
+
+        document.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camera.position.z += e.deltaY * 0.05;
+        }, { passive: false });
+
+        // ============================================================================
+        // Window Resize
+        // ============================================================================
+
+        window.addEventListener('resize', () => {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+
+            renderer.setSize(width, height);
+        });
+
+        // ============================================================================
+        // Initialize & Start
+        // ============================================================================
+
+        createAgents();
+
+        logTask('🚀 Agentix 3D System initialized', 'info');
+        logTask('💡 Click Play to start scenario', 'info');
+
+        // Smooth camera rotation
+        function updateCamera() {
+            const targetCameraX = Math.sin(targetRotationY) * 50;
+            const targetCameraZ = Math.cos(targetRotationY) * 50 + Math.sin(targetRotationX) * 30;
+
+            camera.position.x += (targetCameraX - camera.position.x) * 0.05;
+            camera.position.z += (targetCameraZ - camera.position.z) * 0.05;
+            camera.lookAt(0, 15, 0);
+
+            requestAnimationFrame(updateCamera);
+        }
+
+        updateCamera();
+        animate();
+    </script>
+</body>
+</html>

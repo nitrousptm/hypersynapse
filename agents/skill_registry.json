@@ -1,0 +1,545 @@
+{
+  "Orchestration": {
+    "agents": ["ceo"],
+    "mastery_levels": {
+      "ceo": "expert"
+    }
+  },
+  "Task Decomposition": {
+    "agents": ["ceo", "backend_manager", "frontend_manager", "devops_manager", "qa_manager", "product_manager"],
+    "mastery_levels": {
+      "ceo": "expert",
+      "backend_manager": "intermediate",
+      "frontend_manager": "intermediate",
+      "devops_manager": "intermediate",
+      "qa_manager": "intermediate",
+      "product_manager": "intermediate"
+    }
+  },
+  "Strategic Delegation": {
+    "agents": ["ceo"],
+    "mastery_levels": {
+      "ceo": "expert"
+    }
+  },
+  "Cross-Team Coordination": {
+    "agents": ["ceo", "cto"],
+    "mastery_levels": {
+      "ceo": "expert",
+      "cto": "expert"
+    }
+  },
+  "Agent Creation": {
+    "agents": ["hr_agent"],
+    "mastery_levels": {
+      "hr_agent": "expert"
+    }
+  },
+  "Health Monitoring": {
+    "agents": ["hr_agent"],
+    "mastery_levels": {
+      "hr_agent": "expert"
+    }
+  },
+  "Skill Inventory": {
+    "agents": ["hr_agent"],
+    "mastery_levels": {
+      "hr_agent": "expert"
+    }
+  },
+  "Performance Tracking": {
+    "agents": ["hr_agent"],
+    "mastery_levels": {
+      "hr_agent": "expert"
+    }
+  },
+  "Engineering Coordination": {
+    "agents": ["cto"],
+    "mastery_levels": {
+      "cto": "expert"
+    }
+  },
+  "Architecture": {
+    "agents": ["cto", "api_specialist", "backend_manager"],
+    "mastery_levels": {
+      "cto": "expert",
+      "api_specialist": "intermediate",
+      "backend_manager": "intermediate"
+    }
+  },
+  "Technical Leadership": {
+    "agents": ["cto"],
+    "mastery_levels": {
+      "cto": "expert"
+    }
+  },
+  "Backend Coordination": {
+    "agents": ["backend_manager"],
+    "mastery_levels": {
+      "backend_manager": "expert"
+    }
+  },
+  "API Design": {
+    "agents": ["backend_manager", "api_specialist"],
+    "mastery_levels": {
+      "backend_manager": "intermediate",
+      "api_specialist": "expert"
+    }
+  },
+  "Database Architecture": {
+    "agents": ["backend_manager", "database_specialist"],
+    "mastery_levels": {
+      "backend_manager": "intermediate",
+      "database_specialist": "expert"
+    }
+  },
+  "Python": {
+    "agents": ["api_specialist", "ml_engineer"],
+    "mastery_levels": {
+      "api_specialist": "expert",
+      "ml_engineer": "intermediate"
+    }
+  },
+  "FastAPI": {
+    "agents": ["api_specialist"],
+    "mastery_levels": {
+      "api_specialist": "expert"
+    }
+  },
+  "REST API Design": {
+    "agents": ["api_specialist"],
+    "mastery_levels": {
+      "api_specialist": "expert"
+    }
+  },
+  "API Documentation": {
+    "agents": ["api_specialist", "documentation_specialist"],
+    "mastery_levels": {
+      "api_specialist": "intermediate",
+      "documentation_specialist": "expert"
+    }
+  },
+  "PostgreSQL": {
+    "agents": ["database_specialist"],
+    "mastery_levels": {
+      "database_specialist": "expert"
+    }
+  },
+  "Database Design": {
+    "agents": ["database_specialist"],
+    "mastery_levels": {
+      "database_specialist": "expert"
+    }
+  },
+  "Schema Optimization": {
+    "agents": ["database_specialist"],
+    "mastery_levels": {
+      "database_specialist": "expert"
+    }
+  },
+  "Migrations": {
+    "agents": ["database_specialist"],
+    "mastery_levels": {
+      "database_specialist": "expert"
+    }
+  },
+  "Performance Analysis": {
+    "agents": ["performance_specialist"],
+    "mastery_levels": {
+      "performance_specialist": "expert"
+    }
+  },
+  "Optimization": {
+    "agents": ["performance_specialist"],
+    "mastery_levels": {
+      "performance_specialist": "expert"
+    }
+  },
+  "Profiling": {
+    "agents": ["performance_specialist"],
+    "mastery_levels": {
+      "performance_specialist": "expert"
+    }
+  },
+  "Benchmarking": {
+    "agents": ["performance_specialist"],
+    "mastery_levels": {
+      "performance_specialist": "expert"
+    }
+  },
+  "Frontend Coordination": {
+    "agents": ["frontend_manager"],
+    "mastery_levels": {
+      "frontend_manager": "expert"
+    }
+  },
+  "UI Architecture": {
+    "agents": ["frontend_manager", "ui_specialist"],
+    "mastery_levels": {
+      "frontend_manager": "intermediate",
+      "ui_specialist": "expert"
+    }
+  },
+  "UX Strategy": {
+    "agents": ["frontend_manager", "ux_specialist"],
+    "mastery_levels": {
+      "frontend_manager": "intermediate",
+      "ux_specialist": "expert"
+    }
+  },
+  "React": {
+    "agents": ["ui_specialist"],
+    "mastery_levels": {
+      "ui_specialist": "expert"
+    }
+  },
+  "TypeScript": {
+    "agents": ["ui_specialist"],
+    "mastery_levels": {
+      "ui_specialist": "expert"
+    }
+  },
+  "CSS": {
+    "agents": ["ui_specialist"],
+    "mastery_levels": {
+      "ui_specialist": "expert"
+    }
+  },
+  "Component Design": {
+    "agents": ["ui_specialist"],
+    "mastery_levels": {
+      "ui_specialist": "expert"
+    }
+  },
+  "UX Research": {
+    "agents": ["ux_specialist"],
+    "mastery_levels": {
+      "ux_specialist": "expert"
+    }
+  },
+  "Interaction Design": {
+    "agents": ["ux_specialist"],
+    "mastery_levels": {
+      "ux_specialist": "expert"
+    }
+  },
+  "User Testing": {
+    "agents": ["ux_specialist"],
+    "mastery_levels": {
+      "ux_specialist": "expert"
+    }
+  },
+  "WCAG Compliance": {
+    "agents": ["accessibility_specialist"],
+    "mastery_levels": {
+      "accessibility_specialist": "expert"
+    }
+  },
+  "A11y Audit": {
+    "agents": ["accessibility_specialist"],
+    "mastery_levels": {
+      "accessibility_specialist": "expert"
+    }
+  },
+  "Accessible Design": {
+    "agents": ["accessibility_specialist"],
+    "mastery_levels": {
+      "accessibility_specialist": "expert"
+    }
+  },
+  "DevOps Coordination": {
+    "agents": ["devops_manager"],
+    "mastery_levels": {
+      "devops_manager": "expert"
+    }
+  },
+  "Infrastructure": {
+    "agents": ["devops_manager", "cloud_specialist"],
+    "mastery_levels": {
+      "devops_manager": "intermediate",
+      "cloud_specialist": "expert"
+    }
+  },
+  "Deployment Strategy": {
+    "agents": ["devops_manager", "cicd_specialist"],
+    "mastery_levels": {
+      "devops_manager": "intermediate",
+      "cicd_specialist": "expert"
+    }
+  },
+  "GitHub Actions": {
+    "agents": ["cicd_specialist"],
+    "mastery_levels": {
+      "cicd_specialist": "expert"
+    }
+  },
+  "Docker": {
+    "agents": ["cicd_specialist", "cloud_specialist"],
+    "mastery_levels": {
+      "cicd_specialist": "expert",
+      "cloud_specialist": "intermediate"
+    }
+  },
+  "Pipeline Automation": {
+    "agents": ["cicd_specialist"],
+    "mastery_levels": {
+      "cicd_specialist": "expert"
+    }
+  },
+  "Deployment": {
+    "agents": ["cicd_specialist"],
+    "mastery_levels": {
+      "cicd_specialist": "expert"
+    }
+  },
+  "AWS": {
+    "agents": ["cloud_specialist"],
+    "mastery_levels": {
+      "cloud_specialist": "expert"
+    }
+  },
+  "Cloud Architecture": {
+    "agents": ["cloud_specialist"],
+    "mastery_levels": {
+      "cloud_specialist": "expert"
+    }
+  },
+  "Infrastructure as Code": {
+    "agents": ["cloud_specialist"],
+    "mastery_levels": {
+      "cloud_specialist": "expert"
+    }
+  },
+  "Kubernetes": {
+    "agents": ["cloud_specialist"],
+    "mastery_levels": {
+      "cloud_specialist": "intermediate"
+    }
+  },
+  "Security Audit": {
+    "agents": ["security_specialist"],
+    "mastery_levels": {
+      "security_specialist": "expert"
+    }
+  },
+  "Penetration Testing": {
+    "agents": ["security_specialist"],
+    "mastery_levels": {
+      "security_specialist": "expert"
+    }
+  },
+  "Compliance": {
+    "agents": ["security_specialist"],
+    "mastery_levels": {
+      "security_specialist": "expert"
+    }
+  },
+  "Hardening": {
+    "agents": ["security_specialist"],
+    "mastery_levels": {
+      "security_specialist": "expert"
+    }
+  },
+  "QA Coordination": {
+    "agents": ["qa_manager"],
+    "mastery_levels": {
+      "qa_manager": "expert"
+    }
+  },
+  "Test Strategy": {
+    "agents": ["qa_manager", "test_engineer", "automation_specialist"],
+    "mastery_levels": {
+      "qa_manager": "expert",
+      "test_engineer": "intermediate",
+      "automation_specialist": "intermediate"
+    }
+  },
+  "Quality Metrics": {
+    "agents": ["qa_manager"],
+    "mastery_levels": {
+      "qa_manager": "expert"
+    }
+  },
+  "Test Writing": {
+    "agents": ["test_engineer"],
+    "mastery_levels": {
+      "test_engineer": "expert"
+    }
+  },
+  "Manual Testing": {
+    "agents": ["test_engineer"],
+    "mastery_levels": {
+      "test_engineer": "expert"
+    }
+  },
+  "Test Execution": {
+    "agents": ["test_engineer"],
+    "mastery_levels": {
+      "test_engineer": "expert"
+    }
+  },
+  "Test Coverage": {
+    "agents": ["test_engineer"],
+    "mastery_levels": {
+      "test_engineer": "expert"
+    }
+  },
+  "Test Automation": {
+    "agents": ["automation_specialist"],
+    "mastery_levels": {
+      "automation_specialist": "expert"
+    }
+  },
+  "Selenium": {
+    "agents": ["automation_specialist"],
+    "mastery_levels": {
+      "automation_specialist": "expert"
+    }
+  },
+  "Test Frameworks": {
+    "agents": ["automation_specialist"],
+    "mastery_levels": {
+      "automation_specialist": "expert"
+    }
+  },
+  "Regression Testing": {
+    "agents": ["automation_specialist"],
+    "mastery_levels": {
+      "automation_specialist": "expert"
+    }
+  },
+  "Bug Investigation": {
+    "agents": ["bug_analyst"],
+    "mastery_levels": {
+      "bug_analyst": "expert"
+    }
+  },
+  "Root Cause Analysis": {
+    "agents": ["bug_analyst"],
+    "mastery_levels": {
+      "bug_analyst": "expert"
+    }
+  },
+  "Bug Reproduction": {
+    "agents": ["bug_analyst"],
+    "mastery_levels": {
+      "bug_analyst": "expert"
+    }
+  },
+  "Requirements Gathering": {
+    "agents": ["product_manager", "requirement_analyst"],
+    "mastery_levels": {
+      "product_manager": "expert",
+      "requirement_analyst": "intermediate"
+    }
+  },
+  "Product Strategy": {
+    "agents": ["product_manager"],
+    "mastery_levels": {
+      "product_manager": "expert"
+    }
+  },
+  "Roadmap Planning": {
+    "agents": ["product_manager"],
+    "mastery_levels": {
+      "product_manager": "expert"
+    }
+  },
+  "Requirements Analysis": {
+    "agents": ["requirement_analyst"],
+    "mastery_levels": {
+      "requirement_analyst": "expert"
+    }
+  },
+  "Specification Writing": {
+    "agents": ["requirement_analyst"],
+    "mastery_levels": {
+      "requirement_analyst": "expert"
+    }
+  },
+  "Stakeholder Communication": {
+    "agents": ["requirement_analyst"],
+    "mastery_levels": {
+      "requirement_analyst": "expert"
+    }
+  },
+  "Technical Writing": {
+    "agents": ["documentation_specialist"],
+    "mastery_levels": {
+      "documentation_specialist": "expert"
+    }
+  },
+  "User Guides": {
+    "agents": ["documentation_specialist"],
+    "mastery_levels": {
+      "documentation_specialist": "expert"
+    }
+  },
+  "Data Strategy": {
+    "agents": ["data_ai_manager"],
+    "mastery_levels": {
+      "data_ai_manager": "expert"
+    }
+  },
+  "ML Coordination": {
+    "agents": ["data_ai_manager"],
+    "mastery_levels": {
+      "data_ai_manager": "expert"
+    }
+  },
+  "Data Architecture": {
+    "agents": ["data_ai_manager", "data_engineer"],
+    "mastery_levels": {
+      "data_ai_manager": "intermediate",
+      "data_engineer": "expert"
+    }
+  },
+  "Machine Learning": {
+    "agents": ["ml_engineer"],
+    "mastery_levels": {
+      "ml_engineer": "expert"
+    }
+  },
+  "Model Training": {
+    "agents": ["ml_engineer"],
+    "mastery_levels": {
+      "ml_engineer": "expert"
+    }
+  },
+  "PyTorch": {
+    "agents": ["ml_engineer"],
+    "mastery_levels": {
+      "ml_engineer": "expert"
+    }
+  },
+  "Transformers": {
+    "agents": ["ml_engineer"],
+    "mastery_levels": {
+      "ml_engineer": "expert"
+    }
+  },
+  "Data Pipelines": {
+    "agents": ["data_engineer"],
+    "mastery_levels": {
+      "data_engineer": "expert"
+    }
+  },
+  "ETL": {
+    "agents": ["data_engineer"],
+    "mastery_levels": {
+      "data_engineer": "expert"
+    }
+  },
+  "Data Warehousing": {
+    "agents": ["data_engineer"],
+    "mastery_levels": {
+      "data_engineer": "expert"
+    }
+  },
+  "Spark": {
+    "agents": ["data_engineer"],
+    "mastery_levels": {
+      "data_engineer": "expert"
+    }
+  }
+}

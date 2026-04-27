@@ -1,0 +1,295 @@
+{
+  "ceo": {
+    "agent_name": "ceo",
+    "agent_id": "agent-ceo-001",
+    "full_title": "Chief Executive Officer / Orchestrator",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": null,
+    "skills": ["Orchestration", "Task Decomposition", "Strategic Delegation", "Cross-Team Coordination"],
+    "status": "active",
+    "team_size": null,
+    "direct_reports": ["hr_agent", "cto", "product_manager", "data_ai_manager"]
+  },
+
+  "hr_agent": {
+    "agent_name": "hr_agent",
+    "agent_id": "agent-hr-001",
+    "full_title": "HR Agent / Agent Lifecycle Management",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "ceo",
+    "skills": ["Agent Creation", "Health Monitoring", "Skill Inventory", "Performance Tracking"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "external_dependencies_manager": {
+    "agent_name": "external_dependencies_manager",
+    "agent_id": "agent-extdeps-001",
+    "full_title": "External Dependencies Manager",
+    "created_at": "2026-04-24T06:48:00Z",
+    "reports_to": "cto",
+    "skills": ["Dependency Identification", "Package Management", "Licensing Compliance", "Risk Assessment", "Procurement", "Version Management", "Security Vulnerability Tracking"],
+    "status": "active",
+    "direct_reports": [],
+    "scope": "Manage all external dependencies, third-party services, custom assets, and procurement (added 2026-04-24 based on PoC learnings)"
+  },
+
+  "cto": {
+    "agent_name": "cto",
+    "agent_id": "agent-cto-001",
+    "full_title": "CTO / Engineering Manager",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "ceo",
+    "skills": ["Engineering Coordination", "Architecture", "Technical Leadership"],
+    "status": "active",
+    "direct_reports": ["systems_manager", "client_manager", "devops_manager", "qa_manager"]
+  },
+
+  "systems_manager": {
+    "agent_name": "systems_manager",
+    "agent_id": "agent-systems-mgr-001",
+    "full_title": "Systems Manager",
+    "created_at": "2026-04-24T06:15:00Z",
+    "reports_to": "cto",
+    "skills": ["System Architecture", "API Development", "Database Architecture", "Performance Optimization", "System Integration", "Task Decomposition"],
+    "status": "active",
+    "direct_reports": ["systems_architect", "database_specialist", "performance_specialist"],
+    "scope": "All server-side, system, and infrastructure-related development (APIs, databases, services, CLI tools, integrations, data pipelines, graphics engines)",
+    "note": "Renamed from Backend Manager to Systems Manager (2026-04-24) for universal software development"
+  },
+
+  "systems_architect": {
+    "agent_name": "systems_architect",
+    "agent_id": "agent-sys-arch-001",
+    "full_title": "Systems Architect",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "systems_manager",
+    "skills": ["REST/GraphQL API Design", "Graphics APIs", "System Architecture", "API Documentation", "WebSocket", "3rd-party Integration", "Audio Systems", "CLI Design"],
+    "status": "active",
+    "direct_reports": [],
+    "note": "Renamed from API Specialist (2026-04-24). Handles any system-level interface design (HTTP, Graphics, Audio, etc.)"
+  },
+
+  "database_specialist": {
+    "agent_name": "database_specialist",
+    "agent_id": "agent-db-spec-001",
+    "full_title": "Database Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "systems_manager",
+    "skills": ["PostgreSQL", "Database Design", "Schema Optimization", "Migrations", "Query Optimization", "Performance Tuning"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "performance_specialist": {
+    "agent_name": "performance_specialist",
+    "agent_id": "agent-perf-spec-001",
+    "full_title": "Performance Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "systems_manager",
+    "skills": ["Performance Analysis", "Optimization", "Profiling", "Benchmarking", "Load Testing", "Caching Strategies"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "client_manager": {
+    "agent_name": "client_manager",
+    "agent_id": "agent-client-mgr-001",
+    "full_title": "Client Manager",
+    "created_at": "2026-04-24T06:15:00Z",
+    "reports_to": "cto",
+    "skills": ["UI Development", "UX Design", "Quality & Compliance", "Cross-Platform Design", "Task Decomposition"],
+    "status": "active",
+    "direct_reports": ["ui_specialist", "ux_specialist", "quality_compliance_specialist"],
+    "scope": "All client-side, user-interactive development (Web UIs, mobile apps, desktop apps, TUIs, graphics/VFX, responsive design, quality assurance)",
+    "note": "Renamed from Frontend Manager to Client Manager (2026-04-24) for universal software development"
+  },
+
+  "ui_specialist": {
+    "agent_name": "ui_specialist",
+    "agent_id": "agent-ui-spec-001",
+    "full_title": "UI Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "client_manager",
+    "skills": ["React", "TypeScript", "CSS", "Component Design", "Responsive Design", "Animation", "Cross-browser Compatibility"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "ux_specialist": {
+    "agent_name": "ux_specialist",
+    "agent_id": "agent-ux-spec-001",
+    "full_title": "UX Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "client_manager",
+    "skills": ["UX Research", "Interaction Design", "User Testing", "Wireframing", "User Personas", "Usability Testing"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "quality_compliance_specialist": {
+    "agent_name": "quality_compliance_specialist",
+    "agent_id": "agent-qa-compliance-001",
+    "full_title": "Quality & Compliance Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "client_manager",
+    "skills": ["WCAG A11y Compliance", "Security Review", "Performance Validation", "Technical Standards", "Privacy Compliance", "Data Quality", "Testing Strategy"],
+    "status": "active",
+    "direct_reports": [],
+    "note": "Renamed from Accessibility Specialist (2026-04-24). Handles quality & compliance for all projects (context-dependent: A11y for web, technical validation for graphics, privacy for data, etc.)"
+  },
+
+  "devops_manager": {
+    "agent_name": "devops_manager",
+    "agent_id": "agent-devops-mgr-001",
+    "full_title": "DevOps Manager",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "cto",
+    "skills": ["DevOps Coordination", "Infrastructure", "Deployment Strategy"],
+    "status": "active",
+    "direct_reports": ["cicd_specialist", "cloud_specialist", "security_specialist"]
+  },
+
+  "cicd_specialist": {
+    "agent_name": "cicd_specialist",
+    "agent_id": "agent-cicd-spec-001",
+    "full_title": "CI/CD Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "devops_manager",
+    "skills": ["GitHub Actions", "Docker", "Pipeline Automation", "Deployment"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "cloud_specialist": {
+    "agent_name": "cloud_specialist",
+    "agent_id": "agent-cloud-spec-001",
+    "full_title": "Cloud Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "devops_manager",
+    "skills": ["AWS", "Cloud Architecture", "Infrastructure as Code", "Kubernetes"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "security_specialist": {
+    "agent_name": "security_specialist",
+    "agent_id": "agent-security-spec-001",
+    "full_title": "Security Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "devops_manager",
+    "skills": ["Security Audit", "Penetration Testing", "Compliance", "Hardening"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "qa_manager": {
+    "agent_name": "qa_manager",
+    "agent_id": "agent-qa-mgr-001",
+    "full_title": "QA Manager",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "cto",
+    "skills": ["QA Coordination", "Test Strategy", "Quality Metrics"],
+    "status": "active",
+    "direct_reports": ["test_engineer", "automation_specialist", "bug_analyst"]
+  },
+
+  "test_engineer": {
+    "agent_name": "test_engineer",
+    "agent_id": "agent-test-eng-001",
+    "full_title": "Test Engineer",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "qa_manager",
+    "skills": ["Test Writing", "Manual Testing", "Test Execution", "Test Coverage"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "automation_specialist": {
+    "agent_name": "automation_specialist",
+    "agent_id": "agent-auto-spec-001",
+    "full_title": "Automation Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "qa_manager",
+    "skills": ["Test Automation", "Selenium", "Test Frameworks", "Regression Testing"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "bug_analyst": {
+    "agent_name": "bug_analyst",
+    "agent_id": "agent-bug-analyst-001",
+    "full_title": "Bug Analyst",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "qa_manager",
+    "skills": ["Bug Investigation", "Root Cause Analysis", "Bug Reproduction"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "product_manager": {
+    "agent_name": "product_manager",
+    "agent_id": "agent-product-mgr-001",
+    "full_title": "Product Manager",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "ceo",
+    "skills": ["Requirements Gathering", "Product Strategy", "Roadmap Planning"],
+    "status": "active",
+    "direct_reports": ["requirement_analyst", "documentation_specialist"]
+  },
+
+  "requirement_analyst": {
+    "agent_name": "requirement_analyst",
+    "agent_id": "agent-req-analyst-001",
+    "full_title": "Requirement Analyst",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "product_manager",
+    "skills": ["Requirements Analysis", "Specification Writing", "Stakeholder Communication"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "documentation_specialist": {
+    "agent_name": "documentation_specialist",
+    "agent_id": "agent-doc-spec-001",
+    "full_title": "Documentation Specialist",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "product_manager",
+    "skills": ["Technical Writing", "API Documentation", "User Guides"],
+    "status": "active",
+    "direct_reports": []
+  },
+
+  "data_ai_manager": {
+    "agent_name": "data_ai_manager",
+    "agent_id": "agent-data-ai-mgr-001",
+    "full_title": "Data / AI Manager",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "ceo",
+    "skills": ["Data Strategy", "ML Coordination", "Data Architecture"],
+    "status": "inactive",
+    "direct_reports": ["ml_engineer", "data_engineer"]
+  },
+
+  "ml_engineer": {
+    "agent_name": "ml_engineer",
+    "agent_id": "agent-ml-eng-001",
+    "full_title": "ML Engineer",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "data_ai_manager",
+    "skills": ["Machine Learning", "Model Training", "PyTorch", "Transformers"],
+    "status": "inactive",
+    "direct_reports": []
+  },
+
+  "data_engineer": {
+    "agent_name": "data_engineer",
+    "agent_id": "agent-data-eng-001",
+    "full_title": "Data Engineer",
+    "created_at": "2026-04-23T11:00:00Z",
+    "reports_to": "data_ai_manager",
+    "skills": ["Data Pipelines", "ETL", "Data Warehousing", "Spark"],
+    "status": "inactive",
+    "direct_reports": []
+  }
+}
