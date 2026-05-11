@@ -1,0 +1,67 @@
+# Build artifacts (C++)
+build/
+out/
+cmake-build-*/
+*.exe
+*.dll
+*.lib
+*.pdb
+*.obj
+*.o
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node.js (Dashboard)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Vite
+dist/
+dist-ssr/
+*.local
+
+# Dashboard runtime state
+dashboard/state/
+dashboard/backend/state/
+dashboard/logs/
+*.log
+
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+credentials.json
+
+# Assets (large binary, will use Git LFS later)
+assets/music/*.wav
+assets/music/*.flac
+assets/textures/raw/
+
+# AI Generation outputs (intermediate)
+concept/visual/_drafts/
+concept/audio/_drafts/
