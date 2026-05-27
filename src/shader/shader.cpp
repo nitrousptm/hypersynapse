@@ -1,0 +1,95 @@
+#include "shader/shader.h"
+
+#include <cstdio>
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <glad/gl.h>
+
+namespace hyp::shader {
+
+namespace {
+
+std::string read_file(std::string_view path) {
+    std::ifstream f{std::string(path)};
+    if (!f) {
+        std::fprintf(stderr, "[shader] cannot open %.*s\n",
+                     static_cast<int>(path.size()), path.data());
+        return {};
+    }
+    std::stringstream ss;
+    ss << f.rdbuf();
+    return ss.str();
+}
+
+uint32_t compile(GLenum stage, std::string_view source, std::string_view tag) {
+    const std::string src(source);
+    const char* c_src = src.c_str();
+    uint32_t sh = glCreateShader(stage);
+    glShaderSource(sh, 1, &c_src, nullptr);
+    glCompileShader(sh);
+
+    int ok = 0;
+    glGetShaderiv(sh, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        int len = 0;
+        glGetShaderiv(sh, GL_INFO_LOG_LENGTH, &len);
+        std::vector<char> log(static_cast<size_t>(len));
+        glGetShaderInfoLog(sh, len, nullptr, log.data());
+        std::fprintf(stderr, "[shader] compile %.*s failed:\n%s\n",
+                     static_cast<int>(tag.size()), tag.data(), log.data());
+        glDeleteShader(sh);
+        return 0;
+    }
+    return sh;
+}
+
+uint32_t link(std::initializer_list<uint32_t> stages, std::string_view tag) {
+    uint32_t prog = glCreateProgram();
+    for (uint32_t s : stages) glAttachShader(prog, s);
+    glLinkProgram(prog);
+    for (uint32_t s : stages) {
+        glDetachShader(prog, s);
+        glDeleteShader(s);
+    }
+
+    int ok = 0;
+    glGetProgramiv(prog, GL_LINK_STATUS, &ok);
+    if (!ok) {
+        int len = 0;
+        glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
+        std::vector<char> log(static_cast<size_t>(len));
+        glGetProgramInfoLog(prog, len, nullptr, log.data());
+        std::fprintf(stderr, "[shader] link %.*s failed:\n%s\n",
+                     static_cast<int>(tag.size()), tag.data(), log.data());
+        glDeleteProgram(prog);
+        return 0;
+    }
+    return prog;
+}
+
+}  // namespace
+
+uint32_t load_program(std::string_view vert_path, std::string_view frag_path) {
+    auto vsrc = read_file(vert_path);
+    auto fsrc = read_file(frag_path);
+    if (vsrc.empty() || fsrc.empty()) return 0;
+
+    uint32_t v = compile(GL_VERTEX_SHADER, vsrc, vert_path);
+    if (!v) return 0;
+    uint32_t f = compile(GL_FRAGMENT_SHADER, fsrc, frag_path);
+    if (!f) { glDeleteShader(v); return 0; }
+    return link({v, f}, frag_path);
+}
+
+uint32_t load_compute(std::string_view comp_path) {
+    auto src = read_file(comp_path);
+    if (src.empty()) return 0;
+    uint32_t c = compile(GL_COMPUTE_SHADER, src, comp_path);
+    if (!c) return 0;
+    return link({c}, comp_path);
+}
+
+}  // namespace hyp::shader
