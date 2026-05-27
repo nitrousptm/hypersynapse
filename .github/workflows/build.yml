@@ -1,0 +1,69 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ninja-build \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libgl1-mesa-dev \
+            glslang-tools
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build -j
+
+      - name: Validate shaders
+        run: |
+          for f in shaders/**/*.vert shaders/**/*.frag shaders/**/*.comp; do
+            [ -e "$f" ] || continue
+            stage="${f##*.}"
+            case "$stage" in
+              vert) glslang_stage=vert ;;
+              frag) glslang_stage=frag ;;
+              comp) glslang_stage=comp ;;
+              *) continue ;;
+            esac
+            echo "==> $f"
+            glslangValidator -S "$glslang_stage" "$f"
+          done
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypersynapse-linux
+          path: build/hypersynapse
+          if-no-files-found: error
+
+  windows:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build
+        run: cmake --build build --config Release -j
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: hypersynapse-windows
+          path: build/Release/hypersynapse.exe
+          if-no-files-found: error
