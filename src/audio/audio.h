@@ -12,7 +12,7 @@ public:
     void seek(double seconds);
     void shutdown();
 
-    double position() const;
+    double position();
     bool is_active() const { return active_; }
     bool is_valid() const { return valid_; }
 

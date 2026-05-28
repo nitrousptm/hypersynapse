@@ -82,7 +82,8 @@ target_link_libraries(hypersynapse PRIVATE glfw glm::glm glad_gl_core_46 miniaud
 target_compile_definitions(hypersynapse PRIVATE
     HYP_SHADER_DIR="${CMAKE_SOURCE_DIR}/shaders"
     HYP_ASSET_DIR="${CMAKE_SOURCE_DIR}/assets"
-    GLFW_INCLUDE_NONE)
+    GLFW_INCLUDE_NONE
+    $<$<CXX_COMPILER_ID:MSVC>:_CRT_SECURE_NO_WARNINGS>)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(hypersynapse PRIVATE dl pthread)
