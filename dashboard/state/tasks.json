@@ -163,10 +163,11 @@
     "id": "t-final-testing",
     "agent": "demo_director",
     "title": "Final Integration & Testing (Full 8-min Run-through)",
-    "detail": "⏳ Pending: Compile + run full demo, verify beat-sync, act transitions, colors, no artifacts. Test capture mode → PPM → ffmpeg → WebM. Check audio/video sync, 60fps stable. Sign-off ready for Assembly submission.",
-    "status": "pending",
-    "started_at": null,
-    "progress": 0.0
+    "detail": "🔄 In Progress (75%): ✅ Debug stats (src/debug/) + FPS monitoring. ✅ Build scripts (PS1+bash). ✅ TEST_PLAN.md (10-step verification). ✅ SUBMISSION.md (pre-upload checklist). ✅ SHADER_OPTIMIZATION.md (perf tuning guide). ✅ WebM validators (PS1+bash scripts). 🔧 Infrastructure complete. TODO: Windows RTX compilation + 8min runtime. Pending: Audio/video sync confirmation. All doc + tooling ready.",
+    "status": "in_progress",
+    "started_at": 1748395200,
+    "finished_at": null,
+    "progress": 0.75
   },
   {
     "id": "t-assembly-submission",

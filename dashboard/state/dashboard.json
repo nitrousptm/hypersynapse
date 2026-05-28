@@ -1,0 +1,23 @@
+{
+  "project": "hypersynapse",
+  "title": "HYPERSYNAPSE — Assembly 2026 PC Demo",
+  "crew": "agentix",
+  "deadline": "2026-07-28T23:59:00Z",
+  "event": "Assembly Summer 2026 — Helsinki",
+  "event_date": "2026-07-30",
+  "duration_sec": 480,
+  "resolution": "1920x1080@60",
+  "target_gpu_max": "RTX 5090",
+  "target_gpu_min": "RTX 3090",
+  "api": "OpenGL 4.6 Core + Compute",
+  "language": "C++20",
+  "music_genre": "AI Drum & Bass",
+  "repo": "https://github.com/nitrousptm/hypersynapse",
+  "started_at": 1748336700,
+  "paused": false,
+  "last_update": 1748403600,
+  "current_phase": "Final Integration Testing Infrastructure",
+  "next_milestone": "Windows RTX compilation + 8-minute runtime verification",
+  "session_work": "Debug stats (h/cpp) + build automation (PS1/bash) + TEST_PLAN + SUBMISSION.md + SHADER_OPTIMIZATION.md + WebM validators",
+  "commits_today": "b65aaac (stats+build), d02c188 (session summary), c48f176 (submission infra)"
+}

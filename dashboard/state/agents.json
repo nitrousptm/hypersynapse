@@ -1,0 +1,58 @@
+[
+  {
+    "name": "demo_director",
+    "title": "Demo Director",
+    "emoji": "🎬",
+    "reports_to": "creative_director",
+    "description": "Timeline, scene-choreography, team coordination",
+    "color": "#f97316"
+  },
+  {
+    "name": "demo_researcher",
+    "title": "Demoscene Researcher",
+    "emoji": "🔎",
+    "reports_to": "demo_director",
+    "description": "Pouet analysis, winning-patterns mining",
+    "color": "#06b6d4"
+  },
+  {
+    "name": "shader_specialist",
+    "title": "Shader Specialist",
+    "emoji": "✨",
+    "reports_to": "demo_director",
+    "description": "GLSL fragment/compute/mesh shaders",
+    "color": "#a855f7"
+  },
+  {
+    "name": "procedural_specialist",
+    "title": "Procedural Specialist",
+    "emoji": "🧮",
+    "reports_to": "demo_director",
+    "description": "SDFs, noise, IFS, geometry generation",
+    "color": "#10b981"
+  },
+  {
+    "name": "audio_specialist",
+    "title": "Audio Specialist",
+    "emoji": "🎧",
+    "reports_to": "demo_director",
+    "description": "AI DnB generation, FFT, beat-sync",
+    "color": "#ec4899"
+  },
+  {
+    "name": "postfx_specialist",
+    "title": "Post-FX Specialist",
+    "emoji": "🎞️",
+    "reports_to": "demo_director",
+    "description": "Bloom, DoF, CA, color grading",
+    "color": "#eab308"
+  },
+  {
+    "name": "build_specialist",
+    "title": "Build Specialist",
+    "emoji": "🔧",
+    "reports_to": "demo_director",
+    "description": "CMake, CI, packaging, final exe",
+    "color": "#64748b"
+  }
+]
