@@ -1,7 +1,10 @@
 #include "renderer/renderer.h"
 
 #include <cstdio>
+#include <cmath>
 #include <glad/gl.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/random.hpp>
 
 #include "shader/shader.h"
 #include "timeline/timeline.h"
@@ -80,6 +83,15 @@ bool Renderer::init(int width, int height) {
 }
 
 void Renderer::render(const Timeline& tl) {
+    // Particle emission (Act I beat-synced neural pulse)
+    if (particles_ && tl.act() == Act::I) {
+        // Emit particles at beat downbeats (beat_phase near 0)
+        float beat_phase = static_cast<float>(tl.beat_phase());
+        if (beat_phase < 0.05f) {
+            emit_neural_pulse(tl);
+        }
+    }
+
     // Update particle simulation
     if (particles_) {
         float dt = 1.0f / 60.0f;  // Assume 60 fps
@@ -161,6 +173,39 @@ void Renderer::draw_post(const Timeline& tl) {
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glBindVertexArray(0);
     glUseProgram(0);
+}
+
+void Renderer::emit_neural_pulse(const Timeline& tl) {
+    if (!particles_) return;
+
+    // Beat-synced neural particle burst: ~150 particles per beat
+    const int burst_count = 150;
+    const float burst_speed = 3.5f;
+    const float lifetime = 1.2f;
+
+    // Palette: magenta (beat start) → cyan (beat end)
+    float beat_t = static_cast<float>(tl.beat_phase());
+    glm::vec3 col = glm::mix(
+        glm::vec3(1.0f, 0.0f, 1.0f),   // Magenta
+        glm::vec3(0.0f, 1.0f, 1.0f),   // Cyan
+        beat_t
+    );
+
+    // Emit from pseudo-random neuron positions in the lattice
+    for (int i = 0; i < burst_count; ++i) {
+        // Hash-based pseudo-random position (soma clusters)
+        float seed = static_cast<float>(tl.beat_count()) * 17.f + static_cast<float>(i);
+        glm::vec3 pos = glm::ballRand(0.5f);  // Within 0.5 unit sphere of origin
+        pos.y *= 0.7f;  // Flatten vertically
+
+        // Radial velocity outward
+        glm::vec3 vel = glm::normalize(pos) * burst_speed;
+
+        // Slight upward bias
+        vel.y += 0.5f;
+
+        particles_->emit(pos, vel, 0, lifetime, col);
+    }
 }
 
 void Renderer::shutdown() {

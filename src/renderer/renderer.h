@@ -20,6 +20,7 @@ private:
     void draw_scene(const Timeline& tl);
     void draw_particles(const Timeline& tl);
     void draw_post(const Timeline& tl);
+    void emit_neural_pulse(const Timeline& tl);
 
     int width_ = 0, height_ = 0;
     uint32_t fullscreen_vao_ = 0;
