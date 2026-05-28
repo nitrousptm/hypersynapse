@@ -1,0 +1,46 @@
+#pragma once
+
+#include <cstdint>
+#include <glm/glm.hpp>
+
+namespace hyp {
+
+class Timeline;
+
+struct Particle {
+    glm::vec3 pos;
+    float age;
+    glm::vec3 vel;
+    uint32_t type;
+    glm::vec3 color;
+    float lifetime;
+};
+
+class ParticleSystem {
+public:
+    bool init(uint32_t max_particles);
+    void update(const Timeline& tl, float dt);
+    void render(uint32_t target_fbo);
+    void shutdown();
+
+    void emit(const glm::vec3& pos, const glm::vec3& vel, uint32_t type, float lifetime, const glm::vec3& color);
+
+    uint32_t alive_count() const { return alive_count_; }
+
+private:
+    void update_compute(const Timeline& tl, float dt);
+    void compact();
+
+    // GPU buffers
+    uint32_t particle_ssbo_     = 0;  // Particle data
+    uint32_t particle_count_    = 0;  // Atomic counter / indirect draw buffer
+    uint32_t particle_vao_      = 0;  // For rendering
+    uint32_t compute_program_   = 0;  // Particle update shader
+    uint32_t render_program_    = 0;  // Particle render shader
+
+    uint32_t max_particles_  = 0;
+    uint32_t alive_count_    = 0;
+    bool active_             = false;
+};
+
+}  // namespace hyp

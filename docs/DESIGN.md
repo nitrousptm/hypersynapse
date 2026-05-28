@@ -42,21 +42,29 @@ If we ship something genuinely punishing, we'll add a single `--low` runtime fla
 | Track structure | **Visuals first, music cuts to timeline** | Demo timing must be deterministic for Assembly submission. Composer receives the three-act time map and cuts to it. |
 | Capture / replay | **Yes — ship `--capture` flag for WebM 60fps** | Demoscene tradition. Will headless-render via offscreen FBO + ffmpeg pipe. Flag TBD in a later session. |
 
-## Implementation Status (2026-05-28 06:55)
+## Implementation Status (2026-05-28 07:02)
 
-### Audio Integration ✅ DONE
+### ✅ Audio Integration
 - **miniaudio** engine initialized (48 kHz, stereo)
 - Play/seek/position() methods implemented
-- Timeline-synchronized playback ready (174 BPM hard-coded in timeline.h)
+- Timeline-synchronized playback (174 BPM hard-coded in timeline.h)
 - Command-line audio path: `./build/hypersynapse track.wav`
-- No drift compensation yet (timeline is source of truth; audio position() available for monitoring)
+- Documentation: `docs/AUDIO.md` with composition specs and timing cues
+
+### ✅ Particle System Groundwork
+- Architecture spec: `docs/PARTICLES.md` (4M particles on 5090, 1M on 3090 fallback)
+- Compute shader skeleton: `shaders/compute/particles_update.comp`
+- Render shader skeleton: `shaders/compute/particles_render.frag`
+- C++ manager skeleton: `src/particles/particles.h/cpp` (ready for integration)
+- Planned deployment: Act I (synaptic discharge) + Act II (city atmosphere)
 
 ### Open Questions for Agents
 
 - ~~Music BPM target?~~ → **174 BPM** ✅
 - ~~Track structure?~~ → **Visuals first** ✅
-- ~~WebM capture?~~ → **Yes, `--capture` flag** ✅
+- ~~WebM capture?~~ → **Yes, `--capture` flag** (TBD) 
 - ~~Audio integration?~~ → **miniaudio done** ✅
-- Shader `#include` mechanism: add GL_ARB_shading_language_include, or keep shaders self-contained? (current: self-contained)
-- Compute-shader particle system: implement as Act I overlay or separate pass? (planned: Act I → II transition)
-- Drift compensation: should we sync audio frame to timeline if they diverge >100ms?
+- ~~Particle system architecture?~~ → **Skeleton + docs done** ✅
+- Shader `#include` mechanism: GL_ARB_shading_language_include vs. self-contained? (current: self-contained)
+- Particle physics tuning: should emission follow beat grid or continuous?
+- Drift compensation: sync audio frame to timeline if diverge >100ms?

@@ -1,0 +1,104 @@
+#version 460 core
+// Particle update compute shader
+// Dispatched once per frame to update particle physics and lifetimes.
+//
+// Input: particle SSBOs (position, velocity, age)
+// Output: updated SSBOs, compacted alive particle indices
+//
+// TODO: Implement actual physics simulation.
+// This is a skeleton to define buffer layouts and uniforms.
+
+#define WORKGROUP_SIZE 256
+
+layout(local_size_x = WORKGROUP_SIZE) in;
+
+// ─── Particle Data ───────────────────────────────────────────────────────────
+struct Particle {
+    vec4 pos_age;      // xyz: position, w: age (s)
+    vec4 vel_type;     // xyz: velocity, w: particle type
+    vec4 col_life;     // xyz: color, w: lifetime (s)
+};
+
+layout(std430, binding = 0) coherent buffer ParticleBuffer {
+    Particle particles[];
+} particles_rw;
+
+layout(std430, binding = 1) readonly buffer ParticleCountBuffer {
+    uint count;
+    uint _pad[3];
+} particle_count;
+
+// ─── Timeline Uniforms ───────────────────────────────────────────────────────
+uniform float u_time;
+uniform float u_dt;         // Delta time (frame duration, ~0.0167s @ 60fps)
+uniform float u_beat;       // Beat phase [0,1]
+uniform float u_act_norm;   // Act progress [0,1]
+uniform int u_beat_cnt;
+uniform int u_act_idx;      // 0=Act I, 1=Act II, 2=Act III
+
+// ─── Simulation Parameters ───────────────────────────────────────────────────
+uniform float u_gravity;
+uniform float u_damping;
+uniform vec3 u_wind;
+uniform uint u_alive_count;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// Pseudo-random via hash
+float hash11(float n) { return fract(sin(n) * 43758.5453); }
+
+// Kill particle if age > lifetime
+bool is_dead(Particle p) {
+    return p.pos_age.w > p.col_life.w;
+}
+
+// ─── Main Compute Kernel ─────────────────────────────────────────────────────
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= u_alive_count) return;
+
+    Particle p = particles_rw.particles[idx];
+
+    // Update physics
+    {
+        // Add gravity and damping
+        p.vel_type.xyz += vec3(0.0, u_gravity, 0.0) * u_dt;
+        p.vel_type.xyz *= (1.0 - u_damping * u_dt);
+
+        // Apply wind
+        p.vel_type.xyz += u_wind * u_dt;
+
+        // Advect position
+        p.pos_age.xyz += p.vel_type.xyz * u_dt;
+    }
+
+    // Age particle
+    {
+        p.pos_age.w += u_dt;
+    }
+
+    // Kill if expired
+    if (is_dead(p)) {
+        p.pos_age.w = p.col_life.w + 1.0;  // Mark for removal
+    }
+
+    // Act-specific behavior
+    {
+        // Act I: particles shoot outward from soma, fade at edge
+        if (u_act_idx == 0) {
+            float fade = 1.0 - smoothstep(0.4, 0.5, p.pos_age.w / p.col_life.w);
+            p.col_life.xyz *= fade;  // Fade to black over lifetime
+        }
+        // Act II: particles slow and settle
+        else if (u_act_idx == 1) {
+            p.vel_type.xyz *= 0.98;  // Extra drag
+        }
+        // Act III: particles cease and fade
+        else {
+            p.vel_type.xyz = vec3(0.0);  // Stop
+            p.pos_age.w = p.col_life.w + 0.1;  // Expire faster
+        }
+    }
+
+    particles_rw.particles[idx] = p;
+}
