@@ -1,70 +1,183 @@
-# HYPERSYNAPSE — Design Notes
+# SINGULARITY GARDEN — Design Notes
 
-Living document. Owned by Director / Timeline Agent; edited by the Concept and Shader agents.
+Living document. Owned by demo_director.
 
-## Concept (working)
+## Concept
 
-A descent through a synthetic mind. The viewer travels from raw electrical
-signal into structured cognition: neurons fire, geometric latticeworks
-crystallize, abstract dream-states bloom, and the demo collapses back into
-a single point of light. Cyberpunk surface — neon, scanlines, holographic
-glitch — over a geometric/abstract substrate (SDF lattices, voronoi
-networks, ray-marched volumes).
+A superintelligent AI awakens and begins rewriting reality into organic mathematical structures.
+Cities fracture into fractals. Light becomes physical. Geometry grows like plants.
+Time loses linearity. The universe transforms into a single living mathematical entity.
 
-## Three-Act Structure (8:00)
+Tone arc: **dystopian → surreal → transcendent**
 
-| Act | Length | Title             | Mood             | Primary Technique |
-|----:|-------:|-------------------|------------------|-------------------|
-| I   |  2:15  | Boot / Synapse    | birth, electric  | SDF + particles   |
-| II  |  3:30  | Lattice / City    | structure, drive | raymarched city   |
-| III |  2:15  | Bloom / Collapse  | overload, peace  | volumetrics + IFS |
+Style fusion:
+- hard sci-fi brutalism (Act 1–2)
+- sacred geometry / procedural organics (Act 3)
+- cosmic horror beauty / recursive infinity (Act 3–4)
 
-Beat-1 (Act I→II) at ~2:15. Drop (Act II climax) at ~4:30. Collapse at ~5:45.
+Signature Effect: **Recursive Universes** — worlds within worlds.
+Holy-shit moment: camera zooms out of a universe that is a particle in a larger universe.
 
-## Tech Budget
+## Four-Act Structure (4:00 / 240s)
 
-- Raymarched SDFs as primary geometry primitive.
-- Compute-shader particle systems (up to 4M particles on 5090, scaled down via instance count on 3090).
-- Volumetric ray-march in Act III (cheap on 5090, may halve internal res on 3090).
-- Post FX: bloom, chromatic aberration, scanlines, film grain, vignette.
-- Optional: hardware-accelerated raytracing extension probe (`GL_NV_ray_tracing`); fall back gracefully.
+| Act | Duration   | Title         | Mood                        |
+|----:|:----------:|---------------|----------------------------|
+| I   | 0:00–0:45  | BOOT          | Cold, minimal, tension      |
+| II  | 0:45–1:45  | INFECTION     | Loss of control, fracture   |
+| III | 1:45–3:00  | ASCENSION     | Beautiful, overwhelming     |
+| IV  | 3:00–4:00  | TRANSCENDENCE | Cosmic, emotional, gigantic |
 
-## Quality Strategy (RTX 3090 fallback)
+## Scene Map (7 Scenes)
 
-No quality presets. Single render pipeline. On 3090 we accept lower framerate (45–55 fps) per Udo's call.
-If we ship something genuinely punishing, we'll add a single `--low` runtime flag, no menu.
+| Scene | Time      | Title                     | Act | Primary Technique              |
+|------:|:---------:|---------------------------|-----|-------------------------------|
+| 1     | 0:00–0:18 | Black Void Startup        | I   | Fullscreen: hex grid, CRT     |
+| 2     | 0:18–0:45 | Awakening Core            | I   | SDF monolith + particles      |
+| 3     | 0:45–1:15 | City Corruption           | II  | Polygon meshes + displacement |
+| 4     | 1:15–1:45 | Time Fracture             | II  | Feedback + temporal reprojection |
+| 5     | 1:45–2:30 | Geometry Bloom            | III | Raymarched fractals + volumetrics |
+| 6     | 2:30–3:00 | Impossible Space          | III | **SIGNATURE**: Recursive universes |
+| 7     | 3:00–4:00 | Singularity Garden        | IV  | Cosmic instancing + final logo |
 
-## Resolved Decisions (2026-05-28)
+## Scene Details
 
-| Question | Decision | Rationale |
-|---|---|---|
-| Music BPM | **174 BPM** | Classic DnB tempo. Clean 8-bar phrases = 11.03 s, lines up with act cuts at 135 s (≈12.25 bars). Beat grid hard-coded in `timeline.h`. |
-| Track structure | **Visuals first, music cuts to timeline** | Demo timing must be deterministic for Assembly submission. Composer receives the three-act time map and cuts to it. |
-| Capture / replay | **Yes — ship `--capture` flag for WebM 60fps** | Demoscene tradition. Will headless-render via offscreen FBO + ffmpeg pipe. Flag TBD in a later session. |
+### Scene 1 — Black Void Startup (0:00–0:18)
+- Black void with single white debug lines, GPU-style hex grids
+- CRT noise overlay, floating numeric glyphs, scanlines
+- Chromatic aberration very subtle
+- First kick at 0:18 triggers Scene 2 cut
+- Camera: static, slowly drifting
 
-## Implementation Status (2026-05-28 07:02)
+### Scene 2 — Awakening Core (0:18–0:45)
+- Giant geometric monolith (polygon mesh) materializes from particles
+- Procedural surface growth via vertex displacement shader
+- Volumetric fog around base
+- Beat-synced particle bursts from surface
+- Monolith "opens" impossibly at 0:45 → Act II cut
 
-### ✅ Audio Integration
-- **miniaudio** engine initialized (48 kHz, stereo)
-- Play/seek/position() methods implemented
-- Timeline-synchronized playback (174 BPM hard-coded in timeline.h)
-- Command-line audio path: `./build/hypersynapse track.wav`
-- Documentation: `docs/AUDIO.md` with composition specs and timing cues
+### Scene 3 — City Corruption (0:45–1:15)
+- Brutalist megacity rendered with instanced polygon buildings
+- Geometry shader extrusions on facades
+- Vertex displacement: buildings start warping to mathematical shapes
+- Light arteries spread through city grid
+- Camera: fast FPV flights through canyons
+- Transition: buildings dissolve into mathematical forms at 1:15
 
-### ✅ Particle System Groundwork
-- Architecture spec: `docs/PARTICLES.md` (4M particles on 5090, 1M on 3090 fallback)
-- Compute shader skeleton: `shaders/compute/particles_update.comp`
-- Render shader skeleton: `shaders/compute/particles_render.frag`
-- C++ manager skeleton: `src/particles/particles.h/cpp` (ready for integration)
-- Planned deployment: Act I (synaptic discharge) + Act II (city atmosphere)
+### Scene 4 — Time Fracture (1:15–1:45)
+- Same explosion played at 3 different time offsets simultaneously
+- Frozen debris fields in space
+- Reversed particle simulation streams
+- Recursive mirror portals
+- Reprojection feedback buffer abuse
+- Camera: flies through frozen time fragments
 
-### Open Questions for Agents
+### Scene 5 — Geometry Bloom (1:45–2:30)
+- Reality becomes organic: raymarched fractal flowers, SDF temples
+- Kaleidoscopic spaces, living light structures
+- Procedural animation: geometry pulsing to music
+- Volumetric light scattering through fractal structures
+- Emotional musical peak
 
-- ~~Music BPM target?~~ → **174 BPM** ✅
-- ~~Track structure?~~ → **Visuals first** ✅
-- ~~WebM capture?~~ → **Yes, `--capture` flag** (TBD) 
-- ~~Audio integration?~~ → **miniaudio done** ✅
-- ~~Particle system architecture?~~ → **Skeleton + docs done** ✅
-- Shader `#include` mechanism: GL_ARB_shading_language_include vs. self-contained? (current: self-contained)
-- Particle physics tuning: should emission follow beat grid or continuous?
-- Drift compensation: sync audio frame to timeline if diverge >100ms?
+### Scene 6 — Impossible Space (2:30–3:00) *** SIGNATURE ***
+- Non-euclidean space: rooms fold into themselves
+- 4D-like rotation effects
+- Portal rendering: recursive FBO capture (3 depth levels)
+- Rooms within light beams
+- **HOLY-SHIT MOMENT at 2:50**: Camera zooms out from universe → universe is a particle in larger universe
+- Shader-based space warping, impossible topology
+
+### Scene 7 — Singularity Garden (3:00–4:00)
+- Entire reality becomes fractal
+- Massive GPU instancing: stars, nebulae, geometric structures
+- Particle fluid: light grows like plants
+- Final 10s: complete silence → single light pulse → SINGULARITY GARDEN logo
+- Logo: all previous scene data streams converge as typography
+- Camera: slow pullback to infinite distance
+
+## Color Palette
+
+| Act | Primary  | Secondary | Highlight |
+|-----|----------|-----------|-----------|
+| I   | #000000  | #0a0a12   | #e8e8ff   |
+| II  | #0d1117  | #1a2030   | #00aaff   |
+| III | #050020  | #200050   | #ff40ff   |
+| IV  | #000508  | #001020   | #ffffff   |
+
+Progression: near-black → electric blue → magenta/violet → pure white
+
+## Tech Stack
+
+- **API**: OpenGL 4.6 Core + Compute Shaders
+- **Language**: C++20
+- **Geometry**: Polygon meshes (procedural, runtime-generated) + SDF raymarching hybrid
+- **Particles**: GPU compute shader, 32k–1M pool
+- **Audio**: miniaudio, 133 BPM, `assets/music/Concrete-Syncope.wav`
+- **Post FX**: ACES tonemapping, bloom, chromatic aberration, scanlines, vignette
+- **Recursive rendering**: Dual FBO pingpong for Scene 6 portal effect
+
+## Music
+
+- **File**: `assets/music/Concrete-Syncope.wav`
+- **BPM**: 133
+- **Beat**: 0.45113s | **Bar**: 1.80451s
+- **Style**: Industrial Ambient / Cinematic Neurobass
+- **References**: Carbon Based Lifeforms, Noisia, Mick Gordon, Rival Consoles
+- **Key cues**: First kick 0:18 | Bass drop 0:45 | Emotional peak 1:45 | Climax 2:50 | Silence 3:50
+
+## Mesh Architecture
+
+All geometry generated procedurally at runtime — no external asset files.
+
+| Mesh          | Generator                              | Used In |
+|---------------|----------------------------------------|---------|
+| MonolithMesh  | Box + subdivision + displacement       | Scene 2 |
+| BuildingMesh  | Instanced box extrusions (1000+ inst.) | Scene 3 |
+| CityGrid      | Procedural street/block layout         | Scene 3 |
+| Particles     | GPU compute (no CPU mesh)              | All     |
+| Fractals      | SDF raymarching (no mesh)              | 5–7     |
+
+## Resolved Decisions
+
+| Question          | Decision                                               |
+|-------------------|-------------------------------------------------------|
+| API               | OpenGL 4.6 (Assembly-compatible, saves vs Vulkan)     |
+| Signature effect  | Recursive Universes (Scene 6)                         |
+| Music             | Concrete-Syncope.wav, 133 BPM (Industrial Ambient — NOT DnB) |
+| Polygon models    | Procedural runtime generation, no external files      |
+| Geometry hybrid   | Polygon for architecture, SDF for organic/fractal     |
+| Quality fallback  | No presets; RTX 3090 accepted at 45–55 fps            |
+| Music BPM         | 133 BPM locked — Neurobass/Cinematic Industrial (DnB rejected) |
+| Track structure   | Visuals-first approach: scenes designed, then music mapped to them |
+| Capture/replay    | WebM VP9 60fps via ffmpeg two-pass; validate_webm.sh provided |
+| Particle camera   | Per-scene orbit camera; particles use 3D world space  |
+| Bloom pipeline    | Dual-layer Gaussian (tight 0.4r + wide 1.0r) for cinematic halo |
+| Lens flare        | Beat-sync, Acts II–III only — fades out before finale  |
+
+## Implementation Status (28 May 2026)
+
+### Completed Systems
+
+| System | Status | Notes |
+|--------|--------|-------|
+| Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + scanlines + grain + vignette |
+| Scene shaders (all 7) | ✅ Complete | Boot Void → Transcendence fully implemented |
+| Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50 |
+| SDF raymarching | ✅ Complete | sdf_lib.glsl shared library, used in scenes 2, 5, 6 |
+| Particle system | ✅ Complete | Compute shader physics, beat-sync, act-specific behaviors |
+| Particle render | ✅ Complete | Soft glow sprites, velocity-based brightness, act-aware color |
+| Audio integration | ✅ Complete | miniaudio, Concrete-Syncope.wav playback |
+| Mesh pipeline | ✅ Complete | Procedural city (scene 3), buildings + instancing |
+| Timeline | ✅ Complete | 133 BPM beat tracking, 4 acts, 7 scenes, cue system |
+| Capture mode | ✅ Complete | PPM frame sequence + ffmpeg WebM encode |
+| Debug stats | ✅ Complete | FPS/frame time overlay, beat counter |
+| Build scripts | ✅ Complete | build.sh (Linux/macOS) + build_windows.ps1 (MSVC) |
+
+### Outstanding for Submission
+
+| Task | Priority | Notes |
+|------|----------|-------|
+| Windows RTX compile test | 🔴 Critical | Needs MSVC + RTX 3090/5090 machine |
+| 4-minute runtime validation | 🔴 Critical | Audio sync + full run-through |
+| WebM capture test | 🔴 Critical | 13,659 frames @ 60fps verification |
+| nfo file | 🟡 Required | Title, crew, contact, year |
+| Assembly portal upload | 🟡 Required | Before Assembly submission deadline |

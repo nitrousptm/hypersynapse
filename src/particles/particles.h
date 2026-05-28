@@ -17,7 +17,8 @@ class ParticleSystem {
 public:
     bool init(uint32_t max_particles);
     void update(const Timeline& tl, float dt);
-    void render(uint32_t target_fbo);
+    void render(uint32_t target_fbo, const Timeline& tl,
+                const glm::mat4& view, const glm::mat4& proj);
     void shutdown();
 
     void emit(const glm::vec3& pos, const glm::vec3& vel, uint32_t type, float lifetime, const glm::vec3& color);

@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <glad/gl.h>
+#include <glm/gtc/type_ptr.hpp>
 #include "timeline/timeline.h"
 #include "shader/shader.h"
 
@@ -59,11 +60,15 @@ void ParticleSystem::update_compute(const Timeline& tl, float dt) {
     glUseProgram(compute_program_);
 
     // Timeline uniforms
-    glUniform1f(glGetUniformLocation(compute_program_, "u_dt"), dt);
-    glUniform1f(glGetUniformLocation(compute_program_, "u_beat"), tl.beat_phase());
-    glUniform1i(glGetUniformLocation(compute_program_, "u_beat_cnt"), tl.beat_count());
-    glUniform1i(glGetUniformLocation(compute_program_, "u_act_idx"), (int)tl.act());
-    glUniform1f(glGetUniformLocation(compute_program_, "u_act_norm"), tl.act_norm());
+    glUniform1f(glGetUniformLocation(compute_program_, "u_time"),       static_cast<float>(tl.time()));
+    glUniform1f(glGetUniformLocation(compute_program_, "u_dt"),         dt);
+    glUniform1f(glGetUniformLocation(compute_program_, "u_beat"),       static_cast<float>(tl.beat_phase()));
+    glUniform1f(glGetUniformLocation(compute_program_, "u_bar"),        static_cast<float>(tl.bar_phase()));
+    glUniform1f(glGetUniformLocation(compute_program_, "u_act_norm"),   static_cast<float>(tl.act_norm()));
+    glUniform1f(glGetUniformLocation(compute_program_, "u_scene_norm"), static_cast<float>(tl.scene_norm()));
+    glUniform1i(glGetUniformLocation(compute_program_, "u_beat_cnt"),   tl.beat_count());
+    glUniform1i(glGetUniformLocation(compute_program_, "u_bar_cnt"),    tl.bar_count());
+    glUniform1i(glGetUniformLocation(compute_program_, "u_act_idx"),    static_cast<int>(tl.act()));
     glUniform1ui(glGetUniformLocation(compute_program_, "u_alive_count"), alive_count_);
 
     // Simulation parameters
@@ -83,20 +88,31 @@ void ParticleSystem::compact() {
     // For now, just reap expired particles in the compute shader.
 }
 
-void ParticleSystem::render(uint32_t target_fbo) {
+void ParticleSystem::render(uint32_t target_fbo, const Timeline& tl,
+                            const glm::mat4& view, const glm::mat4& proj) {
     if (!active_ || alive_count_ == 0 || !render_program_) return;
 
     glBindFramebuffer(GL_FRAMEBUFFER, target_fbo);
     glUseProgram(render_program_);
 
+    // Timeline uniforms
+    glUniform1f(glGetUniformLocation(render_program_, "u_beat"),          static_cast<float>(tl.beat_phase()));
+    glUniform1f(glGetUniformLocation(render_program_, "u_act_norm"),      static_cast<float>(tl.act_norm()));
+    glUniform1f(glGetUniformLocation(render_program_, "u_time"),          static_cast<float>(tl.time()));
+    glUniform1f(glGetUniformLocation(render_program_, "u_particle_size"), 18.0f);
+
+    // Camera matrices
+    glUniformMatrix4fv(glGetUniformLocation(render_program_, "u_view"), 1, GL_FALSE, glm::value_ptr(view));
+    glUniformMatrix4fv(glGetUniformLocation(render_program_, "u_proj"), 1, GL_FALSE, glm::value_ptr(proj));
+
     // Bind particle SSBO to shader
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, particle_ssbo_);
 
-    // Set up additive blending for particle glow
+    // Additive blending for particle glow
     glEnable(GL_BLEND);
     glBlendFunc(GL_ONE, GL_ONE);
+    glEnable(GL_PROGRAM_POINT_SIZE);
 
-    // Render as point sprites
     glBindVertexArray(particle_vao_);
     glDrawArrays(GL_POINTS, 0, alive_count_);
 
