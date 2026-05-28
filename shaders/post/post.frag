@@ -83,32 +83,40 @@ void main() {
     vec2 uv  = v_uv;
     vec2 ctr = uv - 0.5;
 
-    // Beat kick drives aberration and grain slightly
+    // Beat kick drives effects dynamically
     float kick = exp(-u_beat * 10.0);
 
-    // 1. Chromatic aberration (stronger near edges, stronger on beat)
-    float ca_str = 0.006 + kick * 0.004;
+    // Act-specific effect intensity (stronger as demo progresses)
+    float fx_intensity = mix(0.6, 1.2, u_act_norm);
+
+    // 1. Chromatic aberration (stronger on beat, stronger in later acts)
+    float ca_str = (0.006 + kick * 0.004) * mix(0.8, 1.5, u_act_norm);
     vec3 col     = chroma(uv, ca_str);
 
-    // 2. Bloom
-    float bloom_thresh  = 0.85;
-    float bloom_radius  = 7.0 + kick * 4.0;
-    float bloom_strength = 0.55;
+    // 2. Bloom (adaptive threshold + radius per act)
+    // Act I: subtle glow, Act II: strong bloom, Act III: chaotic bloom
+    float bloom_thresh  = mix(0.80, 0.65, u_act_norm);  // Lower threshold = more glow
+    float bloom_radius  = mix(5.0, 10.0, u_act_norm) + kick * 4.0;
+    float bloom_strength = mix(0.40, 0.80, u_act_norm);
     col += bloom(uv, bloom_thresh, bloom_radius) * bloom_strength;
 
-    // 3. Scanlines — subtle, one line per pixel row at native res
+    // 3. Scanlines — intensity increases toward collapse (Act III)
     float scanline = sin(uv.y * u_res.y * 3.14159) * 0.5 + 0.5;
-    float scan_str = 0.06;
+    float scan_str = mix(0.04, 0.12, u_act_norm);  // Subtle→heavy
     col *= 1.0 - scan_str * (1.0 - scanline);
 
-    // 4. Film grain — per-pixel, per-frame noise
-    float grain = (hash21(uv + fract(u_time * 7.37)) - 0.5) * 0.04;
+    // 4. Film grain — per-pixel, per-frame, stronger in final act
+    float grain_strength = mix(0.03, 0.08, u_act_norm);
+    float grain = (hash21(uv + fract(u_time * 7.37)) - 0.5) * grain_strength;
     col += vec3(grain);
 
-    // 5. Vignette (smooth quad falloff)
-    float vig = 1.0 - dot(ctr, ctr) * 1.6;
+    // 5. Vignette (morphs from subtle to extreme during collapse)
+    // Act I: gentle vignette, Act III: heavy edge darkening (collapse effect)
+    float vig_power = mix(1.5, 3.5, u_act_norm);
+    float vig_radius = mix(1.6, 2.2, u_act_norm);
+    float vig = 1.0 - dot(ctr, ctr) * vig_radius;
     vig = clamp(vig, 0.0, 1.0);
-    vig = vig * vig;
+    vig = pow(vig, vig_power);  // Sharper falloff in Act III
     col *= vig;
 
     // 6. ACES tonemap
