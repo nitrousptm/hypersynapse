@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HYPERSYNAPSE — Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: { 950: '#05060d', 900: '#0a0d1a', 800: '#10141f', 700: '#1a2030', 600: '#293048' },
+            neon: { magenta: '#ff2e93', cyan: '#1de9ff', purple: '#a855f7', lime: '#a3ff12', orange: '#f97316' },
+          },
+          fontFamily: { display: ['"JetBrains Mono"', 'ui-monospace', 'monospace'] },
+          boxShadow: {
+            'neon-cyan':    '0 0 20px rgba(29,233,255,0.35)',
+            'neon-magenta': '0 0 20px rgba(255,46,147,0.35)',
+            'neon-lime':    '0 0 16px rgba(163,255,18,0.3)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .scanline::after {
+      content:''; position:fixed; top:0; left:0; right:0; bottom:0; pointer-events:none;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.06) 2px, rgba(0,0,0,.06) 4px);
+      z-index:9999;
+    }
+    .pulse-dot { animation: pdot 1.8s ease-in-out infinite; }
+    @keyframes pdot { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .progress-bar { transition: width .6s cubic-bezier(.4,0,.2,1); }
+    ::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:#0a0d1a; }
+    ::-webkit-scrollbar-thumb { background:#293048; border-radius:2px; }
+  </style>
+</head>
+
+<body class="bg-ink-950 text-gray-100 min-h-screen scanline" x-data="dashboard()" x-init="connect()">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────── -->
+  <header class="border-b border-ink-700 bg-ink-900/90 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <div class="text-2xl font-bold tracking-widest text-neon-cyan" style="text-shadow:0 0 20px rgba(29,233,255,.5)">HYPERSYNAPSE</div>
+        <div class="hidden md:block text-xs text-gray-500">agentix · Assembly Summer 2026 · Helsinki</div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs px-2 py-1 rounded border font-bold"
+          :class="connected ? 'border-neon-lime text-neon-lime' : 'border-red-500 text-red-500'">
+          <span :class="connected && 'pulse-dot'" x-text="connected ? '● LIVE' : '○ OFFLINE'"></span>
+        </span>
+        <button @click="togglePause()"
+          class="px-4 py-1.5 rounded text-sm font-bold border transition-all"
+          :class="dash.paused ? 'border-neon-lime text-neon-lime hover:bg-neon-lime/10' : 'border-neon-magenta text-neon-magenta hover:bg-neon-magenta/10'">
+          <span x-text="dash.paused ? '▶ RESUME' : '⏸ PAUSE'"></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Project Stats ──────────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 py-5">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4 hover:border-ink-600 transition-colors">
+        <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Deadline</div>
+        <div class="text-3xl font-bold text-neon-magenta" x-text="daysLeft + 'd'" style="text-shadow:0 0 12px rgba(255,46,147,.4)"></div>
+        <div class="text-[11px] text-gray-500 mt-1">28. Juli 2026</div>
+      </div>
+
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4 hover:border-ink-600 transition-colors">
+        <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Fortschritt</div>
+        <div class="text-3xl font-bold text-neon-cyan" x-text="overallProgress + '%'" style="text-shadow:0 0 12px rgba(29,233,255,.4)"></div>
+        <div class="h-1.5 bg-ink-700 rounded-full mt-2 overflow-hidden">
+          <div class="h-full bg-neon-cyan progress-bar" :style="`width:${overallProgress}%`"></div>
+        </div>
+      </div>
+
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4 hover:border-ink-600 transition-colors">
+        <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Tasks Done</div>
+        <div class="text-3xl font-bold text-neon-lime" x-text="doneCount + ' / ' + tasks.length" style="text-shadow:0 0 12px rgba(163,255,18,.4)"></div>
+        <div class="text-[11px] text-gray-500 mt-1">tasks completed</div>
+      </div>
+
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4 hover:border-ink-600 transition-colors">
+        <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Aktive Agenten</div>
+        <div class="text-3xl font-bold text-neon-orange" x-text="runningCount + ' / ' + agents.length" style="text-shadow:0 0 12px rgba(249,115,22,.4)"></div>
+        <div class="text-[11px] text-gray-500 mt-1">running / total</div>
+      </div>
+
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4 hover:border-ink-600 transition-colors">
+        <div class="text-[10px] uppercase tracking-widest text-gray-500 mb-1">Status</div>
+        <div class="text-2xl font-bold" :class="dash.paused ? 'text-yellow-400' : 'text-neon-lime'"
+          x-text="dash.paused ? 'PAUSED' : 'IN MOTION'" style="text-shadow:0 0 12px rgba(163,255,18,.3)"></div>
+        <div class="text-[11px] text-gray-500 mt-1">OpenGL 4.6 · C++20</div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Timeline / Phases ──────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 pb-5">
+    <h2 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Demo-Struktur</h2>
+    <div class="bg-ink-800 border border-ink-700 rounded-lg p-4">
+      <div class="relative">
+        <!-- Timeline bar -->
+        <div class="flex h-8 rounded overflow-hidden gap-px">
+          <div class="flex-[135] bg-neon-cyan/20 border border-neon-cyan/30 flex items-center justify-center text-[10px] text-neon-cyan font-bold">
+            ACT I · 0–2:15
+          </div>
+          <div class="flex-[210] bg-neon-purple/20 border border-neon-purple/30 flex items-center justify-center text-[10px] text-purple-400 font-bold">
+            ACT II · 2:15–5:45
+          </div>
+          <div class="flex-[135] bg-neon-magenta/20 border border-neon-magenta/30 flex items-center justify-center text-[10px] text-neon-magenta font-bold">
+            ACT III · 5:45–8:00
+          </div>
+        </div>
+        <!-- Labels -->
+        <div class="flex mt-2 gap-4 text-[10px] text-gray-500">
+          <div class="flex-[135]">Boot / Synapse · Cyberpunk-Grid</div>
+          <div class="flex-[210]">Lattice / City · Geometric Structures</div>
+          <div class="flex-[135]">Bloom / Collapse · Abstract Finale</div>
+        </div>
+      </div>
+      <!-- Specs -->
+      <div class="flex flex-wrap gap-3 mt-4">
+        <span class="text-[10px] px-2 py-1 rounded border border-neon-cyan/30 text-neon-cyan">OpenGL 4.6 Core</span>
+        <span class="text-[10px] px-2 py-1 rounded border border-purple-500/30 text-purple-400">Raymarching + SDFs</span>
+        <span class="text-[10px] px-2 py-1 rounded border border-pink-500/30 text-pink-400">AI Drum & Bass · 172 BPM</span>
+        <span class="text-[10px] px-2 py-1 rounded border border-neon-lime/30 text-neon-lime">RTX 5090 max / 3090 min</span>
+        <span class="text-[10px] px-2 py-1 rounded border border-neon-orange/30 text-neon-orange">1920×1080 @ 60fps</span>
+        <span class="text-[10px] px-2 py-1 rounded border border-gray-500/30 text-gray-400">8:00 min exakt</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Agent Grid ──────────────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 pb-5">
+    <h2 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Agent-Team</h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <template x-for="a in agents" :key="a.name">
+        <div class="bg-ink-800 border rounded-lg p-4 transition-all duration-300"
+             :class="agentRunning(a.name) ? 'border-neon-cyan/50 shadow-neon-cyan' : 'border-ink-700 hover:border-ink-600'">
+
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xl" x-text="a.emoji"></span>
+              <div>
+                <div class="font-bold text-sm" :style="`color:${a.color}`" x-text="a.title"></div>
+                <div class="text-[9px] text-gray-600" x-text="a.name"></div>
+              </div>
+            </div>
+            <span class="text-[9px] px-1.5 py-0.5 rounded uppercase font-bold"
+              :class="agentRunning(a.name)
+                ? 'bg-neon-cyan/20 text-neon-cyan'
+                : agentDone(a.name)
+                  ? 'bg-neon-lime/20 text-neon-lime'
+                  : 'bg-ink-700 text-gray-600'"
+              x-text="agentRunning(a.name) ? '▶ run' : agentDone(a.name) ? '✓ done' : 'idle'"></span>
+          </div>
+
+          <div class="text-[10px] text-gray-500 mb-3" x-text="a.description"></div>
+
+          <!-- Laufender Task -->
+          <template x-for="t in agentActiveTasks(a.name)" :key="t.id">
+            <div class="text-[10px] border-t border-ink-700 pt-2">
+              <div class="text-gray-300 font-bold truncate mb-1" x-text="t.title"></div>
+              <div class="h-1 bg-ink-700 rounded-full overflow-hidden">
+                <div class="h-full progress-bar" :style="`width:${((t.progress||0)*100).toFixed(0)}%; background:${a.color}`"></div>
+              </div>
+              <div class="flex justify-between text-gray-600 mt-1">
+                <span :class="t.status==='done'?'text-neon-lime':t.status==='blocked'?'text-red-400':'text-neon-cyan'" x-text="t.status"></span>
+                <span x-text="((t.progress||0)*100).toFixed(0) + '%'"></span>
+              </div>
+            </div>
+          </template>
+
+          <!-- Kein aktiver Task -->
+          <template x-if="agentActiveTasks(a.name).length === 0">
+            <div class="text-[10px] text-gray-600 border-t border-ink-700 pt-2 italic">
+              <span x-text="agentDoneCount(a.name) > 0 ? agentDoneCount(a.name) + ' task(s) completed' : 'waiting for assignment'"></span>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ── Kanban Board ───────────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 pb-5">
+    <h2 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Task Board</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <template x-for="col in columns" :key="col.key">
+        <div class="bg-ink-900 border border-ink-700 rounded-lg overflow-hidden">
+          <div class="px-4 py-2.5 border-b border-ink-700 flex items-center justify-between">
+            <span class="text-[10px] uppercase tracking-widest font-bold" :class="col.color" x-text="col.label"></span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-ink-700 text-gray-400" x-text="tasksIn(col.key).length"></span>
+          </div>
+          <div class="p-3 space-y-2 min-h-[100px]">
+            <template x-for="t in tasksIn(col.key)" :key="t.id">
+              <div class="bg-ink-800 border border-ink-700 rounded-lg p-3 hover:border-ink-600 transition-colors">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <div class="text-xs font-bold text-gray-200 flex-1 leading-tight" x-text="t.title"></div>
+                  <span class="text-base shrink-0" x-text="agentEmoji(t.agent)"></span>
+                </div>
+                <div class="text-[10px] text-gray-500 mb-2 line-clamp-3 leading-relaxed" x-text="t.detail || ''"></div>
+                <!-- Current step (running) -->
+                <template x-if="t.status === 'running' && t.step">
+                  <div class="text-[9px] text-neon-cyan italic mb-2">⚡ <span x-text="t.step"></span></div>
+                </template>
+                <!-- Progress bar (nur bei running) -->
+                <template x-if="t.status === 'running' && t.progress !== undefined">
+                  <div class="mb-2">
+                    <div class="h-1 bg-ink-700 rounded-full overflow-hidden">
+                      <div class="h-full bg-neon-cyan progress-bar" :style="`width:${((t.progress||0)*100).toFixed(0)}%`"></div>
+                    </div>
+                    <div class="text-[9px] text-neon-cyan mt-0.5 text-right" x-text="((t.progress||0)*100).toFixed(0) + '%'"></div>
+                  </div>
+                </template>
+                <div class="flex justify-between text-[9px] text-gray-600">
+                  <span x-text="'@' + t.agent"></span>
+                  <span x-text="fmtDate(t.started_at)"></span>
+                </div>
+              </div>
+            </template>
+            <div x-show="tasksIn(col.key).length === 0"
+              class="text-[10px] text-gray-700 italic text-center py-6">— leer —</div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </section>
+
+  <!-- ── Completed History ──────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 pb-5">
+    <h2 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Erledigte Arbeit — Chronologie</h2>
+    <div class="bg-ink-900 border border-ink-700 rounded-lg overflow-hidden">
+      <div class="divide-y divide-ink-700">
+        <template x-for="(t, i) in doneTasks" :key="t.id">
+          <div class="px-4 py-3 flex items-start gap-3 hover:bg-ink-800/50 transition-colors">
+            <div class="shrink-0 mt-0.5">
+              <span class="text-neon-lime text-sm">✓</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-0.5 flex-wrap">
+                <span class="text-xs font-bold text-gray-200" x-text="t.title"></span>
+                <span class="text-[9px] px-1.5 py-0.5 rounded border border-neon-lime/30 text-neon-lime font-bold">done</span>
+              </div>
+              <div class="text-[10px] text-gray-500 leading-relaxed line-clamp-2" x-text="t.detail || ''"></div>
+              <div class="flex items-center gap-3 mt-1.5 text-[9px] text-gray-600">
+                <span x-text="agentEmoji(t.agent) + ' ' + t.agent"></span>
+                <span x-text="'gestartet: ' + fmtDate(t.started_at)"></span>
+                <template x-if="t.finished_at">
+                  <span x-text="'· ' + fmtElapsed(t) + ' Dauer'"></span>
+                </template>
+              </div>
+            </div>
+          </div>
+        </template>
+        <div x-show="doneTasks.length === 0" class="px-4 py-8 text-[10px] text-gray-700 italic text-center">
+          Noch keine erledigten Tasks.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Key Findings ───────────────────────────────────────────────────── -->
+  <section class="max-w-7xl mx-auto px-6 pb-10">
+    <h2 class="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Research Findings</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4">
+        <div class="text-[10px] text-neon-cyan uppercase tracking-widest mb-2 font-bold">Technische Erkenntnisse</div>
+        <ul class="space-y-1.5 text-[11px] text-gray-400">
+          <li class="flex gap-2"><span class="text-neon-lime shrink-0">▸</span>OpenGL 4.6 richtig — 75%+ der Assembly-Winner nutzen GL</li>
+          <li class="flex gap-2"><span class="text-neon-lime shrink-0">▸</span>Raymarching + Volumetrics + cinematic PostFX = sicheres Meta</li>
+          <li class="flex gap-2"><span class="text-neon-lime shrink-0">▸</span>Mesh-Shader / RTX-Raytracing — keine bewiesenen Winning-Faktoren</li>
+          <li class="flex gap-2"><span class="text-neon-lime shrink-0">▸</span>WebGL dominiert 2024–2025 → natives Demo muss visuell überzeugen</li>
+        </ul>
+      </div>
+      <div class="bg-ink-800 border border-ink-700 rounded-lg p-4">
+        <div class="text-[10px] text-neon-magenta uppercase tracking-widest mb-2 font-bold">Creative Erkenntnisse</div>
+        <ul class="space-y-1.5 text-[11px] text-gray-400">
+          <li class="flex gap-2"><span class="text-neon-magenta shrink-0">▸</span>DnB in Top-3 quasi nie vertreten → Differenzierung durch AI-DnB</li>
+          <li class="flex gap-2"><span class="text-neon-magenta shrink-0">▸</span>Narrative Arc gewinnt seit 2018 — roter Faden nötig, kein Tech-Flex</li>
+          <li class="flex gap-2"><span class="text-neon-magenta shrink-0">▸</span>3-Akt-Struktur: Boot → Lattice → Bloom (8 min exakt)</li>
+          <li class="flex gap-2"><span class="text-neon-magenta shrink-0">▸</span>12 Pflicht-Referenz-Demos für Team definiert (Pouet/Demozoo)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="border-t border-ink-800 text-center text-[10px] text-gray-700 py-4">
+    agentix · hypersynapse · Assembly Summer 2026 ·
+    <a class="underline hover:text-neon-cyan transition-colors" :href="dash.repo" target="_blank" x-text="dash.repo || ''"></a>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
