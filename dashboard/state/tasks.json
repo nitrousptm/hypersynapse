@@ -121,10 +121,11 @@
     "id": "t-particle-emit",
     "agent": "procedural_specialist",
     "title": "Particle Emission System — Neural Pulse Emitter",
-    "detail": "CPU-side emission queue für Act I. Spawn neurale Partikel basierend auf Beat/Bar sync. Position-Seeds vom Synapse-Netzwerk. Color gradient (magenta→cyan).",
-    "status": "pending",
-    "started_at": null,
-    "progress": 0.0
+    "detail": "✅ Beat-synced emission: 150 particles per downbeat in Act I. Spherical distribution, radial velocity + upward bias. Color palette magenta→cyan over beat phase. Lifetime 1.2s. Integrated into render loop.",
+    "status": "done",
+    "started_at": 1748386100,
+    "finished_at": 1748386300,
+    "progress": 1.0
   },
   {
     "id": "t-capture-png",
