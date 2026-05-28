@@ -11,6 +11,9 @@ class ParticleSystem;
 
 class Renderer {
 public:
+    Renderer();
+    ~Renderer();  // defined in .cpp so unique_ptr<ParticleSystem> has complete type
+
     bool init(int width, int height);
     void render(const Timeline& tl);
     void shutdown();

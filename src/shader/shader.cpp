@@ -26,7 +26,8 @@ std::string read_file(std::string_view path) {
 
 std::string preprocess(std::string_view source, std::string_view base_dir) {
     std::stringstream out;
-    std::istringstream in(std::string(source));
+    std::string source_str(source);   // named variable avoids most-vexing-parse
+    std::istringstream in(source_str);
     std::string line;
 
     while (std::getline(in, line)) {

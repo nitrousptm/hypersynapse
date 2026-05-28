@@ -1,4 +1,5 @@
 #include "audio/audio.h"
+#include <cstdint>
 #include <cstdio>
 
 namespace hyp {
@@ -30,7 +31,7 @@ void Audio::play(const char* path) {
         return;
     }
 
-    if (ma_engine_play_sound(&engine_, &sound_) != MA_SUCCESS) {
+    if (ma_sound_start(&sound_) != MA_SUCCESS) {
         std::fprintf(stderr, "[audio] failed to play sound\n");
         ma_sound_uninit(&sound_);
         return;

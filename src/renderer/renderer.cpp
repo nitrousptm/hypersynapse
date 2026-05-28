@@ -11,6 +11,11 @@
 #include "particles/particles.h"
 
 namespace hyp {
+Renderer::Renderer() = default;
+Renderer::~Renderer() = default;
+}  // namespace hyp
+
+namespace hyp {
 
 namespace {
 
@@ -161,7 +166,7 @@ void Renderer::draw_scene(const Timeline& tl) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void Renderer::draw_particles(const Timeline& tl) {
+void Renderer::draw_particles(const Timeline&) {
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
     particles_->render(fbo_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -203,8 +208,6 @@ void Renderer::emit_neural_pulse(const Timeline& tl) {
 
     // Emit from pseudo-random neuron positions in the lattice
     for (int i = 0; i < burst_count; ++i) {
-        // Hash-based pseudo-random position (soma clusters)
-        float seed = static_cast<float>(tl.beat_count()) * 17.f + static_cast<float>(i);
         glm::vec3 pos = glm::ballRand(0.5f);  // Within 0.5 unit sphere of origin
         pos.y *= 0.7f;  // Flatten vertically
 
