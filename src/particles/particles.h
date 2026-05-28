@@ -7,13 +7,10 @@ namespace hyp {
 
 class Timeline;
 
-struct Particle {
-    glm::vec3 pos;
-    float age;
-    glm::vec3 vel;
-    uint32_t type;
-    glm::vec3 color;
-    float lifetime;
+struct alignas(16) Particle {
+    glm::vec4 pos_age;     // xyz: position, w: age (s)
+    glm::vec4 vel_type;    // xyz: velocity, w: particle type
+    glm::vec4 col_life;    // xyz: color, w: lifetime (s)
 };
 
 class ParticleSystem {

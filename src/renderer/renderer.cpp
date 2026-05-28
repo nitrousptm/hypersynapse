@@ -5,6 +5,7 @@
 
 #include "shader/shader.h"
 #include "timeline/timeline.h"
+#include "particles/particles.h"
 
 namespace hyp {
 
@@ -67,12 +68,26 @@ bool Renderer::init(int width, int height) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    // Initialize particle system (32k particles for neural effects)
+    particles_ = std::make_unique<ParticleSystem>();
+    if (!particles_->init(32768)) {
+        std::fprintf(stderr, "[renderer] particle system init failed\n");
+        return false;
+    }
+
     glViewport(0, 0, width_, height_);
     return true;
 }
 
 void Renderer::render(const Timeline& tl) {
+    // Update particle simulation
+    if (particles_) {
+        float dt = 1.0f / 60.0f;  // Assume 60 fps
+        particles_->update(tl, dt);
+    }
+
     draw_scene(tl);
+    if (particles_) draw_particles(tl);
     draw_post(tl);
 }
 
@@ -90,6 +105,12 @@ void Renderer::draw_scene(const Timeline& tl) {
     glBindVertexArray(0);
     glUseProgram(0);
 
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void Renderer::draw_particles(const Timeline& tl) {
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
+    particles_->render(fbo_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -112,6 +133,9 @@ void Renderer::draw_post(const Timeline& tl) {
 }
 
 void Renderer::shutdown() {
+    if (particles_) particles_->shutdown();
+    particles_.reset();
+
     if (fullscreen_vao_) glDeleteVertexArrays(1, &fullscreen_vao_);
     for (auto& p : scene_programs_) { if (p) glDeleteProgram(p); p = 0; }
     if (post_program_) { glDeleteProgram(post_program_); post_program_ = 0; }
