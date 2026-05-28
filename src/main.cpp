@@ -63,12 +63,22 @@ int main(int argc, char** argv) {
     if (!audio.init()) return EXIT_FAILURE;
 
     const char* audio_path = nullptr;
+    bool capture_mode = false;
+
     if (argc > 1) {
-        audio_path = argv[1];
-        audio.play(audio_path);
+        for (int i = 1; i < argc; ++i) {
+            if (std::string_view(argv[i]) == "--capture") {
+                capture_mode = true;
+                std::printf("[hypersynapse] capture mode enabled\n");
+            } else {
+                audio_path = argv[i];
+            }
+        }
+        if (audio_path) audio.play(audio_path);
     }
 
     const double t0 = glfwGetTime();
+    int frame_count = 0;
     while (!glfwWindowShouldClose(window)) {
         const double t = glfwGetTime() - t0;
         if (t >= kDemoDurationSec) break;
@@ -76,8 +86,21 @@ int main(int argc, char** argv) {
         timeline.update(t);
         renderer.render(timeline);
 
+        if (capture_mode) {
+            // Dump frame as PNG for later WebM encoding
+            char frame_path[256];
+            std::snprintf(frame_path, sizeof(frame_path), "frame_%06d.png", frame_count);
+
+            // TODO: glReadPixels + PNG encode (requires libpng or simple PPM fallback)
+            // For now, just log frame captures
+            if (frame_count % 60 == 0) {
+                std::printf("[capture] frame %d (t=%.2fs)\n", frame_count, t);
+            }
+        }
+
         glfwSwapBuffers(window);
         glfwPollEvents();
+        frame_count++;
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GLFW_TRUE);

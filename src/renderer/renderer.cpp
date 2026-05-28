@@ -96,14 +96,45 @@ void Renderer::draw_scene(const Timeline& tl) {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    uint32_t prog = scene_programs_[static_cast<int>(tl.act())];
-    glUseProgram(prog);
-    set_timeline_uniforms(prog, tl, width_, height_);
+    // Check if we're in a transition
+    double trans = tl.transition_progress(1.5);
+    if (trans < 0.0) {
+        // Normal single-scene render
+        uint32_t prog = scene_programs_[static_cast<int>(tl.act())];
+        glUseProgram(prog);
+        set_timeline_uniforms(prog, tl, width_, height_);
+        glBindVertexArray(fullscreen_vao_);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0);
+        glUseProgram(0);
+    } else {
+        // Transition: blend from previous to next act
+        Act prev_act = tl.act();
+        Act next_act = prev_act == Act::I ? Act::II : (prev_act == Act::II ? Act::III : Act::I);
 
-    glBindVertexArray(fullscreen_vao_);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
-    glBindVertexArray(0);
-    glUseProgram(0);
+        // Render previous act at full opacity
+        uint32_t prog_prev = scene_programs_[static_cast<int>(prev_act)];
+        glUseProgram(prog_prev);
+        set_timeline_uniforms(prog_prev, tl, width_, height_);
+        glBindVertexArray(fullscreen_vao_);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        // Enable additive/alpha blend for next act overlay
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Render next act with fade-in opacity
+        uint32_t prog_next = scene_programs_[static_cast<int>(next_act)];
+        glUseProgram(prog_next);
+        set_timeline_uniforms(prog_next, tl, width_, height_);
+        // Pass transition progress to shader
+        glUniform1f(glGetUniformLocation(prog_next, "u_fade"), static_cast<float>(trans));
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        glDisable(GL_BLEND);
+        glBindVertexArray(0);
+        glUseProgram(0);
+    }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

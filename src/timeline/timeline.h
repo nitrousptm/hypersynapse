@@ -49,6 +49,19 @@ public:
         return (time_ - kAct2End) / (kAct3End - kAct2End);
     }
 
+    // Crossfade phases: [0,1] when transitioning, 0 when not transitioning
+    double transition_progress(double window_sec = 1.5) const {
+        // Act I → II crossfade
+        if (time_ >= kAct1End - window_sec * 0.5 && time_ < kAct1End + window_sec * 0.5) {
+            return (time_ - (kAct1End - window_sec * 0.5)) / window_sec;
+        }
+        // Act II → III crossfade
+        if (time_ >= kAct2End - window_sec * 0.5 && time_ < kAct2End + window_sec * 0.5) {
+            return (time_ - (kAct2End - window_sec * 0.5)) / window_sec;
+        }
+        return -1.0;  // Not in transition
+    }
+
 private:
     double duration_   = 0.0;
     double time_       = 0.0;
