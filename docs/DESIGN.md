@@ -42,10 +42,21 @@ If we ship something genuinely punishing, we'll add a single `--low` runtime fla
 | Track structure | **Visuals first, music cuts to timeline** | Demo timing must be deterministic for Assembly submission. Composer receives the three-act time map and cuts to it. |
 | Capture / replay | **Yes — ship `--capture` flag for WebM 60fps** | Demoscene tradition. Will headless-render via offscreen FBO + ffmpeg pipe. Flag TBD in a later session. |
 
-## Open Questions for Agents
+## Implementation Status (2026-05-28 06:55)
+
+### Audio Integration ✅ DONE
+- **miniaudio** engine initialized (48 kHz, stereo)
+- Play/seek/position() methods implemented
+- Timeline-synchronized playback ready (174 BPM hard-coded in timeline.h)
+- Command-line audio path: `./build/hypersynapse track.wav`
+- No drift compensation yet (timeline is source of truth; audio position() available for monitoring)
+
+### Open Questions for Agents
 
 - ~~Music BPM target?~~ → **174 BPM** ✅
 - ~~Track structure?~~ → **Visuals first** ✅
 - ~~WebM capture?~~ → **Yes, `--capture` flag** ✅
+- ~~Audio integration?~~ → **miniaudio done** ✅
 - Shader `#include` mechanism: add GL_ARB_shading_language_include, or keep shaders self-contained? (current: self-contained)
 - Compute-shader particle system: implement as Act I overlay or separate pass? (planned: Act I → II transition)
+- Drift compensation: should we sync audio frame to timeline if they diverge >100ms?

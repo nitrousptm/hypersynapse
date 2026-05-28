@@ -27,8 +27,6 @@ void GLAPIENTRY gl_debug(GLenum, GLenum type, GLuint, GLenum severity,
 }  // namespace
 
 int main(int argc, char** argv) {
-    (void)argc; (void)argv;
-
     glfwSetErrorCallback(glfw_error);
     if (!glfwInit()) return EXIT_FAILURE;
 
@@ -62,7 +60,13 @@ int main(int argc, char** argv) {
 
     hyp::Timeline timeline(kDemoDurationSec);
     hyp::Audio audio;
-    audio.init();
+    if (!audio.init()) return EXIT_FAILURE;
+
+    const char* audio_path = nullptr;
+    if (argc > 1) {
+        audio_path = argv[1];
+        audio.play(audio_path);
+    }
 
     const double t0 = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
