@@ -62,11 +62,12 @@
   {
     "id": "t-scene-brief-act1",
     "agent": "demo_director",
-    "title": "Scene Briefs Act I — Boot/Synapse Sequence",
-    "detail": "Detaillierte Szenen-Briefs für Shader Specialist und Procedural Specialist. SDF-Neuronenmuster, Cyberpunk-Grid-Intro, Synapse-Pulse-Effekte.",
-    "status": "running",
+    "title": "Scene Briefs — All Acts (Implementation Specs)",
+    "detail": "✅ Vollständig: 01_synapse (raymarched neural lattice, 120 iterations, beat-sync soma pulse), 02_city (procedural cyberpunk, neon window flicker), 03_bloom (Mandelbox fractal zoom-collapse). Crosscutting: palette, beat-sync, timing. Code review checklist. docs/SCENE_BRIEFS.md.",
+    "status": "done",
     "started_at": 1748380800,
-    "progress": 0.3
+    "finished_at": 1748388000,
+    "progress": 1.0
   },
   {
     "id": "t-sdf-library",
@@ -82,10 +83,11 @@
     "id": "t-music-direction",
     "agent": "audio_specialist",
     "title": "Music Direction Brief — AI DnB Spezifikation",
-    "detail": "BPM: 172. Liquid DnB für Assembly-Audience. Beat-Sync-Punkte für Szenen-Übergänge definieren. Audio-Reaktivität via FFT-Analyse.",
-    "status": "running",
+    "detail": "✅ Vollständig: 174 BPM Liquid DnB, 8:00 duration, 3-Akt-Struktur. Beat-Sync-Cues definiert (tempo, energy arc, act transitions). AI-Composition-Prompt + Post-Prod-Checklist. Approval-Timeline: 2026-07-15. docs/MUSIC_DIRECTION.md.",
+    "status": "done",
     "started_at": 1748381000,
-    "progress": 0.1
+    "finished_at": 1748388000,
+    "progress": 1.0
   },
   {
     "id": "t-particle-system",
@@ -130,8 +132,36 @@
   {
     "id": "t-capture-png",
     "agent": "build_specialist",
-    "title": "Frame Capture Pipeline (glReadPixels → PNG/PPM)",
-    "detail": "Implement frame dumping in --capture mode. Read framebuffer pixels, encode as PNG (libpng) or PPM (simple). 60fps × 480s = 28800 frames, ~100GB PPM fallback.",
+    "title": "Frame Capture Pipeline (glReadPixels → PPM/WebM)",
+    "detail": "✅ Vollständig: FrameCapture class (src/capture/), glReadPixels per frame, PPM format (Portable Pixelmap, no external deps), automatic vertical flip, ffmpeg command generation for VP9 WebM encode. Usage: --capture audio.wav → ./captures/frame_*.ppm → ffmpeg → hypersynapse.webm.",
+    "status": "done",
+    "started_at": 1748385900,
+    "finished_at": 1748388000,
+    "progress": 1.0
+  },
+  {
+    "id": "t-postfx-polish",
+    "agent": "postfx_specialist",
+    "title": "Post-FX Pipeline Refinement (Bloom, Vignette, Grading)",
+    "detail": "Fine-tune ACES tonemapping, bloom star blur, chromatic aberration intensity per act, scanlines opacity, final color grading. Ensure 60fps on RTX 3090 min.",
+    "status": "pending",
+    "started_at": null,
+    "progress": 0.0
+  },
+  {
+    "id": "t-build-compile",
+    "agent": "build_specialist",
+    "title": "Complete Build Setup (CMake, Dependencies, CI/CD)",
+    "detail": "Fix X11 dep issue, compile full binary, verify on Linux + Windows CI, optimize for Assembly submission requirements.",
+    "status": "pending",
+    "started_at": null,
+    "progress": 0.0
+  },
+  {
+    "id": "t-final-testing",
+    "agent": "demo_director",
+    "title": "Final Integration & Testing (Full 8-min Run-through)",
+    "detail": "Run complete demo end-to-end, verify beat-sync, scene transitions, colors, no artifacts. Test capture mode → WebM export. Ready for submission.",
     "status": "pending",
     "started_at": null,
     "progress": 0.0
