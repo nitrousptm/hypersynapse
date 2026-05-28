@@ -23,18 +23,22 @@ bool Audio::init() {
 void Audio::play(const char* path) {
     if (!valid_) return;
 
-    if (ma_engine_stop(&engine_) != MA_SUCCESS) {
-        std::fprintf(stderr, "[audio] failed to stop previous playback\n");
+    if (sound_loaded_) {
+        ma_sound_stop(&sound_);
+        ma_sound_uninit(&sound_);
+        sound_loaded_ = false;
     }
 
     if (ma_sound_init_from_file(&engine_, path, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound_) != MA_SUCCESS) {
         std::fprintf(stderr, "[audio] failed to load: %s\n", path);
         return;
     }
+    sound_loaded_ = true;
 
     if (ma_sound_start(&sound_) != MA_SUCCESS) {
         std::fprintf(stderr, "[audio] failed to play sound\n");
         ma_sound_uninit(&sound_);
+        sound_loaded_ = false;
         return;
     }
 
@@ -56,7 +60,11 @@ double Audio::position() {
 void Audio::shutdown() {
     active_ = false;
     if (!valid_) return;
-    ma_sound_uninit(&sound_);
+    if (sound_loaded_) {
+        ma_sound_stop(&sound_);
+        ma_sound_uninit(&sound_);
+        sound_loaded_ = false;
+    }
     ma_engine_uninit(&engine_);
     valid_ = false;
 }

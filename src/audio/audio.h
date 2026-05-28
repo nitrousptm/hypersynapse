@@ -18,8 +18,9 @@ public:
 private:
     ma_engine engine_{};
     ma_sound sound_{};
-    bool active_ = false;
-    bool valid_ = false;
+    bool active_       = false;
+    bool valid_        = false;
+    bool sound_loaded_ = false;
 };
 
 }  // namespace hyp
