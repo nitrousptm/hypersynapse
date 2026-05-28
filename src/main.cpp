@@ -14,7 +14,7 @@ namespace {
 
 constexpr int kWidth = 1920;
 constexpr int kHeight = 1080;
-constexpr double kDemoDurationSec = 227.641; // 3:47 — matches music.wav duration
+constexpr double kDemoDurationSec = 240.0;   // 4:00 — Concrete-Syncope.wav @ 133 BPM
 
 void glfw_error(int code, const char* desc) {
     std::fprintf(stderr, "[glfw] %d: %s\n", code, desc);
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
-    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "hypersynapse — agentix", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "SINGULARITY GARDEN — agentix", nullptr, nullptr);
     if (!window) { glfwTerminate(); return EXIT_FAILURE; }
 
     glfwMakeContextCurrent(window);
@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(gl_debug, nullptr);
 
-    std::printf("[hypersynapse] GL %s | %s | %s\n",
+    std::printf("[singularity-garden] GL %s | %s | %s\n",
                 glGetString(GL_VERSION), glGetString(GL_VENDOR), glGetString(GL_RENDERER));
 
     hyp::Renderer renderer;
@@ -107,9 +107,10 @@ int main(int argc, char** argv) {
         // Print FPS stats every 5 seconds
         if (t - last_stats_print >= 5.0) {
             const hyp::Stats& stats = renderer.stats();
-            std::printf("[%.1fs] FPS: %.1f | Frame: %.2f ms | Act: %d | Beat: %d\n",
+            std::printf("[%.1fs] FPS: %.1f | %.2f ms | Act: %d | Scene: %d | Beat: %d\n",
                         t, stats.fps(), stats.frame_time_ms(),
                         static_cast<int>(timeline.act()),
+                        static_cast<int>(timeline.scene()),
                         timeline.beat_count());
             last_stats_print = t;
         }

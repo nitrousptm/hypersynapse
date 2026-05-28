@@ -74,6 +74,7 @@ add_executable(hypersynapse
     src/particles/particles.cpp
     src/capture/capture.cpp
     src/debug/stats.cpp
+    src/mesh/procedural_mesh.cpp
 )
 
 target_include_directories(hypersynapse PRIVATE src)
