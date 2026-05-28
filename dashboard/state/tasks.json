@@ -1,0 +1,138 @@
+[
+  {
+    "id": "t-bootstrap-skeleton",
+    "agent": "build_specialist",
+    "title": "C++/OpenGL Skeleton + CMake FetchContent",
+    "detail": "Window, GL 4.6 ctx, fullscreen-triangle, placeholder shader. GLFW 3.4, GLAD, glm, miniaudio. Commits: 8f932f4 + 050ace9",
+    "status": "done",
+    "started_at": 1748336700,
+    "finished_at": 1748337900,
+    "progress": 1.0
+  },
+  {
+    "id": "t-ci-pipeline",
+    "agent": "build_specialist",
+    "title": "GitHub Actions CI (Linux + Windows + shader validation)",
+    "detail": "Workflow .github/workflows/build.yml — verifies build on every push via glslangValidator. Commit: 7df3513",
+    "status": "done",
+    "started_at": 1748337800,
+    "finished_at": 1748337900,
+    "progress": 1.0
+  },
+  {
+    "id": "t-research-assembly",
+    "agent": "demo_researcher",
+    "title": "Assembly PC Demo Winners 2015–2025 — Winning Patterns Analysis",
+    "detail": "Pouet/Demozoo research. Key findings: OpenGL 4.6 richtig, Raymarching+Volumetrics = Meta, DnB differenziert, Narrative Arc gewinnt seit 2018. 12 Pflicht-Referenz-Demos definiert. Commit: 42d8f86",
+    "status": "done",
+    "started_at": 1748338500,
+    "finished_at": 1748340000,
+    "progress": 1.0
+  },
+  {
+    "id": "t-agent-definitions",
+    "agent": "demo_director",
+    "title": "7 HYPERSYNAPSE Agent-Definitionen erstellt",
+    "detail": "demo_director, demo_researcher, shader_specialist, procedural_specialist, audio_specialist, postfx_specialist, build_specialist — alle mit IDENTITY.md, ROLE.md, SKILLS.md. In agents/hypersynapse/ registriert.",
+    "status": "done",
+    "started_at": 1748338000,
+    "finished_at": 1748339000,
+    "progress": 1.0
+  },
+  {
+    "id": "t-design-doc",
+    "agent": "demo_director",
+    "title": "DESIGN.md — 3-Akt-Konzept dokumentiert",
+    "detail": "Act I (0–2:15 Boot/Synapse), Act II (2:15–5:45 Lattice/City), Act III (5:45–8:00 Bloom/Collapse). Cyberpunk × Geometric × Abstract. ~172 BPM Liquid DnB.",
+    "status": "done",
+    "started_at": 1748337000,
+    "finished_at": 1748337500,
+    "progress": 1.0
+  },
+  {
+    "id": "t-dashboard-scaffold",
+    "agent": "build_specialist",
+    "title": "Dashboard Scaffold (FastAPI + WebSocket SPA)",
+    "detail": "Backend: FastAPI + WebSocket server.py. Frontend: Tailwind/Alpine.js SPA. State-Files: dashboard.json, agents.json, tasks.json. systemd-Unit vorbereitet.",
+    "status": "done",
+    "started_at": 1748339000,
+    "finished_at": 1748340000,
+    "progress": 1.0
+  },
+  {
+    "id": "t-scene-brief-act1",
+    "agent": "demo_director",
+    "title": "Scene Briefs Act I — Boot/Synapse Sequence",
+    "detail": "Detaillierte Szenen-Briefs für Shader Specialist und Procedural Specialist. SDF-Neuronenmuster, Cyberpunk-Grid-Intro, Synapse-Pulse-Effekte.",
+    "status": "running",
+    "started_at": 1748380800,
+    "progress": 0.3
+  },
+  {
+    "id": "t-sdf-library",
+    "agent": "procedural_specialist",
+    "title": "Procedural SDF Library — Basisformen + Kombinatoren",
+    "detail": "✅ Vollständig: 10 Primitives (Sphere, Box, Torus, Cylinder, Capsule, Cone, Octahedron, Tetrahedron, Hexagon), 2 Blend-Funktionen (smin, esmooth), 6 Modifiers (Elongate, Repetition, RadialRep, Warp, Noise). GLSL Preprocessor für #include integriert. Alle Shaders aktualisiert (01_synapse, 02_city, 03_bloom).",
+    "status": "done",
+    "started_at": 1748380900,
+    "finished_at": 1748384580,
+    "progress": 1.0
+  },
+  {
+    "id": "t-music-direction",
+    "agent": "audio_specialist",
+    "title": "Music Direction Brief — AI DnB Spezifikation",
+    "detail": "BPM: 172. Liquid DnB für Assembly-Audience. Beat-Sync-Punkte für Szenen-Übergänge definieren. Audio-Reaktivität via FFT-Analyse.",
+    "status": "running",
+    "started_at": 1748381000,
+    "progress": 0.1
+  },
+  {
+    "id": "t-particle-system",
+    "agent": "procedural_specialist",
+    "title": "Compute-Shader Partikelsystem — Act I Overlay + Transition",
+    "detail": "✅ Vollständig: GPU physics (gravity, damping, wind), 32k particle pool, update + render pipeline. Compute dispatch mit timeline-aware uniforms. Point sprite rendering mit additive blend. Integration in Renderer (init, update, render, shutdown). TODO: Emission spawning für Act I neural pulse.",
+    "status": "done",
+    "started_at": 1748380900,
+    "finished_at": 1748385500,
+    "progress": 1.0
+  },
+  {
+    "id": "t-act-crossfade",
+    "agent": "shader_specialist",
+    "title": "Act I → Act II Crossfade Shader",
+    "detail": "✅ Grundgerüst: Timeline::transition_progress() für Fenster-Detektion, Renderer dual-act blending, crossfade.frag shader. Dual-pass rendering mit alpha fade-in. TODO: Smooth dissolve pattern refinement.",
+    "status": "done",
+    "started_at": 1748385500,
+    "finished_at": 1748385900,
+    "progress": 1.0
+  },
+  {
+    "id": "t-capture-flag",
+    "agent": "build_specialist",
+    "title": "WebM Render-Export Flag (--capture)",
+    "detail": "✅ CLI-Flag integriert (--capture audio.wav). Frame counter + logging. Scaffold für glReadPixels + PNG encode. TODO: libpng integration oder PPM fallback, ffmpeg WebM encoding.",
+    "status": "done",
+    "started_at": 1748385900,
+    "finished_at": 1748386100,
+    "progress": 1.0
+  },
+  {
+    "id": "t-particle-emit",
+    "agent": "procedural_specialist",
+    "title": "Particle Emission System — Neural Pulse Emitter",
+    "detail": "CPU-side emission queue für Act I. Spawn neurale Partikel basierend auf Beat/Bar sync. Position-Seeds vom Synapse-Netzwerk. Color gradient (magenta→cyan).",
+    "status": "pending",
+    "started_at": null,
+    "progress": 0.0
+  },
+  {
+    "id": "t-capture-png",
+    "agent": "build_specialist",
+    "title": "Frame Capture Pipeline (glReadPixels → PNG/PPM)",
+    "detail": "Implement frame dumping in --capture mode. Read framebuffer pixels, encode as PNG (libpng) or PPM (simple). 60fps × 480s = 28800 frames, ~100GB PPM fallback.",
+    "status": "pending",
+    "started_at": null,
+    "progress": 0.0
+  }
+]
