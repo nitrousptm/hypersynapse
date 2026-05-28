@@ -1,0 +1,94 @@
+#version 460 core
+out vec4 frag_color;
+
+// This shader is used as the fragment pass for the polygon city mesh.
+// The vertex shader (mesh.vert) handles building position + vertex displacement.
+// u_scene_norm controls how much the buildings "corrupt" toward mathematical forms.
+
+uniform float u_time;
+uniform vec2  u_res;
+uniform float u_beat;
+uniform float u_bar;
+uniform float u_act_norm;
+uniform float u_scene_norm;
+
+// Passed from mesh.vert
+in vec3 v_world_pos;
+in vec3 v_normal;
+in vec2 v_uv;
+in float v_instance_id;
+in float v_corruption;  // per-building corruption 0..1
+
+// ─── utils ────────────────────────────────────────────────────────────────────
+
+float hash(float n) { return fract(sin(n) * 43758.5453); }
+float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+
+// ─── window pattern (light arteries on buildings) ─────────────────────────────
+
+float window_grid(vec2 uv, float id) {
+    vec2 wuv = fract(uv * vec2(6.0, 12.0));
+    vec2 wid = floor(uv * vec2(6.0, 12.0));
+    float lit = step(0.7, hash2(wid + id * 0.3));
+    float flicker = step(0.98, hash2(wid + floor(u_time * 4.0)));
+    return lit * smoothstep(0.15, 0.0, min(wuv.x, min(1.0-wuv.x, min(wuv.y, 1.0-wuv.y)))) * (1.0 - flicker);
+}
+
+// ─── light artery spreading fractal ──────────────────────────────────────────
+
+float artery(vec2 uv) {
+    // Spreading electric blue veins across facades
+    float spread = u_scene_norm;
+    vec2 p = uv * 8.0;
+    float v = 0.0;
+    for (int i = 0; i < 4; i++) {
+        p = abs(p) / dot(p, p) - vec2(0.5, 0.5);
+        v += 1.0 / (1.0 + dot(p, p) * (5.0 - spread * 3.0));
+    }
+    return clamp(v * spread, 0.0, 1.0);
+}
+
+// ─── main ─────────────────────────────────────────────────────────────────────
+
+void main() {
+    // Base material: brutal concrete grey
+    vec3 col = vec3(0.06, 0.07, 0.09);
+
+    // Concrete texture variation
+    float concrete_var = hash2(v_uv * vec2(100.0, 200.0)) * 0.08;
+    col += concrete_var;
+
+    // Diffuse lighting from above + street level point lights
+    vec3 light_dir = normalize(vec3(0.3, 1.0, 0.5));
+    float diff = max(dot(normalize(v_normal), light_dir), 0.0);
+    col *= 0.4 + 0.6 * diff;
+
+    // Window lights
+    float wins = window_grid(v_uv, v_instance_id);
+    vec3 win_col = mix(vec3(1.0, 0.7, 0.4), vec3(0.2, 0.8, 1.0), v_corruption);
+    col += wins * win_col * (0.5 + 0.5 * u_scene_norm);
+
+    // Light arteries spreading across surface
+    float art = artery(v_uv + vec2(u_time * 0.02, 0.0));
+    col += art * vec3(0.0, 0.5, 1.0) * v_corruption * 2.0;
+
+    // Corruption discoloration: building transitions to mathematical form
+    // Edges and corners glow as geometry warps
+    float edge = 1.0 - abs(dot(normalize(v_normal), vec3(0,0,1)));
+    col += edge * v_corruption * vec3(0.1, 0.3, 1.0) * 1.5;
+
+    // Beat sync: brief bright flash on strong beats
+    float beat_flash = smoothstep(0.05, 0.0, u_beat) * 0.15;
+    col += beat_flash * vec3(0.1, 0.2, 0.5);
+
+    // Corrupt buildings fade toward bright mathematical lines
+    vec3 math_col = vec3(0.0, 0.8, 1.0) * (0.5 + 0.5 * sin(v_world_pos.y * 4.0 + u_time));
+    col = mix(col, math_col, v_corruption * v_corruption * 0.7);
+
+    // Distance fog: deep atmospheric perspective
+    float fog = 1.0 - exp(-length(v_world_pos) * 0.04);
+    vec3 fog_col = vec3(0.01, 0.03, 0.08);
+    col = mix(col, fog_col, fog);
+
+    frag_color = vec4(col, 1.0);
+}

@@ -178,6 +178,6 @@ All geometry generated procedurally at runtime — no external asset files.
 |------|----------|-------|
 | Windows RTX compile test | 🔴 Critical | Needs MSVC + RTX 3090/5090 machine |
 | 4-minute runtime validation | 🔴 Critical | Audio sync + full run-through |
-| WebM capture test | 🔴 Critical | 13,659 frames @ 60fps verification |
-| nfo file | 🟡 Required | Title, crew, contact, year |
+| WebM capture test | 🔴 Critical | 14,400 frames @ 60fps (240s × 60) |
+| nfo file | ✅ Done | SINGULARITY_GARDEN.nfo created (28 May 2026) |
 | Assembly portal upload | 🟡 Required | Before Assembly submission deadline |

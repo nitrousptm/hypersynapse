@@ -1,5 +1,7 @@
 # Assembly 2026 Submission Guide
 
+**Title:** SINGULARITY GARDEN  
+**Binary:** hypersynapse  
 **Event:** Assembly Summer 2026, Helsinki  
 **Submission Deadline:** 28–29 July 2026  
 **Category:** PC Demo (unlimited)  
@@ -31,46 +33,50 @@ cd hypersynapse
 **Visual Inspection:**
 - [ ] Window opens (1920×1080, fullscreen optional)
 - [ ] GL context initialized (check console: "GL 4.6")
-- [ ] Act I renders (neural lattice, volumetric glow, particles)
-- [ ] Act II renders (procedural city, neon flicker, camera motion)
-- [ ] Act III renders (Mandelbox fractal, zoom-collapse, fade-to-black)
+- [ ] Act I — BOOT renders (hex grid, CRT noise, monolith materializes)
+- [ ] Act II — INFECTION renders (city corruption, geometry displacement)
+- [ ] Act III — ASCENSION renders (raymarched fractals, geometry bloom)
+- [ ] Act IV — TRANSCENDENCE renders (cosmic garden, SINGULARITY GARDEN logo)
+- [ ] Scene 6 holy-shit zoom-out at 2:50 works (universe-within-universe)
 - [ ] All transitions smooth (no artifacts, color shifts correct)
-- [ ] Audio plays and synchronizes with visuals
-- [ ] Runtime is exactly 3:47 (227.6 seconds)
-- [ ] FPS stable (55–60 fps, no sudden drops)
+- [ ] Audio plays and synchronizes with visuals at 133 BPM
+- [ ] Runtime is exactly 4:00 (240 seconds)
+- [ ] FPS stable (55–60 fps on RTX 3090, 60 fps on RTX 5090)
 
 **Console Output (every 5 seconds):**
 ```
-[5.0s] FPS: 60.0 | Frame: 16.67 ms | Act: 0 | Beat: 14
-[10.0s] FPS: 59.8 | Frame: 16.71 ms | Act: 0 | Beat: 29
-...
+[5.0s]   FPS: 60.0 | Frame: 16.67 ms | Act: 0 | Scene: 1 | Beat: 11
+[10.0s]  FPS: 59.8 | Frame: 16.71 ms | Act: 0 | Scene: 1 | Beat: 22
+[45.0s]  FPS: 60.0 | Frame: 16.67 ms | Act: 1 | Scene: 3 | Beat: 99
+[240.0s] [demo] finished
 ```
 
 ### Phase 3: Capture & Encoding
 ```powershell
-# Generate frame sequence (~8 minutes)
-.\build\Release\hypersynapse.exe --capture assets\music.wav
+# Generate frame sequence (~4 minutes wall-clock, bandwidth-limited)
+.\build\Release\hypersynapse.exe --capture
 
 # Expected output:
+# [hypersynapse] capture mode enabled
 # [capture] initialized: 1920x1080 → ./captures/
 # [capture] frame 000000 written
 # [capture] frame 000060 written
 # ...
-# [capture] finished — 13659 frames written to ./captures/
+# [capture] finished — 14400 frames written to ./captures/
 # [capture] to encode WebM, run:
 # ffmpeg -framerate 60 -i ./captures/frame_%06d.ppm ...
 
 # Run the printed ffmpeg command (copy-paste from console output)
 ffmpeg -framerate 60 -i .\captures\frame_%06d.ppm ^
-  -c:v libvpx-vp9 -b:v 10000k -pass 1 -f null /dev/null && ^
+  -c:v libvpx-vp9 -b:v 10000k -pass 1 -f null NUL && ^
 ffmpeg -framerate 60 -i .\captures\frame_%06d.ppm ^
-  -c:v libvpx-vp9 -b:v 10000k -pass 2 hypersynapse.webm
+  -c:v libvpx-vp9 -b:v 10000k -pass 2 SINGULARITY_GARDEN.webm
 ```
 
 **Capture Verification:**
-- [ ] Capture runs for exactly 227 seconds
-- [ ] 13,659 frames generated (227s × 60 fps, no rounding)
-- [ ] All PPM files created (frame_000000.ppm → frame_013658.ppm)
+- [ ] Capture runs for exactly 240 seconds (4:00)
+- [ ] 14,400 frames generated (240s × 60 fps, exact)
+- [ ] All PPM files created (frame_000000.ppm → frame_014399.ppm)
 - [ ] No glReadPixels errors
 - [ ] Output directory: `./captures/` (no subdirectories)
 
@@ -87,19 +93,16 @@ ffprobe hypersynapse.webm
 
 **Expected Output:**
 ```
-Duration: 00:03:47.00, start: 0.000000, bitrate: 10000 kb/s
+Duration: 00:04:00.00, start: 0.000000, bitrate: 10000 kb/s
   Stream #0:0: Video: vp9 (Profile 0), 1 video, yuv420p(tv, bt709), 1920x1080, 60 fps, 60 tbr
-  Stream #0:1: Audio: ...
 ```
 
 **Verification Checklist:**
-- [ ] Duration: 227.6 ± 0.5 seconds (must be frame-exact)
+- [ ] Duration: 240.0 ± 0.1 seconds (must be frame-exact)
 - [ ] Resolution: 1920×1080 (exactly)
 - [ ] Frame rate: 60.0 fps (exactly)
 - [ ] Video codec: VP9 (libvpx-vp9)
 - [ ] Bitrate: ~10000 kb/s (10 Mbps)
-- [ ] Audio present (Stream #0:1, typically Vorbis or similar)
-- [ ] Audio synchronized with video (no drift)
 - [ ] File size: ≤ 500 MB
 
 ### Phase 5: Visual Quality Check
@@ -110,57 +113,32 @@ ffplay hypersynapse.webm
 ```
 
 **Final Inspection:**
-- [ ] All three acts visible and distinct
+- [ ] All four acts visible and distinct
 - [ ] Colors accurate (no banding, no clipping)
 - [ ] No visual artifacts or encoding corruption
-- [ ] Act I: Neural lattice clearly visible, particles burst on beats
-- [ ] Act II: City with neon buildings, camera moving, window flickers
-- [ ] Act III: Fractal zoom toward center, increasing chaos, fade to black
-- [ ] Transitions smooth between all acts
-- [ ] Audio perfectly synchronized throughout
+- [ ] Act I (BOOT 0:00–0:45): Hex grid + CRT, monolith materializes from particles
+- [ ] Act II (INFECTION 0:45–1:45): City corruption, geometry displacement
+- [ ] Act III (ASCENSION 1:45–3:00): Fractal bloom, recursive portals, holy-shit at 2:50
+- [ ] Act IV (TRANSCENDENCE 3:00–4:00): Cosmic garden, silence at 3:50, logo sequence
+- [ ] Transitions smooth between all scenes
+- [ ] Audio perfectly synchronized throughout at 133 BPM
 
-### Phase 6: nfo File Preparation
-Create `hypersynapse.nfo` in Assembly submission format:
+### Phase 6: nfo File
+NFO file already created: `SINGULARITY_GARDEN.nfo`
 
-```
-[nfo v2]
-
-Title:        hypersynapse
-Creator:      agentix
-Creator:      Xena (AI Assistant)
-Release Year: 2026
-Release Date: 2026-05-28
-
-Type:    PC Demo
-Bytes:   <FILE_SIZE_IN_BYTES>
-Hours:   0
-Minutes: 3
-Seconds: 47
-
-Platform: Windows, Linux, macOS
-Executable: hypersynapse.exe / hypersynapse (binary)
-Linked:     OpenGL 4.6 Core
-Language:   C++20
-Graphics:   GPU-accelerated volumetric raymarching
-
-Comment: 
-  AI-driven demoscene production showcasing advanced rendering techniques:
-  volumetric raymarching, beat-synchronized procedural effects, and 
-  immersive 3D narrative. Three-act structure: neural lattice awakening,
-  cyberpunk metropolis, chaotic fractal collapse. Powered by agentix
-  AI software development system.
-
-Download: https://github.com/nitrousptm/hypersynapse
-
-```
+Verify it contains correct info before upload:
+- [ ] Title: SINGULARITY GARDEN
+- [ ] Crew: agentix
+- [ ] Duration: 4:00 (240 seconds)
+- [ ] URL: https://github.com/Xena-AI/hypersynapse
 
 ---
 
 ## File Checklist for Submission
 
 ### Required Files
-- [ ] `hypersynapse.webm` (main submission, ≤ 500 MB)
-- [ ] `hypersynapse.nfo` (metadata file)
+- [ ] `SINGULARITY_GARDEN.webm` (main submission, ≤ 500 MB)
+- [ ] `SINGULARITY_GARDEN.nfo` (metadata file — ✅ created)
 - [ ] `hypersynapse.exe` (binary, for verification)
 
 ### Optional (Recommended)
@@ -184,14 +162,14 @@ Download: https://github.com/nitrousptm/hypersynapse
 - Select category: "PC Demo (unlimited)"
 
 ### 2. Upload WebM
-- File: `hypersynapse.webm`
-- Title: `hypersynapse`
+- File: `SINGULARITY_GARDEN.webm`
+- Title: `SINGULARITY GARDEN`
 - Category: `PC Demo`
-- Duration: `3:47` (auto-detect from ffprobe)
+- Duration: `4:00` (auto-detect from ffprobe)
 - Description: (from nfo, 500 chars max)
 
 ### 3. Upload nfo
-- File: `hypersynapse.nfo`
+- File: `SINGULARITY_GARDEN.nfo`
 - Attached to above submission
 
 ### 4. Submit for Review
@@ -226,7 +204,7 @@ A: glReadPixels is bandwidth-limited on older hardware. Options:
 - Reduce shader iterations (see docs/SCENE_BRIEFS.md)
 
 **Q: PPM files are huge, disk full**  
-A: 13,659 frames @ 1920×1080 RGB ≈ 360 GB uncompressed.
+A: 14,400 frames @ 1920×1080 RGB ≈ 87 GB uncompressed.
 Options:
 - Use external SSD (recommended)
 - Encode directly to WebM without intermediate PPM (requires ffmpeg pipe)
@@ -253,10 +231,10 @@ Options:
 - Be patient (encoding happens once)
 
 ### Audio/Video Sync
-**Q: Audio drifts after 4 minutes**  
-A: Check audio.cpp playback timing. This shouldn't happen if music.wav is exactly 480s.
-- Verify: `ffprobe assets/music/music.wav` → Duration must be 00:03:47.00 ± 0.01s
-- If drift detected, timeline.cpp time() may have rounding errors
+**Q: Audio drifts before 4 minutes**  
+A: Check audio.cpp playback timing. This shouldn't happen if Concrete-Syncope.wav is exactly 240s.
+- Verify: `ffprobe assets/music/Concrete-Syncope.wav` → Duration must be 00:04:00.00 ± 0.01s
+- If drift detected, timeline.cpp time() may have rounding errors at 133 BPM beat tracking
 
 ---
 
@@ -295,8 +273,8 @@ constexpr int kHeight = 900;    // instead of 1080
 | Phase | Task | Duration | Notes |
 |-------|------|----------|-------|
 | Build | Compile (clean) | 5 min | First time may fetch FetchContent deps |
-| Runtime | Interactive playback | 8+ min | Full demo run, visual check |
-| Capture | Frame sequence generation | 8+ min | glReadPixels bandwidth-limited |
+| Runtime | Interactive playback | 4+ min | Full demo run, visual check |
+| Capture | Frame sequence generation | 4+ min | glReadPixels bandwidth-limited |
 | Encoding | ffmpeg two-pass VP9 | 30 min | Single-threaded, CPU-intensive |
 | Validation | ffprobe + playback | 5 min | Specs check, quality visual |
 | **Total** | **All phases** | **~60 min** | Plus time for troubleshooting |
@@ -305,17 +283,19 @@ constexpr int kHeight = 900;    // instead of 1080
 
 ## Final Submission Checklist
 
-- [ ] Binary compiles without errors/warnings
-- [ ] Demo runs for full 8:00 (480s ± 0.1s)
-- [ ] All three acts render correctly
-- [ ] Beat synchronization verified (particles burst on downbeats)
+- [ ] Binary compiles without errors/warnings (Windows MSVC)
+- [ ] Demo runs for full 4:00 (240s ± 0.1s)
+- [ ] All four acts render correctly (BOOT → INFECTION → ASCENSION → TRANSCENDENCE)
+- [ ] Beat synchronization verified (particles burst on downbeats @ 133 BPM)
+- [ ] Holy-shit moment at 2:50 works (recursive universe zoom-out)
+- [ ] Logo sequence at 3:50 (silence → pulse → SINGULARITY GARDEN)
 - [ ] Audio/video sync verified (no drift)
-- [ ] Capture generates 13,659 frames (confirmed frame_013658.ppm exists)
-- [ ] ffmpeg encoding completes successfully
-- [ ] hypersynapse.webm created (200–400 MB)
-- [ ] ffprobe output matches specs (1920×1080, 60 fps, 480s, VP9)
+- [ ] Capture generates 14,400 frames (confirmed frame_014399.ppm exists)
+- [ ] ffmpeg encoding completes successfully (two-pass VP9)
+- [ ] SINGULARITY_GARDEN.webm created (200–400 MB)
+- [ ] ffprobe output matches specs (1920×1080, 60 fps, 240s, VP9)
 - [ ] VLC/ffplay playback is smooth (no stuttering/corruption)
-- [ ] nfo file prepared and correct
+- [ ] SINGULARITY_GARDEN.nfo present and correct ✅
 - [ ] All files ready for submission
 - [ ] Assembly portal accessible (test login)
 - [ ] Submission deadline confirmed (28–29 July 2026)
@@ -323,10 +303,11 @@ constexpr int kHeight = 900;    // instead of 1080
 ---
 
 **Assembly 2026 Submission Status:** 🚀 Ready  
-**Critical Path:** Windows compilation + runtime verification + WebM export  
+**Critical Path:** Windows RTX compilation + runtime verification + WebM export  
+**NFO Status:** ✅ SINGULARITY_GARDEN.nfo created  
 **Estimated Days to Submission:** 61 (from 28 May to 28 July 2026)
 
 ---
 
 *Last updated: 28 May 2026*  
-*Submission Guide v1.0 — HYPERSYNAPSE Assembly 2026*
+*Submission Guide v1.1 — SINGULARITY GARDEN / HYPERSYNAPSE Assembly 2026*

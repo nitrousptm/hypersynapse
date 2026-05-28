@@ -1,0 +1,120 @@
+                ╔══════════════════════════════════════════════════════╗
+                ║         S I N G U L A R I T Y   G A R D E N         ║
+                ║                                                      ║
+                ║           a  p c  d e m o  b y  a g e n t i x       ║
+                ║         assembly summer 2026 · helsinki · finland    ║
+                ╚══════════════════════════════════════════════════════╝
+
+  "A superintelligent AI awakens and begins rewriting reality into
+   organic mathematical structures. Cities fracture into fractals.
+   Light becomes physical. Geometry grows like plants."
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  RELEASE INFO
+
+    Title          : SINGULARITY GARDEN
+    Binary         : hypersynapse
+    Crew           : agentix
+    Category       : PC Demo (unlimited)
+    Event          : Assembly Summer 2026, Helsinki
+    Release Year   : 2026
+    Duration       : 4:00 (240 seconds, frame-exact @ 60 fps)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  TECHNICAL SPECS
+
+    Platform       : Windows 10/11 (primary), Linux, macOS
+    Executable     : hypersynapse.exe  (Windows)
+                     hypersynapse      (Linux/macOS)
+    Graphics API   : OpenGL 4.6 Core + Compute Shaders
+    Language       : C++20 (MSVC 2022 / GCC 13 / Clang 17)
+    Dependencies   : GLFW 3.4, GLM 1.0.1, GLAD 2.0.6, miniaudio 0.11.21
+                     (all fetched at build time via CMake FetchContent)
+    Resolution     : 1920 × 1080 @ 60 fps
+    GPU Minimum    : NVIDIA RTX 3090 (45–55 fps)
+    GPU Target     : NVIDIA RTX 5090 (60 fps locked)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  NARRATIVE ARC  (dystopian → surreal → transcendent)
+
+    Act I   BOOT         0:00–0:45   Cold. Minimal. Something stirs.
+    Act II  INFECTION    0:45–1:45   Loss of control. Reality fractures.
+    Act III ASCENSION    1:45–3:00   Beautiful. Overwhelming. Organic.
+    Act IV  TRANSCENDENCE 3:00–4:00  Cosmic. Emotional. Infinite.
+
+  Seven scenes. One direction: outward.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  RENDERING TECHNIQUES
+
+    ·  SDF raymarching with shared sdf_lib.glsl (scenes 2, 5, 6)
+    ·  GPU particle system — compute shader physics, 32k–1M pool
+    ·  Dual-layer Gaussian bloom (tight 0.4r + atmospheric 1.0r)
+    ·  ACES tonemapping + per-act color grading
+    ·  Barrel-distorted chromatic aberration (beat-reactive)
+    ·  Lens flare with 5-ghost streak pattern (Acts II–III)
+    ·  Procedural city with instanced geometry + displacement shaders
+    ·  Recursive portal FBOs — nested universes at 3 depth levels
+    ·  Holy-shit moment @ 2:50: camera pulls back to reveal universe
+       as a single particle inside a larger universe
+    ·  Beat-synchronized scene transitions at 133 BPM
+    ·  CRT scanlines + film grain (Act I)
+    ·  Temporal feedback abuse (Act II — Time Fracture)
+    ·  Fractal raymarching: Mandelbox / SDF temples (Act III)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  MUSIC
+
+    File           : Concrete-Syncope.wav
+    Style          : Industrial Ambient / Cinematic Neurobass
+    BPM            : 133
+    References     : Carbon Based Lifeforms, Noisia, Mick Gordon,
+                     Rival Consoles
+    Key cues       : First kick 0:18 · Bass drop 0:45
+                     Emotional peak 1:45 · Climax 2:50
+                     Silence 3:50 · Single pulse → logo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  HOW TO RUN
+
+    Windows (interactive):
+      hypersynapse.exe
+
+    Windows (capture WebM):
+      hypersynapse.exe --capture
+      ffmpeg -framerate 60 -i captures\frame_%06d.ppm ^
+        -c:v libvpx-vp9 -b:v 10000k -pass 1 -f null NUL && ^
+      ffmpeg -framerate 60 -i captures\frame_%06d.ppm ^
+        -c:v libvpx-vp9 -b:v 10000k -pass 2 SINGULARITY_GARDEN.webm
+
+    Linux/macOS (build):
+      ./build.sh
+      ./build/hypersynapse
+
+    ESC or Q to exit early.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  CREW
+
+    agentix        AI-driven software development studio
+    Xena           AI Demo Director, Lead Engineer, Shader Author
+
+    This production was created entirely with AI-assisted development
+    using the agentix universal agent system.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  SOURCE
+
+    https://github.com/Xena-AI/hypersynapse
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                        greetings to the demoscene
