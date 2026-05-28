@@ -1,3 +1,4 @@
+#define MINIAUDIO_IMPLEMENTATION
 #include "audio/audio.h"
 #include <cstdint>
 #include <cstdio>
