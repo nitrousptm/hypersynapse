@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -7,6 +8,7 @@
 #include "renderer/renderer.h"
 #include "timeline/timeline.h"
 #include "audio/audio.h"
+#include "capture/capture.h"
 
 namespace {
 
@@ -77,6 +79,12 @@ int main(int argc, char** argv) {
         if (audio_path) audio.play(audio_path);
     }
 
+    // Optional: initialize frame capture for --capture mode
+    std::unique_ptr<hyp::FrameCapture> capture;
+    if (capture_mode) {
+        capture = std::make_unique<hyp::FrameCapture>("./captures", kWidth, kHeight);
+    }
+
     const double t0 = glfwGetTime();
     int frame_count = 0;
     while (!glfwWindowShouldClose(window)) {
@@ -86,16 +94,9 @@ int main(int argc, char** argv) {
         timeline.update(t);
         renderer.render(timeline);
 
-        if (capture_mode) {
-            // Dump frame as PNG for later WebM encoding
-            char frame_path[256];
-            std::snprintf(frame_path, sizeof(frame_path), "frame_%06d.png", frame_count);
-
-            // TODO: glReadPixels + PNG encode (requires libpng or simple PPM fallback)
-            // For now, just log frame captures
-            if (frame_count % 60 == 0) {
-                std::printf("[capture] frame %d (t=%.2fs)\n", frame_count, t);
-            }
+        if (capture_mode && capture) {
+            // Read framebuffer and dump as PPM
+            capture->capture_frame(frame_count);
         }
 
         glfwSwapBuffers(window);
@@ -108,6 +109,14 @@ int main(int argc, char** argv) {
 
     audio.shutdown();
     renderer.shutdown();
+
+    // Print ffmpeg command for offline WebM encoding
+    if (capture_mode && capture) {
+        std::printf("\n[capture] finished — %d frames written to ./captures/\n", frame_count);
+        std::printf("[capture] to encode WebM, run:\n\n");
+        std::printf("%s\n\n", capture->ffmpeg_command(60).c_str());
+    }
+
     glfwDestroyWindow(window);
     glfwTerminate();
     return EXIT_SUCCESS;
