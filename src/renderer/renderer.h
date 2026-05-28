@@ -2,6 +2,7 @@
 #include <array>
 #include <cstdint>
 #include <memory>
+#include "debug/stats.h"
 
 namespace hyp {
 
@@ -15,6 +16,7 @@ public:
     void shutdown();
 
     ParticleSystem* particles() { return particles_.get(); }
+    Stats& stats() { return stats_; }
 
 private:
     void draw_scene(const Timeline& tl);
@@ -34,6 +36,9 @@ private:
 
     // Particle system
     std::unique_ptr<ParticleSystem> particles_;
+
+    // Performance stats
+    Stats stats_;
 };
 
 }  // namespace hyp

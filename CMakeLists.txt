@@ -71,6 +71,9 @@ add_executable(hypersynapse
     src/shader/shader.cpp
     src/timeline/timeline.cpp
     src/audio/audio.cpp
+    src/particles/particles.cpp
+    src/capture/capture.cpp
+    src/debug/stats.cpp
 )
 
 target_include_directories(hypersynapse PRIVATE src)

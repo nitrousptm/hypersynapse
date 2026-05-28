@@ -87,6 +87,7 @@ int main(int argc, char** argv) {
 
     const double t0 = glfwGetTime();
     int frame_count = 0;
+    double last_stats_print = 0.0;
     while (!glfwWindowShouldClose(window)) {
         const double t = glfwGetTime() - t0;
         if (t >= kDemoDurationSec) break;
@@ -102,6 +103,16 @@ int main(int argc, char** argv) {
         glfwSwapBuffers(window);
         glfwPollEvents();
         frame_count++;
+
+        // Print FPS stats every 5 seconds
+        if (t - last_stats_print >= 5.0) {
+            const hyp::Stats& stats = renderer.stats();
+            std::printf("[%.1fs] FPS: %.1f | Frame: %.2f ms | Act: %d | Beat: %d\n",
+                        t, stats.fps(), stats.frame_time_ms(),
+                        static_cast<int>(timeline.act()),
+                        timeline.beat_count());
+            last_stats_print = t;
+        }
 
         if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GLFW_TRUE);

@@ -67,6 +67,34 @@ brew install cmake ninja glslang llvm
 
 ## Build
 
+### Automated Build Scripts
+
+For convenience, use the provided build scripts:
+
+**Windows (PowerShell):**
+```powershell
+# Configure and build
+.\build_windows.ps1
+
+# Build and run with audio
+.\build_windows.ps1 -Run -Capture assets\music.wav
+
+# Clean rebuild
+.\build_windows.ps1 -Clean
+```
+
+**Linux/macOS (Bash):**
+```bash
+# Configure and build
+./build.sh
+
+# Build and run with audio
+./build.sh --run --capture assets/music.wav
+
+# Clean rebuild
+./build.sh --clean --run
+```
+
 ### Quick Start — Windows (Primary Target)
 
 **Visual Studio IDE (easiest):**

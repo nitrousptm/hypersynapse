@@ -83,6 +83,16 @@ bool Renderer::init(int width, int height) {
 }
 
 void Renderer::render(const Timeline& tl) {
+    // Update performance metrics
+    stats_.update();
+    stats_.set_timeline_metrics(Stats::TimelineMetrics{
+        tl.time(),
+        tl.beat_phase(),
+        tl.bar_phase(),
+        tl.beat_count(),
+        tl.bar_count()
+    });
+
     // Particle emission (Act I beat-synced neural pulse)
     if (particles_ && tl.act() == Act::I) {
         // Emit particles at beat downbeats (beat_phase near 0)
