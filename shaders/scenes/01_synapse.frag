@@ -5,7 +5,7 @@
 // Volumetric filament glow accumulated during march.
 // Beat-reactive pulse on BPM grid.
 
-#include "include/sdf_lib.glsl"
+#include "../include/sdf_lib.glsl"
 
 in vec2 v_uv;
 out vec4 frag;

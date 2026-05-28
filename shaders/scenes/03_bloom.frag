@@ -3,7 +3,7 @@
 // Mandelbox fractal SDF + volumetric overload → single point of light.
 // Camera pulls in toward origin as u_act_norm → 1.0 (collapse).
 
-#include "include/sdf_lib.glsl"
+#include "../include/sdf_lib.glsl"
 
 in vec2 v_uv;
 out vec4 frag;

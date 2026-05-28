@@ -3,7 +3,7 @@
 // Raymarched cyberpunk city: repeating box towers on a neon grid,
 // camera flies through at ground level, beat-synced window flicker.
 
-#include "include/sdf_lib.glsl"
+#include "../include/sdf_lib.glsl"
 
 in vec2 v_uv;
 out vec4 frag;
