@@ -34,8 +34,18 @@ Beat-1 (Act I→II) at ~2:15. Drop (Act II climax) at ~4:30. Collapse at ~5:45.
 No quality presets. Single render pipeline. On 3090 we accept lower framerate (45–55 fps) per Udo's call.
 If we ship something genuinely punishing, we'll add a single `--low` runtime flag, no menu.
 
+## Resolved Decisions (2026-05-28)
+
+| Question | Decision | Rationale |
+|---|---|---|
+| Music BPM | **174 BPM** | Classic DnB tempo. Clean 8-bar phrases = 11.03 s, lines up with act cuts at 135 s (≈12.25 bars). Beat grid hard-coded in `timeline.h`. |
+| Track structure | **Visuals first, music cuts to timeline** | Demo timing must be deterministic for Assembly submission. Composer receives the three-act time map and cuts to it. |
+| Capture / replay | **Yes — ship `--capture` flag for WebM 60fps** | Demoscene tradition. Will headless-render via offscreen FBO + ffmpeg pipe. Flag TBD in a later session. |
+
 ## Open Questions for Agents
 
-- Music BPM target? DnB usually 170–175. Locks beat-grid for visual sync.
-- Track structure: do we author music first and cut to it, or design visual timing first?
-- Capture/replay: do we ship a 60fps WebM render alongside the exe? (Demoscene tradition: yes.)
+- ~~Music BPM target?~~ → **174 BPM** ✅
+- ~~Track structure?~~ → **Visuals first** ✅
+- ~~WebM capture?~~ → **Yes, `--capture` flag** ✅
+- Shader `#include` mechanism: add GL_ARB_shading_language_include, or keep shaders self-contained? (current: self-contained)
+- Compute-shader particle system: implement as Act I overlay or separate pass? (planned: Act I → II transition)
