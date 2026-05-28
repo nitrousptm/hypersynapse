@@ -3,6 +3,8 @@
 // Raymarched cyberpunk city: repeating box towers on a neon grid,
 // camera flies through at ground level, beat-synced window flicker.
 
+#include "include/sdf_lib.glsl"
+
 in vec2 v_uv;
 out vec4 frag;
 
@@ -20,17 +22,6 @@ uniform int   u_bar_cnt;
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 float hash11(float n) { return fract(sin(n) * 43758.5453123); }
 vec2  hash21(float n) { return fract(sin(vec2(n, n + 1.0)) * vec2(43758.5453, 22578.1459)); }
-
-float smin(float a, float b, float k) {
-    float h = clamp(0.5 + 0.5*(b-a)/k, 0.0, 1.0);
-    return mix(b, a, h) - k*h*(1.0-h);
-}
-
-// ─── SDF primitives ──────────────────────────────────────────────────────────
-float sdBox(vec3 p, vec3 b) {
-    vec3 d = abs(p) - b;
-    return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0);
-}
 
 // ─── City scene ──────────────────────────────────────────────────────────────
 // One city cell: ground plane + tower of random height

@@ -5,6 +5,8 @@
 // Volumetric filament glow accumulated during march.
 // Beat-reactive pulse on BPM grid.
 
+#include "include/sdf_lib.glsl"
+
 in vec2 v_uv;
 out vec4 frag;
 
@@ -22,29 +24,6 @@ uniform int   u_bar_cnt;
 
 // ─── Hashing & math ──────────────────────────────────────────────────────────
 float hash11(float n) { return fract(sin(n) * 43758.5453123); }
-
-vec3 hash33(vec3 p) {
-    p = fract(p * vec3(443.8975, 397.2973, 491.1871));
-    p += dot(p, p.yxz + 19.19);
-    return fract((p.xxy + p.yxx) * p.zyx);
-}
-
-// ─── SDF primitives ──────────────────────────────────────────────────────────
-float sdSphere(vec3 p, float r) {
-    return length(p) - r;
-}
-
-float sdCapsule(vec3 p, vec3 a, vec3 b, float r) {
-    vec3 pa = p - a, ba = b - a;
-    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return length(pa - ba * h) - r;
-}
-
-// Polynomial smooth min (k controls blend radius)
-float smin(float a, float b, float k) {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
-    return mix(b, a, h) - k * h * (1.0 - h);
-}
 
 // ─── Scene ───────────────────────────────────────────────────────────────────
 // One neuron cluster: soma sphere + 4 branching dendrite capsules

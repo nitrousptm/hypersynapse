@@ -24,6 +24,38 @@ std::string read_file(std::string_view path) {
     return ss.str();
 }
 
+std::string preprocess(std::string_view source, std::string_view base_dir) {
+    std::stringstream out;
+    std::istringstream in(std::string(source));
+    std::string line;
+
+    while (std::getline(in, line)) {
+        // Check for #include "path"
+        if (line.find("#include") == 0) {
+            size_t start = line.find('"');
+            size_t end = line.rfind('"');
+            if (start != std::string::npos && end != std::string::npos && start < end) {
+                std::string inc_path = line.substr(start + 1, end - start - 1);
+                // Resolve relative to base_dir
+                std::string full_path = std::string(base_dir) + "/" + inc_path;
+                std::string inc_src = read_file(full_path);
+                if (!inc_src.empty()) {
+                    out << "// #include \"" << inc_path << "\"\n";
+                    out << inc_src << "\n";
+                } else {
+                    std::fprintf(stderr, "[shader] failed to include %s\n", full_path.c_str());
+                    out << line << "\n";
+                }
+            } else {
+                out << line << "\n";
+            }
+        } else {
+            out << line << "\n";
+        }
+    }
+    return out.str();
+}
+
 uint32_t compile(GLenum stage, std::string_view source, std::string_view tag) {
     const std::string src(source);
     const char* c_src = src.c_str();
@@ -77,6 +109,11 @@ uint32_t load_program(std::string_view vert_path, std::string_view frag_path) {
     auto fsrc = read_file(frag_path);
     if (vsrc.empty() || fsrc.empty()) return 0;
 
+    // Preprocess (resolve #include directives)
+    auto base_dir = std::string(frag_path).substr(0, std::string(frag_path).rfind("/"));
+    vsrc = preprocess(vsrc, base_dir);
+    fsrc = preprocess(fsrc, base_dir);
+
     uint32_t v = compile(GL_VERTEX_SHADER, vsrc, vert_path);
     if (!v) return 0;
     uint32_t f = compile(GL_FRAGMENT_SHADER, fsrc, frag_path);
@@ -87,6 +124,11 @@ uint32_t load_program(std::string_view vert_path, std::string_view frag_path) {
 uint32_t load_compute(std::string_view comp_path) {
     auto src = read_file(comp_path);
     if (src.empty()) return 0;
+
+    // Preprocess (resolve #include directives)
+    auto base_dir = std::string(comp_path).substr(0, std::string(comp_path).rfind("/"));
+    src = preprocess(src, base_dir);
+
     uint32_t c = compile(GL_COMPUTE_SHADER, src, comp_path);
     if (!c) return 0;
     return link({c}, comp_path);
