@@ -89,7 +89,7 @@ For convenience, use the provided build scripts:
 ./build.sh
 
 # Build and run with audio
-./build.sh --run --capture assets/music.wav
+./build.sh --run --capture assets/music/music.wav
 
 # Clean rebuild
 ./build.sh --clean --run
@@ -145,7 +145,7 @@ cd ..
 
 # 5. Capture mode (for offline WebM export)
 .\build\Release\hypersynapse.exe --capture assets\music.wav
-# → .\captures\frame_000000.ppm ... frame_028799.ppm
+# → .\captures\frame_000000.ppm ... frame_013658.ppm
 ```
 
 ### Detailed Steps (Linux)
@@ -166,10 +166,10 @@ cmake --build . -j $(nproc)  # Use all CPU cores
 
 # 4. Run (with optional audio)
 cd ..
-./build/hypersynapse assets/music.wav
+./build/hypersynapse assets/music/music.wav
 
 # 5. Capture mode (generate frame sequence for WebM export)
-./build/hypersynapse --capture assets/music.wav
+./build/hypersynapse --capture assets/music/music.wav
 ```
 
 ## Troubleshooting
@@ -235,7 +235,7 @@ cmake .. -DCMAKE_CXX_FLAGS="-O3 -march=native -flto"
 
 ```bash
 # 1. Capture 8-minute demo
-./build/hypersynapse --capture assets/music.wav
+./build/hypersynapse --capture assets/music/music.wav
 
 # 2. Encode WebM (two-pass VP9, as suggested by capture output)
 ffmpeg -framerate 60 -i captures/frame_%06d.ppm \
@@ -245,7 +245,7 @@ ffmpeg -framerate 60 -i captures/frame_%06d.ppm \
 
 # 3. Verify output
 ffprobe hypersynapse.webm
-# Should show: ~480 seconds, VP9 video, 1920x1080, 60 fps
+# Should show: ~227 seconds, VP9 video, 1920x1080, 60 fps
 ```
 
 ## Testing
@@ -254,7 +254,7 @@ ffprobe hypersynapse.webm
 
 ```bash
 # Play demo with audio
-./build/hypersynapse assets/music.wav
+./build/hypersynapse assets/music/music.wav
 
 # Measure frame time (check consistency for 60fps)
 # In-game console would show FPS (not implemented yet)
@@ -288,7 +288,7 @@ Run locally to match CI:
 5. **Submit:** Upload to Assembly submission portal
 
 **Submission Specs:**
-- Duration: 480.0 seconds ± 0.1s
+- Duration: 227.6 seconds ± 0.1s
 - Format: WebM (VP9 video, Vorbis audio)
 - Resolution: 1920×1080 @ 60fps
 - File size: ≤ 500 MB recommended

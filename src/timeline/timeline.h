@@ -8,10 +8,10 @@ constexpr double kBPM     = 174.0;
 constexpr double kBeatSec = 60.0 / kBPM;   // ~0.3448 s
 constexpr double kBarSec  = kBeatSec * 4.0; // ~1.3793 s
 
-// Act boundaries (seconds)
-constexpr double kAct1End = 135.0;  // 2:15
-constexpr double kAct2End = 345.0;  // 2:15 + 3:30 = 5:45
-constexpr double kAct3End = 480.0;  // 8:00
+// Act boundaries (seconds) — scaled to 3:47 audio duration
+constexpr double kAct1End = 64.0;   // 1:04
+constexpr double kAct2End = 164.0;  // 2:44
+constexpr double kAct3End = 227.641; // 3:47
 
 enum class Act : uint8_t { I = 0, II = 1, III = 2 };
 

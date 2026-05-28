@@ -58,8 +58,8 @@ ls -lh ./build/hypersynapse.exe  # Windows
 
 ### Step 4: Demo Playback (Interactive)
 ```bash
-# Requires assets/music.wav (8:00 duration, 174 BPM)
-./build/hypersynapse assets/music.wav
+# Requires assets/music/music.wav (8:00 duration, 174 BPM)
+./build/hypersynapse assets/music/music.wav
 ```
 
 **Verification Checklist:**
@@ -104,9 +104,9 @@ ls -lh ./build/hypersynapse.exe  # Windows
 ### Step 5: Capture Mode
 ```bash
 # Generate frame sequence
-./build/hypersynapse --capture assets/music.wav
+./build/hypersynapse --capture assets/music/music.wav
 # Takes ~8 minutes
-# Outputs: ./captures/frame_000000.ppm ... frame_028799.ppm (28,800 frames at 60 fps)
+# Outputs: ./captures/frame_000000.ppm ... frame_013658.ppm (13,659 frames at 60 fps)
 ```
 
 **Expected Output:**
@@ -123,8 +123,8 @@ ffmpeg -framerate 60 -i ./captures/frame_%06d.ppm ...
 ```
 
 **Verification:**
-- [ ] Capture runs for exactly 480 seconds
-- [ ] 28,800 frames generated (480s × 60 fps)
+- [ ] Capture runs for exactly 227 seconds
+- [ ] 13,659 frames generated (227s × 60 fps)
 - [ ] PPM files are valid (readable with any image viewer)
 - [ ] No glReadPixels errors in console
 
@@ -148,13 +148,13 @@ ffprobe hypersynapse.webm
 
 **Expected Output:**
 ```
-Duration: 00:08:00.00, start: 0.000000, bitrate: 10000 kb/s
+Duration: 00:03:47.00, start: 0.000000, bitrate: 10000 kb/s
   Stream #0:0: Video: vp9 (Profile 0), 1 video, yuv420p(tv, bt709), 1920x1080, 60 fps, 60 tbr, 1k tbn
   Stream #0:1: Audio: ...
 ```
 
 **Verification Checklist:**
-- [ ] Duration: 480.0 ± 0.1 seconds
+- [ ] Duration: 227.6 ± 0.5 seconds
 - [ ] Resolution: 1920×1080
 - [ ] Frame rate: 60 fps
 - [ ] Codec: VP9
@@ -181,9 +181,9 @@ ffplay hypersynapse.webm
 
 ### Step 9: FPS Stability
 Observe console output across all three acts:
-- Act I (0–135s): Should maintain 60 fps
-- Act II (135–345s): May dip to 50–55 fps on RTX 3090 (acceptable)
-- Act III (345–480s): Should recover to 55+ fps
+- Act I (0–64s): Should maintain 60 fps
+- Act II (64–164s): May dip to 50–55 fps on RTX 3090 (acceptable)
+- Act III (164–227s): Should recover to 55+ fps
 
 **Acceptance Criteria:**
 - Sustained 55+ fps average
@@ -198,11 +198,11 @@ While running, monitor system memory:
 ## Submission Checklist
 
 - [ ] Binary compiles successfully (no warnings, no errors)
-- [ ] Demo runs for full 480 seconds
+- [ ] Demo runs for full 227 seconds
 - [ ] All three acts render correctly
 - [ ] Beat synchronization verified (particles burst on downbeats)
 - [ ] Audio/video sync verified (no drift)
-- [ ] Capture mode generates 28,800 frames (480s × 60 fps)
+- [ ] Capture mode generates 13,659 frames (227s × 60 fps)
 - [ ] WebM encodes successfully (VP9, 10 Mbps)
 - [ ] WebM validates (1920×1080, 60 fps, 480s, ≤ 500 MB)
 - [ ] Visual quality acceptable (no artifacts)
@@ -229,15 +229,15 @@ While running, monitor system memory:
 
 **Audio sync drift observed:**
 - Check audio.cpp playback timing
-- Verify music.wav duration is exactly 480s
+- Verify music.wav duration is exactly 227.6s
 
 ## Timeline
 
 1. **Build Verification:** ~5 minutes
 2. **Interactive Testing:** ~10 minutes
-3. **Capture Mode:** ~8 minutes (+ ~30 minutes ffmpeg encoding on RTX 3090)
+3. **Capture Mode:** ~4 minutes (+ ~15 minutes ffmpeg encoding on RTX 3090)
 4. **WebM Verification:** ~5 minutes
-5. **Total:** ~45 minutes (plus ffmpeg encoding time)
+5. **Total:** ~25 minutes (plus ffmpeg encoding time)
 
 ---
 

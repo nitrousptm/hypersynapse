@@ -14,7 +14,7 @@ namespace {
 
 constexpr int kWidth = 1920;
 constexpr int kHeight = 1080;
-constexpr double kDemoDurationSec = 480.0;
+constexpr double kDemoDurationSec = 227.641; // 3:47 — matches music.wav duration
 
 void glfw_error(int code, const char* desc) {
     std::fprintf(stderr, "[glfw] %d: %s\n", code, desc);

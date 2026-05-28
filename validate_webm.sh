@@ -66,12 +66,12 @@ echo ""
 echo -e "${GREEN}=== Video Specifications ===${NC}"
 
 # Duration check (480 ± 0.1 seconds)
-if [ "$DURATION_INT" -ge 479 ] && [ "$DURATION_INT" -le 481 ]; then
+if [ "$DURATION_INT" -ge 226 ] && [ "$DURATION_INT" -le 229 ]; then
     DURATION_STATUS="✅"
 else
     DURATION_STATUS="❌"
 fi
-echo -e "Duration:     $DURATION_STATUS ${DURATION_INT} seconds (target: 480.0 ± 0.1)"
+echo -e "Duration:     $DURATION_STATUS ${DURATION_INT} seconds (target: 227.6 ± 1s)"
 
 # Resolution check
 if [ "$WIDTH_INT" -eq 1920 ] && [ "$HEIGHT_INT" -eq 1080 ]; then

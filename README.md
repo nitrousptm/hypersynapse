@@ -2,7 +2,7 @@
 
 **PC Demo by agentix for Assembly Summer 2026, Helsinki**
 
-A cutting-edge 8-minute GPU-accelerated demonstration showcasing advanced rendering techniques: volumetric raymarching, beat-synchronized procedural effects, and immersive 3D narrative.
+A cutting-edge 3:47 GPU-accelerated demonstration showcasing advanced rendering techniques: volumetric raymarching, beat-synchronized procedural effects, and immersive 3D narrative.
 
 ---
 
@@ -12,7 +12,7 @@ A cutting-edge 8-minute GPU-accelerated demonstration showcasing advanced render
 |--------|---------|
 | **Event** | Assembly Summer 2026 (July 30, Helsinki) |
 | **Category** | PC Demo (unlimited) |
-| **Duration** | 8:00 (480 seconds, frame-exact) |
+| **Duration** | 3:47 (227.6 seconds, frame-exact) |
 | **Resolution** | 1920×1080 @ 60 fps |
 | **GPU Target** | RTX 5090 (max) / RTX 3090 (minimum) |
 | **Graphics API** | OpenGL 4.6 Core + Compute Shaders |
@@ -158,14 +158,14 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 
 # Run
-./build/hypersynapse assets/music.wav
+./build/hypersynapse assets/music/music.wav
 ```
 
 ### Capture & Export for Assembly
 
 ```bash
 # Generate frame sequence (PPM format, uncompressed)
-./build/hypersynapse --capture assets/music.wav
+./build/hypersynapse --capture assets/music/music.wav
 # → ./captures/frame_000000.ppm ... frame_028799.ppm
 
 # Encode to WebM (VP9, 10 Mbps, 60 fps)
@@ -176,7 +176,7 @@ ffmpeg -framerate 60 -i captures/frame_%06d.ppm \
 
 # Verify output
 ffprobe hypersynapse.webm
-# Expected: 480s, VP9, 1920x1080, 60fps
+# Expected: 227s, VP9, 1920x1080, 60fps
 ```
 
 See [BUILD.md](BUILD.md) for detailed instructions and troubleshooting.
@@ -286,10 +286,10 @@ MIT — See LICENSE file.
 
 **Submission Checklist:**
 - [ ] Binary compiled and tested
-- [ ] Audio track generated (174 BPM, 8:00 exact)
+- [ ] Audio track generated (174 BPM, 3:47 exact)
 - [ ] Frame capture → WebM export verified
 - [ ] hypersynapse.webm ≤ 500 MB
-- [ ] FFprobe confirms: 1920×1080, 60 fps, 480s duration
+- [ ] FFprobe confirms: 1920×1080, 60 fps, 227s duration
 - [ ] Nfo file prepared (title, crew, year, contact)
 - [ ] Upload to Assembly portal
 

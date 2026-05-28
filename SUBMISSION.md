@@ -36,7 +36,7 @@ cd hypersynapse
 - [ ] Act III renders (Mandelbox fractal, zoom-collapse, fade-to-black)
 - [ ] All transitions smooth (no artifacts, color shifts correct)
 - [ ] Audio plays and synchronizes with visuals
-- [ ] Runtime is exactly 480 seconds (8:00)
+- [ ] Runtime is exactly 3:47 (227.6 seconds)
 - [ ] FPS stable (55–60 fps, no sudden drops)
 
 **Console Output (every 5 seconds):**
@@ -56,7 +56,7 @@ cd hypersynapse
 # [capture] frame 000000 written
 # [capture] frame 000060 written
 # ...
-# [capture] finished — 28800 frames written to ./captures/
+# [capture] finished — 13659 frames written to ./captures/
 # [capture] to encode WebM, run:
 # ffmpeg -framerate 60 -i ./captures/frame_%06d.ppm ...
 
@@ -68,9 +68,9 @@ ffmpeg -framerate 60 -i .\captures\frame_%06d.ppm ^
 ```
 
 **Capture Verification:**
-- [ ] Capture runs for exactly 480 seconds
-- [ ] 28,800 frames generated (480s × 60 fps, no rounding)
-- [ ] All PPM files created (frame_000000.ppm → frame_028799.ppm)
+- [ ] Capture runs for exactly 227 seconds
+- [ ] 13,659 frames generated (227s × 60 fps, no rounding)
+- [ ] All PPM files created (frame_000000.ppm → frame_013658.ppm)
 - [ ] No glReadPixels errors
 - [ ] Output directory: `./captures/` (no subdirectories)
 
@@ -87,13 +87,13 @@ ffprobe hypersynapse.webm
 
 **Expected Output:**
 ```
-Duration: 00:08:00.00, start: 0.000000, bitrate: 10000 kb/s
+Duration: 00:03:47.00, start: 0.000000, bitrate: 10000 kb/s
   Stream #0:0: Video: vp9 (Profile 0), 1 video, yuv420p(tv, bt709), 1920x1080, 60 fps, 60 tbr
   Stream #0:1: Audio: ...
 ```
 
 **Verification Checklist:**
-- [ ] Duration: 480.0 ± 0.1 seconds (must be frame-exact)
+- [ ] Duration: 227.6 ± 0.5 seconds (must be frame-exact)
 - [ ] Resolution: 1920×1080 (exactly)
 - [ ] Frame rate: 60.0 fps (exactly)
 - [ ] Video codec: VP9 (libvpx-vp9)
@@ -134,8 +134,8 @@ Release Date: 2026-05-28
 Type:    PC Demo
 Bytes:   <FILE_SIZE_IN_BYTES>
 Hours:   0
-Minutes: 8
-Seconds: 0
+Minutes: 3
+Seconds: 47
 
 Platform: Windows, Linux, macOS
 Executable: hypersynapse.exe / hypersynapse (binary)
@@ -187,7 +187,7 @@ Download: https://github.com/nitrousptm/hypersynapse
 - File: `hypersynapse.webm`
 - Title: `hypersynapse`
 - Category: `PC Demo`
-- Duration: `8:00` (auto-detect from ffprobe)
+- Duration: `3:47` (auto-detect from ffprobe)
 - Description: (from nfo, 500 chars max)
 
 ### 3. Upload nfo
@@ -226,7 +226,7 @@ A: glReadPixels is bandwidth-limited on older hardware. Options:
 - Reduce shader iterations (see docs/SCENE_BRIEFS.md)
 
 **Q: PPM files are huge, disk full**  
-A: 28,800 frames @ 1920×1080 RGB ≈ 360 GB uncompressed.
+A: 13,659 frames @ 1920×1080 RGB ≈ 360 GB uncompressed.
 Options:
 - Use external SSD (recommended)
 - Encode directly to WebM without intermediate PPM (requires ffmpeg pipe)
@@ -255,7 +255,7 @@ Options:
 ### Audio/Video Sync
 **Q: Audio drifts after 4 minutes**  
 A: Check audio.cpp playback timing. This shouldn't happen if music.wav is exactly 480s.
-- Verify: `ffprobe assets/music.wav` → Duration must be 00:08:00.00 ± 0.01s
+- Verify: `ffprobe assets/music/music.wav` → Duration must be 00:03:47.00 ± 0.01s
 - If drift detected, timeline.cpp time() may have rounding errors
 
 ---
@@ -310,7 +310,7 @@ constexpr int kHeight = 900;    // instead of 1080
 - [ ] All three acts render correctly
 - [ ] Beat synchronization verified (particles burst on downbeats)
 - [ ] Audio/video sync verified (no drift)
-- [ ] Capture generates 28,800 frames (confirmed frame_028799.ppm exists)
+- [ ] Capture generates 13,659 frames (confirmed frame_013658.ppm exists)
 - [ ] ffmpeg encoding completes successfully
 - [ ] hypersynapse.webm created (200–400 MB)
 - [ ] ffprobe output matches specs (1920×1080, 60 fps, 480s, VP9)

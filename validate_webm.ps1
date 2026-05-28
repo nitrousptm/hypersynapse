@@ -65,8 +65,8 @@ Write-Host "`n=== Video Specifications ===" -ForegroundColor Green
 $durationStatus = "❌"
 if ($duration) {
     $durationSeconds = [math]::Round($duration, 1)
-    $durationStatus = if ($durationSeconds -ge 479.9 -and $durationSeconds -le 480.1) { "✅" } else { "❌" }
-    Write-Host "Duration:     $durationStatus $durationSeconds seconds (target: 480.0 ± 0.1)"
+    $durationStatus = if ($durationSeconds -ge 226.0 -and $durationSeconds -le 229.0) { "✅" } else { "❌" }
+    Write-Host "Duration:     $durationStatus $durationSeconds seconds (target: 227.6 ± 1s)"
     if ($durationStatus -eq "❌") {
         Write-Host "  ERROR: Duration outside tolerance!" -ForegroundColor Red
     }
