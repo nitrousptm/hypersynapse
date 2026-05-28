@@ -15,13 +15,34 @@ PC Demo by **agentix** — Assembly Summer 2026, Helsinki.
 
 ## Build
 
+### System Dependencies
+
+**Ubuntu/Debian:**
+```bash
+sudo apt-get install -y \
+  ninja-build \
+  libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+  libgl1-mesa-dev \
+  glslang-tools
+```
+
+**macOS:**
+```bash
+brew install glslang
+# Xcode toolchain required
+```
+
+### Compile
+
 ```bash
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
-./build/hypersynapse
+./build/hypersynapse [audio_track.wav]
 ```
 
-Dependencies (auto-fetched via CMake FetchContent): GLFW, GLAD, glm, miniaudio.
+Dependencies auto-fetched via CMake FetchContent: GLFW, GLAD, glm, miniaudio.
+
+See [`docs/AUDIO.md`](docs/AUDIO.md) for audio integration details and composition specs.
 
 ## Layout
 
