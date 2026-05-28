@@ -1,15 +1,37 @@
 # HYPERSYNAPSE — Build Instructions
 
+**Primary Target: Windows (NVIDIA RTX 5090 / RTX 3090)**
+
 ## System Requirements
 
 | Component | Version | Notes |
 |-----------|---------|-------|
-| C++ | C++20 | GCC 11+ or Clang 12+ |
+| C++ Compiler | C++20 | MSVC 2022 (Windows) / GCC 11+ (Linux) / Clang 12+ (macOS) |
 | CMake | 3.24+ | For FetchContent support |
 | OpenGL | 4.6 Core | NVIDIA RTX 3090+ / RTX 5090 |
-| X11 (Linux) | dev headers | libx11-dev, libxrandr-dev, etc |
+| GPU Driver | Latest | NVIDIA Driver (Windows: Game Ready / Studio) |
+| X11 (Linux only) | dev headers | libx11-dev, libxrandr-dev, etc — **Windows & macOS skip this** |
 
 ## Dependencies
+
+### Windows (Primary Target — Recommended)
+
+**Prerequisite Software:**
+1. **Visual Studio 2022 Community** (free, download from microsoft.com)
+   - Install C++ Desktop Development workload
+   - Includes MSVC compiler, CMake, Ninja
+
+2. **NVIDIA Driver** (latest Game Ready or Studio)
+   - Ensures OpenGL 4.6 support
+   - Download from nvidia.com
+
+**Build Dependencies (auto-fetched via CMake):**
+- GLFW 3.4 (window + input)
+- GLAD (OpenGL 4.6 loader)
+- glm (math library)
+- miniaudio (audio)
+
+**No system libraries needed for Windows.**
 
 ### Linux (Ubuntu/Debian)
 
@@ -45,7 +67,27 @@ brew install cmake ninja glslang llvm
 
 ## Build
 
-### Quick Start (Linux/macOS)
+### Quick Start — Windows (Primary Target)
+
+**Visual Studio IDE (easiest):**
+```powershell
+# 1. File → Open → Folder → select hypersynapse/
+# 2. CMake → Build All
+# 3. Select Release config
+# 4. Debug → Start Without Debugging
+```
+
+**Command Line:**
+```powershell
+cd hypersynapse
+cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release -j
+
+# Run
+.\build\Release\hypersynapse.exe assets\music.wav
+```
+
+### Quick Start — Linux/macOS
 
 ```bash
 cd hypersynapse
@@ -56,7 +98,29 @@ cmake --build build -j
 ./build/hypersynapse [audio_track.wav]
 ```
 
-### Detailed Steps
+### Detailed Steps (Windows)
+
+```powershell
+# 1. Create build directory
+mkdir build
+cd build
+
+# 2. Configure CMake
+cmake .. -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
+
+# 3. Compile
+cmake --build . --config Release -j
+
+# 4. Run
+cd ..
+.\build\Release\hypersynapse.exe assets\music.wav
+
+# 5. Capture mode (for offline WebM export)
+.\build\Release\hypersynapse.exe --capture assets\music.wav
+# → .\captures\frame_000000.ppm ... frame_028799.ppm
+```
+
+### Detailed Steps (Linux)
 
 ```bash
 # 1. Create build directory
@@ -78,15 +142,14 @@ cd ..
 
 # 5. Capture mode (generate frame sequence for WebM export)
 ./build/hypersynapse --capture assets/music.wav
-# → Outputs frames to ./captures/frame_000000.ppm ... frame_028799.ppm
-# → Prints ffmpeg command for WebM encoding
 ```
 
 ## Troubleshooting
 
-### CMake Error: "Could NOT find X11"
+### CMake Error: "Could NOT find X11" (Linux only)
 
-**Linux only.** Install X11 development headers:
+**Windows & macOS:** This error won't occur.  
+**Linux only:** Install X11 development headers:
 
 ```bash
 sudo apt-get install libx11-dev libxrandr-dev libxinerama-dev \

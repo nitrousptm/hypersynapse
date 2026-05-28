@@ -22,8 +22,17 @@ set(FETCHCONTENT_QUIET OFF)
 set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
-set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+
+# Platform-specific GLFW backends
+if(UNIX AND NOT APPLE)
+    # Linux: X11 backend (Wayland optional)
+    set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+elseif(WIN32)
+    # Windows: native Win32 backend (auto, no options needed)
+elseif(APPLE)
+    # macOS: native Cocoa backend (auto)
+endif()
 FetchContent_Declare(glfw
     GIT_REPOSITORY https://github.com/glfw/glfw.git
     GIT_TAG        3.4
