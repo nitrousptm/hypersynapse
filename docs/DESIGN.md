@@ -153,15 +153,15 @@ All geometry generated procedurally at runtime — no external asset files.
 | Bloom pipeline    | Dual-layer Gaussian (tight 0.4r + wide 1.0r) for cinematic halo |
 | Lens flare        | Beat-sync, Acts II–III only — fades out before finale  |
 
-## Implementation Status (28 May 2026)
+## Implementation Status (29 May 2026)
 
 ### Completed Systems
 
 | System | Status | Notes |
 |--------|--------|-------|
 | Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + scanlines + grain + vignette |
-| Scene shaders (all 7) | ✅ Complete | Boot Void → Transcendence fully implemented |
-| Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50 |
+| Scene shaders (all 7) | ✅ Complete | Boot Void → Transcendence fully implemented + bug fixes (29 May) |
+| Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50; glow offset fixed + richer star field |
 | SDF raymarching | ✅ Complete | sdf_lib.glsl shared library, used in scenes 2, 5, 6 |
 | Particle system | ✅ Complete | Compute shader physics, beat-sync, act-specific behaviors |
 | Particle render | ✅ Complete | Soft glow sprites, velocity-based brightness, act-aware color |
@@ -171,6 +171,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Capture mode | ✅ Complete | PPM frame sequence + ffmpeg WebM encode |
 | Debug stats | ✅ Complete | FPS/frame time overlay, beat counter |
 | Build scripts | ✅ Complete | build.sh (Linux/macOS) + build_windows.ps1 (MSVC) |
+| Logo SDF (Scene 7) | ✅ Refined | Proper arc-based S + G letter forms (29 May); replaced rough placeholders |
+| Scene 4 Feedback | ✅ Fixed | Reprojection feedback UV bug fixed (was sampling top-right quadrant only) |
 
 ### Outstanding for Submission
 
