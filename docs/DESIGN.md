@@ -152,6 +152,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Particle camera   | Per-scene orbit camera; particles use 3D world space  |
 | Bloom pipeline    | Dual-layer Gaussian (tight 0.4r + wide 1.0r) for cinematic halo |
 | Lens flare        | Beat-sync, Acts II–III only — fades out before finale  |
+| Scene 5 god rays  | Dual-source HG volumetric (32 dithered steps, SDF soft shadow, beat-surge) |
+| Scene 6 zoom blur | Radial zoom blur in post FX at scene_norm 0.78–0.98 (holy-shit moment) |
+| Scene 7 galaxy    | 6-layer starfield + galactic plane (dust + HII regions) + large emission nebula |
 
 ## Implementation Status (29 May 2026)
 
@@ -159,10 +162,12 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | System | Status | Notes |
 |--------|--------|-------|
-| Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + scanlines + grain + vignette |
+| Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + radial zoom blur + scanlines + grain + vignette |
 | Scene shaders (all 7) | ✅ Complete | Boot Void → Transcendence fully implemented + bug fixes (29 May) |
-| Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50; glow offset fixed + richer star field |
+| Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50; glow offset fixed + richer star field + radial zoom post FX |
 | SDF raymarching | ✅ Complete | sdf_lib.glsl shared library, used in scenes 2, 5, 6 |
+| Scene 5 Volumetrics | ✅ Upgraded | Dual-source HG god rays, 32 dithered steps, SDF soft shadow, beat-surge (29 May) |
+| Scene 7 Galaxy | ✅ Upgraded | 6-layer starfield + galactic plane (dust lanes + HII regions) + large emission nebula (29 May) |
 | Particle system | ✅ Complete | Compute shader physics, beat-sync, act-specific behaviors |
 | Particle render | ✅ Complete | Soft glow sprites, velocity-based brightness, act-aware color |
 | Audio integration | ✅ Complete | miniaudio, Concrete-Syncope.wav playback |

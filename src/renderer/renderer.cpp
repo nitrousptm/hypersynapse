@@ -372,6 +372,8 @@ void Renderer::draw_post(const Timeline& tl) {
     glUniform1i(glGetUniformLocation(post_program_, "u_scene"), 0);
 
     set_standard_uniforms(post_program_, tl, width_, height_);
+    glUniform1i(glGetUniformLocation(post_program_, "u_scene_idx"),
+                static_cast<int>(tl.scene()));
 
     glBindVertexArray(fullscreen_vao_);
     glDrawArrays(GL_TRIANGLES, 0, 3);

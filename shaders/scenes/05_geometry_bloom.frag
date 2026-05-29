@@ -120,19 +120,77 @@ vec3 normal_at(vec3 p) {
 }
 
 // ─── volumetric god rays ──────────────────────────────────────────────────────
+// Two light sources: overhead magenta + orbiting cyan — 32 dithered steps.
+// Dithering via interleaved gradient noise prevents banding at low cost.
 
-float god_ray(vec3 ro, vec3 rd) {
-    float acc = 0.0;
-    vec3 light = normalize(vec3(0.5, 1.5, 0.3));
-    float t = 0.1;
-    for (int i = 0; i < 16; i++) {
-        vec3 p = ro + rd * t;
-        float n = fbm(p * 1.5 + u_time * 0.1);
-        float phase = max(dot(rd, light), 0.0);
-        acc += n * 0.05 * phase * exp(-t * 0.3);
-        t += 0.25;
+float ign_dither(vec2 fcoord) {
+    return fract(52.9829189 * fract(dot(fcoord, vec2(0.06711056, 0.00583715))));
+}
+
+// Henyey-Greenstein phase function for forward scattering
+float hg_phase(float cos_theta, float g) {
+    float g2 = g * g;
+    return (1.0 - g2) / (4.0 * 3.14159 * pow(1.0 + g2 - 2.0 * g * cos_theta, 1.5));
+}
+
+// SDF-based soft shadow along ray (AO approximation)
+float vol_shadow(vec3 p, vec3 ldir) {
+    float t = 0.08;
+    float occ = 1.0;
+    for (int i = 0; i < 6; i++) {
+        float d = sdf_world(p + ldir * t);
+        occ *= clamp(d / (0.4 * t), 0.0, 1.0);
+        t += 0.15;
     }
-    return acc;
+    return occ;
+}
+
+vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
+    // Two animated light sources for richness
+    float lt = u_time * 0.25;
+    vec3 light1 = normalize(vec3(sin(lt) * 0.6,        2.0, cos(lt) * 0.6));         // overhead sweep
+    vec3 light2 = normalize(vec3(cos(lt * 0.7 + 1.3), -0.5, sin(lt * 0.7 + 1.3)));  // low opposing
+
+    vec3 col1 = vec3(0.9, 0.3, 1.0);   // magenta
+    vec3 col2 = vec3(0.2, 0.8, 1.0);   // cyan
+
+    // Beat-driven intensity surge
+    float beat_surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 1.8 * u_scene_norm;
+    float march_dist = min(t_hit, 4.0);
+
+    float step_size = march_dist / 32.0;
+    float dither = ign_dither(gl_FragCoord.xy) * step_size;
+
+    vec3 acc = vec3(0.0);
+    float transmittance = 1.0;
+
+    for (int i = 0; i < 32; i++) {
+        float tt = dither + float(i) * step_size;
+        vec3 p = ro + rd * tt;
+
+        // Media density from fbm — modulated to scene time for "growing" effect
+        float dens = fbm(p * 1.2 + u_time * 0.08) * mix(0.15, 0.35, u_scene_norm);
+        if (dens < 0.02) continue;
+
+        float sigma_t = dens * 2.5;   // extinction
+        float weight = exp(-transmittance * sigma_t * step_size);
+
+        // Phase for both lights
+        float cos1 = dot(rd, light1);
+        float cos2 = dot(rd, light2);
+        float ph1 = hg_phase(cos1, 0.4);
+        float ph2 = hg_phase(cos2, 0.3);
+
+        // Soft shadow
+        float shad1 = vol_shadow(p, light1);
+        float shad2 = vol_shadow(p, light2);
+
+        vec3 scatter = col1 * ph1 * shad1 + col2 * ph2 * shad2 * 0.6;
+        acc += scatter * dens * weight * step_size;
+        transmittance += sigma_t * step_size;
+    }
+
+    return acc * beat_surge * 1.5;
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────
@@ -194,9 +252,8 @@ void main() {
         col += kaleido * vec3(0.3, 0.0, 0.5);
     }
 
-    // God rays / volumetric light scattering
-    float rays = god_ray(ro, rd);
-    col += rays * vec3(0.5, 0.2, 0.8) * 1.5;
+    // Volumetric light scattering — dual-source god rays
+    col += god_rays(ro, rd, t);
 
     // Vignette
     float vig = 1.0 - dot(uv*0.4, uv*0.4);

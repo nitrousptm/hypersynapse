@@ -34,23 +34,66 @@ float fbm(vec3 p) {
 
 // ─── procedural galaxy ───────────────────────────────────────────────────────
 
+// Star rendered as a point glow in the direction field
+float star_point(vec3 rd, vec3 dir, float size) {
+    float d = length(rd - normalize(dir));
+    return size / (d * d + size * size) * 0.6;
+}
+
 vec3 galaxy(vec3 rd) {
     vec3 col = vec3(0.0);
-    // Starfield
-    for (int i = 0; i < 4; i++) {
+
+    // Multi-scale starfield — 6 layers for deep-field look
+    for (int i = 0; i < 6; i++) {
         float fi = float(i);
-        vec3 p = rd * (50.0 + fi * 30.0);
+        float scale = 50.0 + fi * 25.0;
+        vec3 p = rd * scale + vec3(fi * 31.7, fi * 17.3, fi * 43.1);
         vec3 id = floor(p);
         vec3 fr = fract(p);
         vec3 h = hash3(id);
-        float size = h.x * 0.003;
+        float size = h.x * mix(0.0018, 0.0035, fi / 5.0);
+        // Slight twinkling
+        float twinkle = 0.85 + 0.15 * sin(u_time * (1.5 + h.y * 4.0) + h.z * 40.0);
         float d = length(fr - 0.5);
-        float brightness = size / (d*d + size*size) * 0.5;
-        col += h * brightness;
+        float brightness = size / (d*d + size*size) * 0.45 * twinkle;
+        // Color temperature: mix from cool blue-white to warm yellow-white
+        vec3 star_col = mix(vec3(0.7, 0.85, 1.0), vec3(1.0, 0.95, 0.7), h.z);
+        col += star_col * brightness;
     }
-    // Nebula
-    float neb = fbm(rd * 3.0 + vec3(u_time * 0.02));
-    col += neb * vec3(0.1, 0.0, 0.2) * 0.5;
+
+    // Galactic plane — band of denser stars + dust along y≈0 in view space
+    float plane_cos = abs(rd.y);  // 0 = on plane, 1 = at pole
+    float plane_dens = exp(-plane_cos * plane_cos * 12.0);
+
+    if (plane_dens > 0.01) {
+        // Extra dense star layer for the galactic band
+        for (int i = 0; i < 3; i++) {
+            float fi = float(i);
+            vec3 p = rd * (80.0 + fi * 40.0) + vec3(fi * 11.3, 0.0, fi * 23.7);
+            vec3 id = floor(p);
+            vec3 fr = fract(p);
+            vec3 h = hash3(id);
+            float size = h.x * 0.0025;
+            float d = length(fr - 0.5);
+            float b = size / (d*d + size*size) * 0.35;
+            col += h * b * plane_dens * 2.0;
+        }
+        // Galactic dust: warm orange-red emission nebula
+        float dust = fbm(rd * 4.5 + vec3(u_time * 0.008, 0.0, u_time * 0.005));
+        col += dust * vec3(0.35, 0.10, 0.25) * plane_dens * 0.9;
+        // Blue HII emission regions
+        float hii = fbm(rd * 7.0 + vec3(53.0, u_time * 0.012, 17.0));
+        col += max(hii - 0.45, 0.0) * vec3(0.1, 0.3, 0.7) * plane_dens * 1.2;
+    }
+
+    // Nebula background — deep color clouds
+    float neb = fbm(rd * 2.5 + vec3(u_time * 0.015, 0.0, u_time * 0.01));
+    col += neb * vec3(0.06, 0.0, 0.14) * 0.7;
+
+    // Large emission nebula: bluish cloud in upper hemisphere
+    float big_neb = fbm(rd * 1.2 + vec3(7.0, u_time * 0.005, 11.0));
+    col += max(big_neb - 0.4, 0.0) * vec3(0.0, 0.08, 0.18) * 1.5;
+
     return col;
 }
 

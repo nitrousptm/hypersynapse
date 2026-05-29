@@ -1,6 +1,6 @@
 #version 460 core
 // Post FX pass — SINGULARITY GARDEN
-// Pipeline: chromatic aberration → dual bloom → lens flare → color grade → scanlines → grain → vignette → ACES → gamma
+// Pipeline: chromatic aberration → dual bloom → lens flare → color grade → radial zoom blur → scanlines → grain → vignette → ACES → gamma
 
 in vec2 v_uv;
 out vec4 frag;
@@ -12,6 +12,7 @@ uniform float     u_beat;
 uniform float     u_act_norm;
 uniform float     u_scene_norm;
 uniform int       u_bar_cnt;
+uniform int       u_scene_idx;   // current scene 0–6
 
 // ─── hash ─────────────────────────────────────────────────────────────────────
 float hash21(vec2 p) {
@@ -162,6 +163,27 @@ vec3 color_grade(vec3 col, float act_norm, float scene_norm) {
     return col;
 }
 
+// ─── radial zoom blur ─────────────────────────────────────────────────────────
+// Used during Scene 6 holy-shit zoom-out (scene_norm 0.80–1.0).
+// Samples radially outward from the zoom center, creating a sense of infinite
+// acceleration as the universe shrinks to a particle.
+vec3 radial_zoom_blur(vec2 uv, float strength, vec2 center) {
+    if (strength < 0.001) return texture(u_scene, uv).rgb;
+
+    vec3 acc = vec3(0.0);
+    const int SAMPLES = 12;
+    vec2 dir = uv - center;
+    float step_scale = strength / float(SAMPLES);
+
+    for (int i = 0; i < SAMPLES; i++) {
+        float t = float(i) / float(SAMPLES - 1);
+        // Sample along line from uv toward center, weighted toward center
+        vec2 sample_uv = uv - dir * t * step_scale * 8.0;
+        acc += texture(u_scene, clamp(sample_uv, 0.001, 0.999)).rgb;
+    }
+    return acc / float(SAMPLES);
+}
+
 // ─── main ─────────────────────────────────────────────────────────────────────
 void main() {
     vec2 uv  = v_uv;
@@ -181,6 +203,14 @@ void main() {
     float bloom_radius   = mix(5.0, 14.0, u_act_norm) + kick * 6.0;
     float bloom_strength = mix(0.35, 1.10, u_act_norm);
     col += bloom(uv, bloom_thresh, bloom_radius, bloom_strength);
+
+    // 2b. Radial zoom blur — Scene 6 holy-shit zoom-out (scene_norm 0.80→1.0)
+    if (u_scene_idx == 5) {
+        float zoom_t = smoothstep(0.78, 0.98, u_scene_norm);
+        // Zoom center trails slightly off-axis to sell the "falling outward" feel
+        vec2 zoom_center = vec2(0.5 + 0.04 * sin(u_time * 0.4), 0.5 + 0.03 * cos(u_time * 0.3));
+        col = mix(col, radial_zoom_blur(uv, zoom_t, zoom_center), zoom_t * 0.85);
+    }
 
     // 3. Color grading (act-aware palette)
     col = color_grade(col, u_act_norm, u_scene_norm);
