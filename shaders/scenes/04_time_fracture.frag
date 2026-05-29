@@ -59,7 +59,7 @@ vec3 feedback_sample(vec2 uv) {
     // Sample previous frame with temporal distortion
     float jitter = vnoise(uv * 20.0 + u_time * 3.0) * 0.008;
     vec2 motion = vec2(sin(uv.y * 3.14 + u_time) * 0.003, cos(uv.x * 3.14 + u_time) * 0.002);
-    vec2 sample_uv = uv * 0.5 + 0.5 + motion + jitter;
+    vec2 sample_uv = uv + motion + jitter;
     return texture(u_prev_frame, clamp(sample_uv, 0.001, 0.999)).rgb;
 }
 

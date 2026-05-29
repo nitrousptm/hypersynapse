@@ -113,26 +113,48 @@ float tendril(vec2 uv, float seed, float t) {
 
 // ─── logo formation (final 10 seconds) ───────────────────────────────────────
 
-// Simple "SINGULARITY GARDEN" text render via SDF approximation
-float char_S(vec2 p) {
-    // Very rough S shape using circles and boxes
-    vec2 pp = p - vec2(0.0, 0.0);
-    float top = length(pp - vec2(0.0, 0.15)) - 0.12;
-    float bot = length(pp - vec2(0.0, -0.15)) - 0.12;
-    return min(
-        length(vec2(max(abs(pp.x)-0.08, 0.0), pp.y)) - 0.03,
-        min(abs(top) - 0.025, abs(bot) - 0.025)
-    );
+float sdSeg(vec2 p, vec2 a, vec2 b) {
+    vec2 pa = p-a, ba = b-a;
+    return length(pa - ba*clamp(dot(pa,ba)/dot(ba,ba),0.,1.));
+}
+
+// Distance to a circular arc from angle a0 to a1 (radians), stroke width w
+float sdArcStroke(vec2 p, vec2 c, float r, float a0, float a1, float w) {
+    p -= c;
+    float a = atan(p.y, p.x);
+    if (a < a0 - 0.001) a += 6.28318530718;
+    a = clamp(a, a0, a1);
+    return length(p - r*vec2(cos(a), sin(a))) - w;
+}
+
+// S glyph: two opposite arcs (upper opens right, lower opens left)
+float glyph_S(vec2 p) {
+    float w = 0.024;
+    float r = 0.105;
+    // Upper arc: center upper-right, runs from ~200° to ~355°
+    float top = sdArcStroke(p, vec2(0.030,  r), r, 3.49, 6.20, w);
+    // Lower arc: center lower-left, runs from ~20° to ~160°
+    float bot = sdArcStroke(p, vec2(-0.030, -r), r, 0.35, 2.79, w);
+    return min(top, bot);
+}
+
+// G glyph: large C arc + short inward bar at 3 o'clock
+float glyph_G(vec2 p) {
+    float w = 0.024;
+    float r = 0.125;
+    // C arc: 35° to 325°, leaving a gap on the right
+    float arc = sdArcStroke(p, vec2(0.0, 0.0), r, 0.611, 5.672, w);
+    // Horizontal spur pointing inward from the right edge
+    float bar = sdSeg(p, vec2(r, 0.0), vec2(r * 0.25, 0.0)) - w;
+    // Short closing vertical to give the G its shelf
+    float shelf = sdSeg(p, vec2(r, 0.0), vec2(r, -r * 0.28)) - w;
+    return min(arc, min(bar, shelf));
 }
 
 float logo_sdf(vec2 uv) {
-    // "SG" monogram centered
-    vec2 p = uv;
-    float s = char_S(p + vec2(0.12, 0.0)) * 0.7;
-    float g = length(p - vec2(-0.12, 0.0)) - 0.15;  // circle for G
-    float gc = length(p - vec2(-0.02, 0.0)) - 0.08; // cutout
-    float g_shape = max(g, -gc);
-    return min(s, g_shape);
+    float s = glyph_S(uv + vec2(0.20, 0.0));
+    float g = glyph_G(uv - vec2(0.20, 0.0));
+    return min(s, g);
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────

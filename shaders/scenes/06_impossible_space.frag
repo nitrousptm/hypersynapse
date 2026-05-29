@@ -170,16 +170,26 @@ vec2 apply_zoom_out(vec2 uv) {
 
 vec3 cosmic_particles(vec2 uv) {
     vec3 col = vec3(0.0);
-    // Stars / particles
-    for (int i = 0; i < 3; i++) {
-        vec2 offset = vec2(float(i) * 1.7, float(i) * 2.3);
-        vec2 p = fract((uv + offset) * vec2(80.0, 45.0));
-        vec2 id = floor((uv + offset) * vec2(80.0, 45.0));
+    // Multi-scale star field: 5 levels for rich depth
+    for (int i = 0; i < 5; i++) {
+        float fi = float(i);
+        vec2 offset = vec2(fi * 1.7 + 0.3, fi * 2.3 + 0.9);
+        float scale = mix(60.0, 140.0, fi / 4.0);
+        vec2 p = fract((uv + offset) * vec2(scale, scale * 0.5625));
+        vec2 id = floor((uv + offset) * vec2(scale, scale * 0.5625));
         float h = hash2(id);
-        float size = 0.015 + h * 0.03;
-        float d = length(p - 0.5);
-        col += vec3(h, h*0.5+0.5, 1.0) * size / (d + 0.005) * 0.1;
+        // Only ~20% of cells have a star
+        if (h < 0.20) {
+            float size = 0.006 + h * 0.03;
+            // Twinkling
+            float twinkle = 0.8 + 0.2 * sin(u_time * (2.0 + h * 5.0) + h * 40.0);
+            float d = length(p - 0.5);
+            vec3 star_col = mix(vec3(0.8, 0.9, 1.0), vec3(h, 0.7+h*0.3, 1.0), h);
+            col += star_col * size / (d + 0.004) * 0.09 * twinkle;
+        }
     }
+    // Faint nebula haze
+    col += vec3(0.0, 0.03, 0.08) * vnoise(vec3(uv * 2.0, u_time * 0.05)) * 0.4;
     return col;
 }
 
@@ -261,7 +271,7 @@ void main() {
     col = mix(col, outer, outer_fade);
 
     // The current universe-view shrinks to a glowing particle in the outer view
-    float particle_glow = zoom * smoothstep(0.08, 0.0, length(uv - vec2(0.3, 0.2) / (u_res.x/u_res.y)));
+    float particle_glow = zoom * smoothstep(0.08, 0.0, length(uv - vec2(0.3, 0.2)));
     col += particle_glow * vec3(0.5, 0.8, 1.0) * 3.0;
 
     // Vignette (stronger during zoom-out for dramatic effect)
