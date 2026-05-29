@@ -124,12 +124,11 @@ Hit march(vec3 ro, vec3 rd) {
         vec3 p = ro + rd * t;
         float d = sdf_scene(p);
 
-        // Detect which portal was hit
-        float dp1 = sdf_portal(p, vec3(0.0, 0.0, -1.8), 0.6);
-        float dp2 = sdf_portal(p, vec3(-1.5, 0.2, 0.0), 0.45);
-        float dp3 = sdf_portal(p, vec3(1.5, -0.3, 0.5), 0.35);
-
         if (d < SURF_DIST) {
+            // Portal type detection only runs on surface hit — not every step
+            float dp1 = sdf_portal(p, vec3(0.0, 0.0, -1.8), 0.6);
+            float dp2 = sdf_portal(p, vec3(-1.5, 0.2, 0.0), 0.45);
+            float dp3 = sdf_portal(p, vec3(1.5, -0.3, 0.5), 0.35);
             if (dp1 < SURF_DIST) return Hit(t, 1, vec3(0.0, 0.0, -1.8));
             if (dp2 < SURF_DIST) return Hit(t, 2, vec3(-1.5, 0.2, 0.0));
             if (dp3 < SURF_DIST) return Hit(t, 3, vec3(1.5, -0.3, 0.5));
@@ -142,12 +141,15 @@ Hit march(vec3 ro, vec3 rd) {
 }
 
 vec3 normal_at(vec3 p) {
-    float e = 0.002;
-    return normalize(vec3(
-        sdf_scene(p+vec3(e,0,0))-sdf_scene(p-vec3(e,0,0)),
-        sdf_scene(p+vec3(0,e,0))-sdf_scene(p-vec3(0,e,0)),
-        sdf_scene(p+vec3(0,0,e))-sdf_scene(p-vec3(0,0,e))
-    ));
+    // Tetrahedron method: 4 SDF evaluations vs 6 for central differences
+    const float e = 0.002;
+    const vec2 k = vec2(1, -1);
+    return normalize(
+        k.xyy * sdf_scene(p + k.xyy * e) +
+        k.yyx * sdf_scene(p + k.yyx * e) +
+        k.yxy * sdf_scene(p + k.yxy * e) +
+        k.xxx * sdf_scene(p + k.xxx * e)
+    );
 }
 
 // ─── holy-shit zoom-out ───────────────────────────────────────────────────────
@@ -190,6 +192,22 @@ vec3 cosmic_particles(vec2 uv) {
     }
     // Faint nebula haze
     col += vec3(0.0, 0.03, 0.08) * vnoise(vec3(uv * 2.0, u_time * 0.05)) * 0.4;
+
+    // Spiral galaxy structure — the outer universe has its own Milky-Way-like shape
+    float r = length(uv - vec2(0.15, -0.1));
+    float a = atan((uv.y + 0.1), (uv.x - 0.15));
+    // Two-arm logarithmic spiral: arm brightness peaks along arm angle
+    float arm1 = abs(sin(a * 2.0 - r * 8.0 + u_time * 0.05));
+    float arm2 = abs(sin(a * 2.0 - r * 8.0 + 3.14159 + u_time * 0.05));
+    float spiral_arms = max(arm1, arm2);
+    // Gaussian envelope: bright core, fades with radius
+    float envelope = exp(-r * r * 8.0) * exp(-r * 3.5);
+    float arm_dens = spiral_arms * envelope;
+    // Warm core glow + cool arm tint
+    col += arm_dens * mix(vec3(0.35, 0.25, 0.5), vec3(0.05, 0.15, 0.4), smoothstep(0.0, 0.3, r)) * 2.5;
+    // Extra bright galactic core
+    col += exp(-r * r * 40.0) * vec3(0.4, 0.3, 0.6) * 3.0;
+
     return col;
 }
 

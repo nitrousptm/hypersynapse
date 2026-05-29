@@ -88,8 +88,13 @@ int main(int argc, char** argv) {
     const double t0 = glfwGetTime();
     int frame_count = 0;
     double last_stats_print = 0.0;
+    constexpr double kCaptureHz = 60.0;
     while (!glfwWindowShouldClose(window)) {
-        const double t = glfwGetTime() - t0;
+        // In capture mode, advance time deterministically at exactly 60fps so
+        // the output video has uniform frame spacing regardless of render speed.
+        const double t = capture_mode
+                       ? frame_count / kCaptureHz
+                       : glfwGetTime() - t0;
         if (t >= kDemoDurationSec) break;
 
         timeline.update(t);

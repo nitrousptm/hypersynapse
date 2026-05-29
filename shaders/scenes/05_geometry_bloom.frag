@@ -111,12 +111,15 @@ float march(vec3 ro, vec3 rd, out int steps) {
 }
 
 vec3 normal_at(vec3 p) {
-    float e = 0.001;
-    return normalize(vec3(
-        sdf_world(p+vec3(e,0,0))-sdf_world(p-vec3(e,0,0)),
-        sdf_world(p+vec3(0,e,0))-sdf_world(p-vec3(0,e,0)),
-        sdf_world(p+vec3(0,0,e))-sdf_world(p-vec3(0,0,e))
-    ));
+    // Tetrahedron method: 4 SDF evaluations vs 6 for central differences
+    const float e = 0.001;
+    const vec2 k = vec2(1, -1);
+    return normalize(
+        k.xyy * sdf_world(p + k.xyy * e) +
+        k.yyx * sdf_world(p + k.yyx * e) +
+        k.yxy * sdf_world(p + k.yxy * e) +
+        k.xxx * sdf_world(p + k.xxx * e)
+    );
 }
 
 // ─── volumetric god rays ──────────────────────────────────────────────────────
@@ -162,7 +165,7 @@ vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
     float dither = ign_dither(gl_FragCoord.xy) * step_size;
 
     vec3 acc = vec3(0.0);
-    float transmittance = 1.0;
+    float transmittance = 1.0;  // Beer-Lambert: starts at 1, decays multiplicatively
 
     for (int i = 0; i < 32; i++) {
         float tt = dither + float(i) * step_size;
@@ -172,8 +175,7 @@ vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
         float dens = fbm(p * 1.2 + u_time * 0.08) * mix(0.15, 0.35, u_scene_norm);
         if (dens < 0.02) continue;
 
-        float sigma_t = dens * 2.5;   // extinction
-        float weight = exp(-transmittance * sigma_t * step_size);
+        float sigma_t = dens * 2.5;   // extinction coefficient
 
         // Phase for both lights
         float cos1 = dot(rd, light1);
@@ -185,9 +187,13 @@ vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
         float shad1 = vol_shadow(p, light1);
         float shad2 = vol_shadow(p, light2);
 
+        // Scatter contribution weighted by current transmittance (Beer-Lambert)
         vec3 scatter = col1 * ph1 * shad1 + col2 * ph2 * shad2 * 0.6;
-        acc += scatter * dens * weight * step_size;
-        transmittance += sigma_t * step_size;
+        acc += scatter * dens * transmittance * step_size;
+
+        // Multiplicative transmittance decay — physically correct
+        transmittance *= exp(-sigma_t * step_size);
+        if (transmittance < 0.005) break;  // early exit when medium is opaque
     }
 
     return acc * beat_surge * 1.5;

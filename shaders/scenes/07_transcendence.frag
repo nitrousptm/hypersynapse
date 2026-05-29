@@ -250,23 +250,54 @@ void main() {
                   step(0.895, u_scene_norm) * step(u_scene_norm, 0.905);
     col += pulse * 2.0;
 
-    // Logo appears (streams of data converging)
+    // Logo appears (12 data streams converging from all angles)
     float logo_appear = smoothstep(0.905, 0.93, u_scene_norm);
     float logo_d = logo_sdf(uv * 2.0);
-    float logo_mask = smoothstep(0.01, 0.0, logo_d);
-    // Data streams converging to logo
+    float logo_mask = smoothstep(0.008, 0.0, logo_d);
+
     float streams = 0.0;
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 12; i++) {
         float fi = float(i);
-        vec2 stream_dir = normalize(vec2(cos(fi * 1.047), sin(fi * 1.047)));
+        float angle = fi * 0.5236;   // π/6 — evenly spaced
+        vec2 stream_dir = normalize(vec2(cos(angle), sin(angle)));
         float along = dot(uv, stream_dir);
         float across = abs(dot(uv, vec2(-stream_dir.y, stream_dir.x)));
-        streams += smoothstep(0.005, 0.0, across) *
+        float w = 0.003 + hash(fi * 2.3) * 0.002;  // slight width variation
+        streams += smoothstep(w, 0.0, across) *
                    step(0.0, along) *
-                   fract(along * 8.0 - u_time * 3.0) * logo_appear;
+                   fract(along * 6.0 - u_time * 3.0 + fi * 0.4) * logo_appear;
     }
-    vec3 logo_col = mix(vec3(0.6, 0.8, 1.0), vec3(1.0), logo_appear);
-    col += (logo_mask + streams * 0.3) * logo_col * logo_appear * 3.0;
+
+    // Two-layer logo glow: inner tight edge + outer atmospheric halo
+    vec3 logo_col   = mix(vec3(0.5, 0.75, 1.0), vec3(1.0, 1.0, 1.0), logo_appear);
+    float logo_halo = exp(-max(logo_d * 2.0, 0.0) * 6.0) * logo_appear;  // wide soft halo
+    col += (logo_mask + streams * 0.25) * logo_col * logo_appear * 3.5;
+    col += logo_halo * vec3(0.3, 0.5, 1.0) * 1.5;
+
+    // Breathing pulse — logo "breathes" once it's up (slow sine, 0.5 Hz)
+    float logo_breath = logo_appear * (0.85 + 0.15 * sin(u_time * 3.14));
+    col *= mix(1.0, logo_breath, logo_appear * 0.3);
+
+    // Decorative separator line below logo (scene_norm > 0.94)
+    float sep_appear = smoothstep(0.935, 0.955, u_scene_norm);
+    float sep_y      = uv.y + 0.30;
+    float sep_mask   = smoothstep(0.0015, 0.0, abs(sep_y)) *
+                       smoothstep(0.0, 0.55, 0.55 - abs(uv.x)) *
+                       sep_appear;
+    col += sep_mask * vec3(0.4, 0.6, 1.0) * 1.5;
+
+    // Group credit dots: small glowing points below separator (scene_norm > 0.95)
+    float cred_appear = smoothstep(0.955, 0.975, u_scene_norm);
+    for (int i = 0; i < 20; i++) {
+        float fi = float(i);
+        // Skip a gap in the middle (space between two words)
+        float xoff = (fi < 10.0) ? (fi - 4.5) * 0.054 : (fi - 9.5) * 0.054;
+        float yoff = -0.40;
+        float h    = hash(fi * 5.91);
+        float d    = length(uv - vec2(xoff, yoff));
+        float sz   = 0.006 + h * 0.004;
+        col += sz / (d + sz) * 0.06 * vec3(0.5, 0.7, 1.0) * cred_appear;
+    }
 
     // Vignette
     float vig = 1.0 - dot(uv * 0.35, uv * 0.35);
