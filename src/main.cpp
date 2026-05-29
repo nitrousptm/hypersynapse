@@ -109,14 +109,22 @@ int main(int argc, char** argv) {
         glfwPollEvents();
         frame_count++;
 
-        // Print FPS stats every 5 seconds
+        // Print stats every 5 seconds; in capture mode also show % progress
         if (t - last_stats_print >= 5.0) {
             const hyp::Stats& stats = renderer.stats();
-            std::printf("[%.1fs] FPS: %.1f | %.2f ms | Act: %d | Scene: %d | Beat: %d\n",
-                        t, stats.fps(), stats.frame_time_ms(),
-                        static_cast<int>(timeline.act()),
-                        static_cast<int>(timeline.scene()),
-                        timeline.beat_count());
+            if (capture_mode) {
+                int pct = static_cast<int>(100.0 * t / kDemoDurationSec);
+                std::printf("[capture %3d%%] frame %d / 14400 | t=%.1fs | Act: %d | Scene: %d\n",
+                            pct, frame_count,
+                            t, static_cast<int>(timeline.act()),
+                            static_cast<int>(timeline.scene()));
+            } else {
+                std::printf("[%.1fs] FPS: %.1f | %.2f ms | Act: %d | Scene: %d | Beat: %d\n",
+                            t, stats.fps(), stats.frame_time_ms(),
+                            static_cast<int>(timeline.act()),
+                            static_cast<int>(timeline.scene()),
+                            timeline.beat_count());
+            }
             last_stats_print = t;
         }
 

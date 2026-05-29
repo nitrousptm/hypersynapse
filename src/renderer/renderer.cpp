@@ -433,6 +433,20 @@ void Renderer::emit_particles(const Timeline& tl) {
         }
         break;
     }
+    case Scene::TimeFracture: {
+        // Frozen debris: particles with near-zero velocity, suspended in time
+        int burst = 28;
+        for (int i = 0; i < burst; i++) {
+            glm::vec3 pos = glm::sphericalRand(glm::linearRand(0.3f, 2.8f));
+            glm::vec3 vel = glm::sphericalRand(0.018f);  // almost frozen
+            float hue = glm::linearRand(0.0f, 1.0f);
+            glm::vec3 col = hue < 0.5f
+                ? glm::vec3(0.15f, 0.45f + hue * 0.5f, 1.0f)    // cold blue
+                : glm::vec3(1.0f, 0.9f - hue * 0.7f, 0.05f);    // hot orange-red
+            particles_->emit(pos, vel, 0, 3.5f, col);
+        }
+        break;
+    }
     case Scene::GeometryBloom: {
         // Colorful petal particles
         int burst = 80;

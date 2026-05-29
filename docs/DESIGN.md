@@ -156,7 +156,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 6 zoom blur | Radial zoom blur in post FX at scene_norm 0.78–0.98 (holy-shit moment) |
 | Scene 7 galaxy    | 6-layer starfield + galactic plane (dust + HII regions) + large emission nebula |
 | Scene 6 SDF march | Portal type detection moved inside surface hit only — eliminates ~180 redundant SDF evals/pixel (29 May) |
-| Normal estimation | Tetrahedron method (4 SDF evals vs 6 central-diff) in Scenes 5 + 6 (29 May) |
+| Normal estimation | Tetrahedron method (4 SDF evals vs 6 central-diff) in all SDF scenes: 2, 5, 6 |
 | Capture timing    | Deterministic: frame_count/60Hz instead of wall-clock — guarantees 14,400 frames (29 May) |
 | Scene 7 logo seq  | 12 data streams (vs 6), per-stream width variation; two-layer glow; breathing pulse; separator + credit dots (29 May) |
 
@@ -183,9 +183,11 @@ All geometry generated procedurally at runtime — no external asset files.
 | Logo SDF (Scene 7) | ✅ Refined | Proper arc-based S + G letter forms (29 May); replaced rough placeholders |
 | Scene 4 Feedback | ✅ Fixed | Reprojection feedback UV bug fixed (was sampling top-right quadrant only) |
 | Scene 6 march perf | ✅ Optimized | Portal SDF type detection moved inside d<SURF_DIST — ~180 evals/pixel saved (29 May eve) |
-| Normal estimation | ✅ Optimized | Tetrahedron method (4 SDF evals) in Scenes 5+6 instead of 6 central-diff evals (29 May eve) |
+| Normal estimation | ✅ Optimized | Tetrahedron method (4 SDF evals) in all SDF scenes: 2, 5, 6 — Scene 2 upgraded 29 May night |
 | Capture timing fix | ✅ Fixed | frame_count/60.0 in capture mode — deterministic 14,400 frames guaranteed (29 May eve) |
 | Scene 7 logo polish | ✅ Complete | 12 streams, two-layer glow, breathing pulse, separator line, credit dot row (29 May eve) |
+| Scene 4 particles | ✅ Added | Frozen debris field: 28/beat, near-zero velocity (0.018), blue↔orange palette (29 May night) |
+| Capture progress | ✅ Added | --capture prints % + frame/14400 counter every 5s demo time (29 May night) |
 
 ### Outstanding for Submission
 

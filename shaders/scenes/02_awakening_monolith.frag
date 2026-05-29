@@ -84,12 +84,15 @@ float march(vec3 ro, vec3 rd, out int steps) {
 }
 
 vec3 normal(vec3 p) {
-    float e = 0.001;
-    return normalize(vec3(
-        sdf_monolith(p + vec3(e,0,0)) - sdf_monolith(p - vec3(e,0,0)),
-        sdf_monolith(p + vec3(0,e,0)) - sdf_monolith(p - vec3(0,e,0)),
-        sdf_monolith(p + vec3(0,0,e)) - sdf_monolith(p - vec3(0,0,e))
-    ));
+    // Tetrahedron method: 4 SDF evaluations vs 6 for central differences
+    const float e = 0.001;
+    const vec2 k = vec2(1, -1);
+    return normalize(
+        k.xyy * sdf_monolith(p + k.xyy * e) +
+        k.yyx * sdf_monolith(p + k.yyx * e) +
+        k.yxy * sdf_monolith(p + k.yxy * e) +
+        k.xxx * sdf_monolith(p + k.xxx * e)
+    );
 }
 
 // ─── particle sparks on surface ───────────────────────────────────────────────
