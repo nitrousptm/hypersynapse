@@ -163,8 +163,10 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5→6 crossfade portals | Portal FBOs pre-rendered during cross-fade window so Scene 6 shows live recursive portals (not black stale FBOs) during transition (30 May eve) |
 | Galaxy spiral (Scene 6) | cos^10 2-arm spiral replaces abs(sin) 4-arm artifact — proper Milky-Way shape for the holy-shit zoom-out (30 May eve) |
 | Tendril SDF (Scene 7) | sdSeg2D line-segment SDF in tendril() — correct tube glow instead of point-glow chain; origin-relative growth (30 May eve) |
+| Scene 4 portal interiors | portal_interior() samples prev_frame through each ring with unique time-offset tint + Y-flip — portals now show actual time-shifted scene content, not just decorative rings (30 May night) |
+| SUBMISSION.md music path | Corrected to assets\music\Concrete-Syncope.wav (was wrong assets\music.wav) (30 May night) |
 
-## Implementation Status (30 May 2026 — evening)
+## Implementation Status (30 May 2026 — night)
 
 ### Completed Systems
 
@@ -198,6 +200,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5→6 crossfade | ✅ Fixed | Portal FBOs now pre-rendered during crossfade — recursive portals show correctly throughout the 0.6s transition (30 May eve) |
 | Scene 6 galaxy spiral | ✅ Improved | True 2-arm logarithmic spiral via cos^10 — eliminates 4-arm abs(sin) artifact; dusty arm tints + brighter galactic core (30 May eve) |
 | Scene 7 tendrils | ✅ Fixed | Proper line-segment SDF (sdSeg2D) — tendrils have correct tube thickness; removed dead d_line variable; grow from origin outward (30 May eve) |
+| Scene 4 portals | ✅ Upgraded | portal_interior() adds actual time-shifted prev_frame content inside each ring: Y-flipped, colour-tinted per portal, edge-faded — true "windows into other timeframes" (30 May night) |
 
 ### Outstanding for Submission
 

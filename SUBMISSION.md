@@ -15,7 +15,7 @@
 ```powershell
 # On RTX 5090 or RTX 3090 machine
 cd hypersynapse
-.\build_windows.ps1 -Clean
+.\build_windows.ps1 -Clean -Run
 ```
 
 **Acceptance:**
@@ -27,7 +27,7 @@ cd hypersynapse
 
 ### Phase 2: Runtime Verification (Interactive)
 ```powershell
-.\build\Release\hypersynapse.exe assets\music.wav
+.\build\Release\hypersynapse.exe assets\music\Concrete-Syncope.wav
 ```
 
 **Visual Inspection:**
@@ -309,5 +309,5 @@ constexpr int kHeight = 900;    // instead of 1080
 
 ---
 
-*Last updated: 28 May 2026*  
-*Submission Guide v1.1 — SINGULARITY GARDEN / HYPERSYNAPSE Assembly 2026*
+*Last updated: 30 May 2026*  
+*Submission Guide v1.2 — SINGULARITY GARDEN / HYPERSYNAPSE Assembly 2026*

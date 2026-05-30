@@ -73,6 +73,39 @@ float portal_ring(vec2 uv, vec2 center, float r, float time_offset) {
     return ring * (0.5 + 0.5 * sin(phase * 6.28 * 8.0));
 }
 
+// Portal interior: shows a time-shifted reflection of the current scene.
+// Sampling the prev_frame at a compressed+distorted coordinate creates the
+// "window into another timeframe" illusion without requiring an extra FBO.
+vec3 portal_interior(vec2 uv, vec2 center, float r, float time_offset) {
+    vec2 local = uv - center;
+    float d = length(local);
+    if (d >= r * 0.98) return vec3(0.0);
+
+    // Map inside-portal to a distorted prev_frame region.
+    // Each portal gets a unique spatial offset so they show "different times".
+    vec2 offset = vec2(sin(time_offset * 4.1), cos(time_offset * 3.7)) * 0.15;
+    // Flip Y to reinforce the mirror/temporal-reversal concept.
+    vec2 portal_uv = (local * vec2(1.0, -1.0)) / (r * 2.2) + 0.5 + offset;
+
+    // Subtle time-wobble: coordinates shift slowly over time
+    portal_uv += vec2(sin(u_time * 0.4 + time_offset * 6.28),
+                      cos(u_time * 0.35 + time_offset * 4.0)) * 0.012;
+
+    vec3 content = texture(u_prev_frame, clamp(portal_uv, 0.001, 0.999)).rgb;
+
+    // Tint each portal a distinct colour to reinforce "different time streams"
+    vec3 tint;
+    if      (time_offset < 0.5) tint = vec3(0.6, 0.85, 1.0);  // cold blue  (copy 1)
+    else if (time_offset < 1.5) tint = vec3(1.0, 0.55, 0.2);  // hot orange (copy 2)
+    else                        tint = vec3(0.3, 1.0, 0.55);  // acid green (copy 3)
+
+    content *= tint;
+
+    // Vignetted fade toward the ring edge so interior blends into ring glow
+    float edge_fade = smoothstep(r * 0.98, r * 0.55, d);
+    return content * edge_fade * 0.75;
+}
+
 // ─── main ─────────────────────────────────────────────────────────────────────
 
 void main() {
@@ -100,13 +133,18 @@ void main() {
     float rs = reversed_stream(uv);
     col += rs * vec3(0.1, 0.4, 1.0) * 0.8;
 
-    // Time portal rings at multiple positions
+    // Time portal rings — glowing edge + interior showing a time-shifted reflection
     float pr1 = portal_ring(uv, vec2(0.0, 0.0), 0.6, 0.0);
     float pr2 = portal_ring(uv, vec2(-0.4, 0.2), 0.35, 0.33);
     float pr3 = portal_ring(uv, vec2(0.5, -0.3), 0.2, 0.67);
     col += pr1 * vec3(0.0, 0.6, 1.0) * 1.2;
     col += pr2 * vec3(1.0, 0.2, 0.8) * 0.8;
     col += pr3 * vec3(0.2, 1.0, 0.5) * 0.6;
+
+    // Portal interiors: actual time-shifted scene content visible through each ring
+    col += portal_interior(uv, vec2(0.0, 0.0), 0.6, 0.0);
+    col += portal_interior(uv, vec2(-0.4, 0.2), 0.35, 0.33);
+    col += portal_interior(uv, vec2(0.5, -0.3), 0.2, 0.67);
 
     // Motion vector abuse: warp space based on velocity field
     float warp = vnoise(uv * 4.0 + vec2(u_time * 0.3, -u_time * 0.2)) * 0.04;
