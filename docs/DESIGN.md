@@ -165,8 +165,13 @@ All geometry generated procedurally at runtime — no external asset files.
 | Tendril SDF (Scene 7) | sdSeg2D line-segment SDF in tendril() — correct tube glow instead of point-glow chain; origin-relative growth (30 May eve) |
 | Scene 4 portal interiors | portal_interior() samples prev_frame through each ring with unique time-offset tint + Y-flip — portals now show actual time-shifted scene content, not just decorative rings (30 May night) |
 | SUBMISSION.md music path | Corrected to assets\music\Concrete-Syncope.wav (was wrong assets\music.wav) (30 May night) |
+| Scene 6 outer universe | 3 distinct galaxies in cosmic_particles(): Milky-Way (bluish-violet), Andromeda companion (reddish-orange), edge-on sliver streak + faint intergalactic filament between them (31 May) |
+| Scene 6 universe-particle | Shrunken universe now shows a spiral galaxy structure + concentric pulse rings emanating outward — sells "it IS a universe" identity (31 May) |
+| Scene 6 reality-fracture flash | Brief white burst at scene_norm 0.80 marks the exact zoom transition — sharpens the wow-moment onset (31 May) |
+| Post FX beat-vignette | Vignette tightens on strong kicks (Acts II/III): vig_str += kick * 0.6 — heartbeat compression effect (31 May) |
+| Post FX dither | Triangular dither (1/255 amplitude, 2-sample triangle distribution) added after ACES tonemap — eliminates banding in dark areas (31 May) |
 
-## Implementation Status (30 May 2026 — night)
+## Implementation Status (30 May 2026 — late night / 31 May)
 
 ### Completed Systems
 
@@ -201,6 +206,11 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 6 galaxy spiral | ✅ Improved | True 2-arm logarithmic spiral via cos^10 — eliminates 4-arm abs(sin) artifact; dusty arm tints + brighter galactic core (30 May eve) |
 | Scene 7 tendrils | ✅ Fixed | Proper line-segment SDF (sdSeg2D) — tendrils have correct tube thickness; removed dead d_line variable; grow from origin outward (30 May eve) |
 | Scene 4 portals | ✅ Upgraded | portal_interior() adds actual time-shifted prev_frame content inside each ring: Y-flipped, colour-tinted per portal, edge-faded — true "windows into other timeframes" (30 May night) |
+| Scene 6 outer universe | ✅ Upgraded | 3 galaxies (Milky-Way, Andromeda companion, edge-on sliver) + intergalactic filament — richer "cluster of universes" reveal during zoom-out (31 May) |
+| Scene 6 universe-particle | ✅ Upgraded | Shrunken universe shows spiral structure + 3 concentric pulse rings + bright nucleus — identity as a universe is unmistakable (31 May) |
+| Scene 6 reality-fracture | ✅ Added | White flash burst at scene_norm 0.80 sharpens the zoom-transition onset (31 May) |
+| Post FX beat vignette | ✅ Added | Beat-driven vignette compression (kick * 0.6) in Acts II/III — heartbeat feel (31 May) |
+| Post FX dither | ✅ Added | Triangular dither 1/255 after ACES — eliminates dark-area banding (31 May) |
 
 ### Outstanding for Submission
 

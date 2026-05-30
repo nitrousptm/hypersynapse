@@ -235,10 +235,12 @@ void main() {
     float grain_base = mix(0.045, 0.018, demo_norm);
     col += (hash21(uv + fract(u_time * 7.37)) - 0.5) * grain_base;
 
-    // 7. Vignette — intense in I/II, open in III/IV
+    // 7. Vignette — intense in I/II, open in III/IV + beat-pulse heartbeat
     float vig_str = mix(2.0, 0.8, smoothstep(0.4375, 0.75, demo_norm));
+    // Beat-driven tightening: vignette briefly clamps inward on strong kicks
+    float vig_pulse = kick * 0.6 * smoothstep(0.1875, 0.75, demo_norm);
     float vig = 1.0 - dot(ctr * 1.5, ctr * 1.5);
-    vig = clamp(pow(clamp(vig, 0.0, 1.0), vig_str), 0.0, 1.0);
+    vig = clamp(pow(clamp(vig, 0.0, 1.0), vig_str + vig_pulse), 0.0, 1.0);
     col *= vig;
 
     // 8. Beat-sync white flash (strong beats in Acts II/III)
@@ -248,7 +250,13 @@ void main() {
     // 9. ACES tonemapping
     col = aces(col);
 
-    // 10. sRGB gamma
+    // 10. Triangular dither — prevents banding in dark areas before gamma
+    // Two uniform samples combined via triangle distribution for ~1/256 noise floor
+    float d1 = hash21(uv + fract(u_time * 43.31));
+    float d2 = hash21(uv + fract(u_time * 73.79 + 0.5));
+    col += (d1 + d2 - 1.0) / 255.0;
+
+    // 11. sRGB gamma
     col = pow(max(col, vec3(0.0)), vec3(1.0 / 2.2));
 
     frag = vec4(col, 1.0);

@@ -193,25 +193,51 @@ vec3 cosmic_particles(vec2 uv) {
     // Faint nebula haze
     col += vec3(0.0, 0.03, 0.08) * vnoise(vec3(uv * 2.0, u_time * 0.05)) * 0.4;
 
-    // Spiral galaxy structure — the outer universe has its own Milky-Way-like shape
-    vec2 gal_center = vec2(0.15, -0.1);
-    float r = length(uv - gal_center);
-    float a = atan((uv.y - gal_center.y), (uv.x - gal_center.x));
-    // True 2-arm logarithmic spiral: each arm is a raised-cosine peak at ±π apart.
-    // Using cos^N avoids the 4-arm artifact that abs(sin) creates.
-    float phase = a - r * 4.5 + u_time * 0.025;
-    float arm1 = pow(max(cos(phase),         0.0), 10.0);
-    float arm2 = pow(max(cos(phase + 3.14159), 0.0), 10.0);
-    float spiral_arms = arm1 + arm2;
-    // Gaussian envelope: bright core, exponential falloff with radius
-    float envelope = exp(-r * r * 10.0) * exp(-r * 4.0);
-    float arm_dens = spiral_arms * envelope;
-    // Dusty arm color (bluish-white in arms, warm orange in core)
-    col += arm_dens * mix(vec3(0.4, 0.55, 1.0), vec3(0.5, 0.35, 0.6), smoothstep(0.0, 0.25, r)) * 3.0;
-    // Extra bright galactic core with warm glow
-    col += exp(-r * r * 40.0) * vec3(0.5, 0.35, 0.7) * 3.5;
-    // Faint outer halo (older star population)
-    col += exp(-r * r * 2.5) * vec3(0.08, 0.06, 0.15) * envelope * 0.5;
+    // Primary galaxy — large, bluish-violet Milky-Way analog
+    {
+        vec2 dv = uv - vec2(0.15, -0.10);
+        float gr = length(dv);
+        float ga = atan(dv.y, dv.x);
+        float gp = ga - gr * 4.5 + u_time * 0.025;
+        float ga1 = pow(max(cos(gp),          0.0), 10.0);
+        float ga2 = pow(max(cos(gp + 3.14159), 0.0), 10.0);
+        float ge = exp(-gr * gr * 10.0) * exp(-gr * 4.0);
+        col += (ga1 + ga2) * ge * mix(vec3(0.40, 0.55, 1.00), vec3(0.50, 0.35, 0.70), smoothstep(0.25, 0.0, gr)) * 3.0;
+        col += exp(-gr * gr * 40.0) * vec3(0.50, 0.35, 0.70) * 5.0;
+        col += exp(-gr * gr * 2.5) * vec3(0.40, 0.55, 1.00) * ge * 0.5;
+    }
+
+    // Second galaxy — reddish-orange elliptical (Andromeda-like companion)
+    {
+        vec2 dv = uv - vec2(-0.55, 0.35);
+        float gr = length(dv);
+        float ga = atan(dv.y, dv.x);
+        float gp = ga - gr * 3.8 - u_time * 0.018;
+        float ga1 = pow(max(cos(gp),          0.0), 10.0);
+        float ga2 = pow(max(cos(gp + 3.14159), 0.0), 10.0);
+        float ge = exp(-gr * gr * 18.0) * exp(-gr * 5.0);
+        col += (ga1 + ga2) * ge * mix(vec3(0.55, 0.38, 0.70), vec3(0.70, 0.40, 0.25), smoothstep(0.18, 0.0, gr)) * 1.4;
+        col += exp(-gr * gr * 60.0) * vec3(0.70, 0.40, 0.25) * 3.0;
+    }
+
+    // Third galaxy — edge-on sliver (appears as a bright streak)
+    {
+        vec2 dv = uv - vec2(0.60, -0.45);
+        float gr = length(dv);
+        float flat_d = length(vec2(dv.x * 0.15, dv.y));
+        col += exp(-flat_d * flat_d * 60.0) * exp(-gr * 3.0) * vec3(0.6, 0.7, 1.0) * 1.8;
+        col += exp(-gr * gr * 80.0) * vec3(0.8, 0.6, 0.4) * 1.2;
+    }
+
+    // Faint intergalactic filament hinting at large-scale cosmic structure
+    {
+        vec2 a2 = vec2(0.15, -0.10);
+        vec2 b2 = vec2(-0.55, 0.35);
+        vec2 ab = b2 - a2;
+        float t2 = clamp(dot(uv - a2, ab) / dot(ab, ab), 0.0, 1.0);
+        float fil_d = length((uv - a2) - ab * t2);
+        col += exp(-fil_d * fil_d * 600.0) * vec3(0.08, 0.05, 0.15) * 0.6;
+    }
 
     return col;
 }
@@ -293,9 +319,40 @@ void main() {
     outer += vec3(0.0, 0.02, 0.05); // deep space background
     col = mix(col, outer, outer_fade);
 
-    // The current universe-view shrinks to a glowing particle in the outer view
-    float particle_glow = zoom * smoothstep(0.08, 0.0, length(uv - vec2(0.3, 0.2)));
-    col += particle_glow * vec3(0.5, 0.8, 1.0) * 3.0;
+    // ── Universe-as-particle: the shrunken view becomes a glowing spiral orb ───
+    // Position tracks apply_zoom_out offset: universe "lands" at (0.3, 0.2)
+    vec2 particle_pos = vec2(0.3, 0.2);
+    vec2 dp = uv - particle_pos;
+    float dp_r = length(dp);
+
+    // Inner bright nucleus
+    float nucleus = exp(-dp_r * dp_r * 900.0) * 6.0;
+    // Spiral structure hinting it IS a galaxy/universe
+    {
+        float pa = atan(dp.y, dp.x);
+        float pp = pa - dp_r * 5.0 + u_time * 0.4;
+        float pa1 = pow(max(cos(pp),          0.0), 8.0);
+        float pa2 = pow(max(cos(pp + 3.14159), 0.0), 8.0);
+        float penv = exp(-dp_r * dp_r * 200.0) * exp(-dp_r * 12.0);
+        col += (pa1 + pa2) * penv * zoom * vec3(0.4, 0.7, 1.0) * 2.5;
+    }
+    // Outer soft glow halo
+    col += nucleus * zoom * vec3(0.5, 0.8, 1.0);
+    col += exp(-dp_r * dp_r * 80.0) * zoom * vec3(0.15, 0.3, 0.6) * 2.0;
+
+    // Concentric pulse rings emanating outward from the universe-particle
+    // — three rings at different radii, animated outward
+    for (int ri = 0; ri < 3; ri++) {
+        float ring_phase = fract(u_time * 0.7 + float(ri) * 0.333);
+        float ring_r = ring_phase * 0.35;
+        float ring_fade = (1.0 - ring_phase) * zoom;
+        float ring_d = abs(dp_r - ring_r);
+        col += ring_fade * smoothstep(0.008, 0.0, ring_d) * vec3(0.3, 0.6, 1.0) * 1.2;
+    }
+
+    // Reality-fracture flash: brief white burst exactly when zoom begins (scene_norm 0.80)
+    float fracture = exp(-abs(u_scene_norm - 0.80) * 60.0) * 1.5;
+    col += fracture * vec3(0.6, 0.8, 1.0);
 
     // Vignette (stronger during zoom-out for dramatic effect)
     float vig_str = mix(0.4, 0.6, zoom);
