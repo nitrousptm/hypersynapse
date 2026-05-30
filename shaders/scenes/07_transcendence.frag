@@ -287,16 +287,21 @@ void main() {
     col += sep_mask * vec3(0.4, 0.6, 1.0) * 1.5;
 
     // Group credit dots: small glowing points below separator (scene_norm > 0.95)
+    // Two groups of 10, each centered symmetrically around ±0.28 with a clear gap.
     float cred_appear = smoothstep(0.955, 0.975, u_scene_norm);
     for (int i = 0; i < 20; i++) {
         float fi = float(i);
-        // Skip a gap in the middle (space between two words)
-        float xoff = (fi < 10.0) ? (fi - 4.5) * 0.054 : (fi - 9.5) * 0.054;
+        // Group 1 (i<10): center at -0.28; group 2 (i≥10): center at +0.28.
+        // Each group spans ±0.243 → gap between groups is 0.037 each side = 0.074 wide.
+        float xoff = (fi < 10.0) ? (fi - 4.5) * 0.054 - 0.28
+                                  : (fi - 14.5) * 0.054 + 0.28;
         float yoff = -0.40;
         float h    = hash(fi * 5.91);
         float d    = length(uv - vec2(xoff, yoff));
         float sz   = 0.006 + h * 0.004;
-        col += sz / (d + sz) * 0.06 * vec3(0.5, 0.7, 1.0) * cred_appear;
+        // Stagger the appear animation — each dot fades in 0.001 s_n later than the last
+        float dot_appear = smoothstep(0.955 + float(i) * 0.001, 0.975 + float(i) * 0.001, u_scene_norm);
+        col += sz / (d + sz) * 0.07 * vec3(0.45 + fi * 0.012, 0.70, 1.0) * dot_appear;
     }
 
     // Vignette

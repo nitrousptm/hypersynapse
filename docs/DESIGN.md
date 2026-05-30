@@ -161,7 +161,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 7 logo seq  | 12 data streams (vs 6), per-stream width variation; two-layer glow; breathing pulse; separator + credit dots (29 May) |
 | Scene crossfades  | GL_CONSTANT_ALPHA blend (not GL_SRC_ALPHA) + pre-boundary only window — actual smooth 0.6s fades, no more hard cuts (30 May) |
 
-## Implementation Status (30 May 2026 — morning)
+## Implementation Status (30 May 2026 — afternoon)
 
 ### Completed Systems
 
@@ -190,6 +190,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 4 particles | ✅ Added | Frozen debris field: 28/beat, near-zero velocity (0.018), blue↔orange palette (29 May night) |
 | Capture progress | ✅ Added | --capture prints % + frame/14400 counter every 5s demo time (29 May night) |
 | Scene crossfades | ✅ Fixed | Two bugs: GL_SRC_ALPHA→GL_CONSTANT_ALPHA (alpha=1 caused hard cuts); pre-boundary-only window (sc+1 pointed at wrong scene post-flip). Now: smooth 0.6s crossfades between all 7 scenes (30 May) |
+| Scene 7 credit dots | ✅ Fixed | Overlap bug: group 2 was starting inside group 1's x-range. Both groups now centered symmetrically at ±0.28 with 0.074 clear gap + staggered appear animation (30 May) |
+| Scene 6 particles | ✅ Added | Portal particle emission: 40 inward-spiraling cyan/violet fragments per beat — sells the "quantum things falling into portals" feel (30 May) |
 
 ### Outstanding for Submission
 

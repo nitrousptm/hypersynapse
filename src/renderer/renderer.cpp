@@ -469,6 +469,20 @@ void Renderer::emit_particles(const Timeline& tl) {
         }
         break;
     }
+    case Scene::ImpossibleSpace: {
+        // Quantum fragments spiraling inward toward portals
+        int burst = 40;
+        for (int i = 0; i < burst; i++) {
+            glm::vec3 pos = glm::sphericalRand(glm::linearRand(0.4f, 2.5f));
+            glm::vec3 vel = -glm::normalize(pos) * glm::linearRand(0.3f, 1.2f);  // inward
+            bool cool = glm::linearRand(0.0f, 1.0f) < 0.5f;
+            glm::vec3 col = cool
+                ? glm::vec3(0.0f, 0.55f, 1.0f)   // portal cyan-blue
+                : glm::vec3(0.55f, 0.1f, 1.0f);  // portal violet
+            particles_->emit(pos, vel, 0, 2.0f, col);
+        }
+        break;
+    }
     case Scene::Transcendence: {
         // Cosmic star-like particles growing outward
         int burst = 200;
