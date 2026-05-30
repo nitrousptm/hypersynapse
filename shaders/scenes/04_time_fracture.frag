@@ -30,12 +30,13 @@ float vnoise(vec2 p) {
 // ─── debris field (frozen particles) ─────────────────────────────────────────
 
 float debris(vec2 uv, float time_offset) {
-    float t_local = u_time + time_offset;
+    // Each time-copy gets unique particle positions via seed_offset.
+    // Positions stay frozen (no time dependence) to sell "time stopped" effect.
+    float seed = time_offset * 100.0;
     float acc = 0.0;
     for (int i = 0; i < 12; i++) {
-        float fi = float(i);
+        float fi = float(i) + seed;
         vec2 center = vec2(hash1(fi * 3.1), hash1(fi * 7.3)) * 2.0 - 1.0;
-        // Debris: positions frozen in time (no movement)
         float size = 0.004 + hash1(fi * 11.7) * 0.008;
         float d = length(uv - center);
         acc += size / (d * d + size * size) * 0.3;

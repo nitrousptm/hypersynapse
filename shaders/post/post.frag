@@ -136,13 +136,13 @@ vec3 aces(vec3 x) {
     return clamp((x*(a*x+b)) / (x*(c*x+d)+e), 0.0, 1.0);
 }
 
-// ─── color grade per act ──────────────────────────────────────────────────────
-// Act I:   desaturated cold (near-black, white lines)
-// Act II:  electric blue / dark cyan
-// Act III: magenta / violet richness
-// Act IV:  pure white / cosmic
-vec3 color_grade(vec3 col, float act_norm, float scene_norm) {
-    float t = act_norm;
+// ─── color grade — evolves over full demo (t = demo_norm 0→1) ─────────────────
+// Act I (0–0.1875):  desaturated cold (near-black, white lines)
+// Act II (0.1875–0.4375):  electric blue / dark cyan
+// Act III (0.4375–0.75):  magenta / violet richness
+// Act IV (0.75–1.0):  pure white / cosmic
+vec3 color_grade(vec3 col, float demo_norm, float scene_norm) {
+    float t = demo_norm;
 
     vec3 tint;
     if      (t < 0.1875) tint = mix(vec3(0.92, 0.95, 1.05), vec3(0.80, 0.90, 1.20), t/0.1875);
@@ -189,19 +189,25 @@ void main() {
     vec2 uv  = v_uv;
     vec2 ctr = uv - 0.5;
 
+    // Global demo progress 0→1 over full 240s.
+    // u_act_norm resets to 0 at each act boundary — it cannot be used for
+    // cross-act transitions. Use demo_norm for any effect that must evolve
+    // monotonically across the whole demo.
+    float demo_norm = clamp(u_time / 240.0, 0.0, 1.0);
+
     float kick = exp(-u_beat * 10.0);
 
     // 1. Chromatic aberration (barrel-distorted)
-    float ca_base = 0.003 + u_act_norm * 0.005;
+    float ca_base = 0.003 + demo_norm * 0.005;
     float ca_beat = kick * 0.008;
-    float ca_fade = 1.0 - smoothstep(0.75, 1.0, u_act_norm);
+    float ca_fade = 1.0 - smoothstep(0.75, 1.0, demo_norm);
     float ca_str  = (ca_base + ca_beat) * ca_fade;
     vec3 col = chroma(uv, ca_str);
 
     // 2. Dual-layer bloom (richer in Acts III/IV)
-    float bloom_thresh   = mix(0.82, 0.50, u_act_norm);
-    float bloom_radius   = mix(5.0, 14.0, u_act_norm) + kick * 6.0;
-    float bloom_strength = mix(0.35, 1.10, u_act_norm);
+    float bloom_thresh   = mix(0.82, 0.50, demo_norm);
+    float bloom_radius   = mix(5.0, 14.0, demo_norm) + kick * 6.0;
+    float bloom_strength = mix(0.35, 1.10, demo_norm);
     col += bloom(uv, bloom_thresh, bloom_radius, bloom_strength);
 
     // 2b. Radial zoom blur — Scene 6 holy-shit zoom-out (scene_norm 0.80→1.0)
@@ -212,31 +218,31 @@ void main() {
         col = mix(col, radial_zoom_blur(uv, zoom_t, zoom_center), zoom_t * 0.85);
     }
 
-    // 3. Color grading (act-aware palette)
-    col = color_grade(col, u_act_norm, u_scene_norm);
+    // 3. Color grading (demo-wide palette — monotonic, must not reset at act boundaries)
+    col = color_grade(col, demo_norm, u_scene_norm);
 
     // 4. Lens flare on beat (Acts II/III only — infectious/transcendent)
-    float flare_gate = smoothstep(0.1875, 0.30, u_act_norm) *
-                       (1.0 - smoothstep(0.80, 0.90, u_act_norm));
+    float flare_gate = smoothstep(0.1875, 0.30, demo_norm) *
+                       (1.0 - smoothstep(0.80, 0.90, demo_norm));
     col += lens_flare(uv, kick * flare_gate);
 
     // 5. Scanlines — only Acts I/II, fade out in III/IV
-    float scan_fade = 1.0 - smoothstep(0.3, 0.5, u_act_norm);
+    float scan_fade = 1.0 - smoothstep(0.3, 0.5, demo_norm);
     float scanline  = sin(uv.y * u_res.y * 3.14159) * 0.5 + 0.5;
     col *= 1.0 - 0.08 * (1.0 - scanline) * scan_fade;
 
     // 6. Film grain (slightly more in Act I for CRT texture)
-    float grain_base = mix(0.045, 0.018, u_act_norm);
+    float grain_base = mix(0.045, 0.018, demo_norm);
     col += (hash21(uv + fract(u_time * 7.37)) - 0.5) * grain_base;
 
     // 7. Vignette — intense in I/II, open in III/IV
-    float vig_str = mix(2.0, 0.8, smoothstep(0.4375, 0.75, u_act_norm));
+    float vig_str = mix(2.0, 0.8, smoothstep(0.4375, 0.75, demo_norm));
     float vig = 1.0 - dot(ctr * 1.5, ctr * 1.5);
     vig = clamp(pow(clamp(vig, 0.0, 1.0), vig_str), 0.0, 1.0);
     col *= vig;
 
     // 8. Beat-sync white flash (strong beats in Acts II/III)
-    float flash_str = smoothstep(0.1875, 0.75, u_act_norm);
+    float flash_str = smoothstep(0.1875, 0.75, demo_norm);
     col += exp(-u_beat * 20.0) * flash_str * 0.08;
 
     // 9. ACES tonemapping
