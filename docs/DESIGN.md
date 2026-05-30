@@ -159,8 +159,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Normal estimation | Tetrahedron method (4 SDF evals vs 6 central-diff) in all SDF scenes: 2, 5, 6 |
 | Capture timing    | Deterministic: frame_count/60Hz instead of wall-clock — guarantees 14,400 frames (29 May) |
 | Scene 7 logo seq  | 12 data streams (vs 6), per-stream width variation; two-layer glow; breathing pulse; separator + credit dots (29 May) |
+| Scene crossfades  | GL_CONSTANT_ALPHA blend (not GL_SRC_ALPHA) + pre-boundary only window — actual smooth 0.6s fades, no more hard cuts (30 May) |
 
-## Implementation Status (29 May 2026 — evening)
+## Implementation Status (30 May 2026 — morning)
 
 ### Completed Systems
 
@@ -188,6 +189,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 7 logo polish | ✅ Complete | 12 streams, two-layer glow, breathing pulse, separator line, credit dot row (29 May eve) |
 | Scene 4 particles | ✅ Added | Frozen debris field: 28/beat, near-zero velocity (0.018), blue↔orange palette (29 May night) |
 | Capture progress | ✅ Added | --capture prints % + frame/14400 counter every 5s demo time (29 May night) |
+| Scene crossfades | ✅ Fixed | Two bugs: GL_SRC_ALPHA→GL_CONSTANT_ALPHA (alpha=1 caused hard cuts); pre-boundary-only window (sc+1 pointed at wrong scene post-flip). Now: smooth 0.6s crossfades between all 7 scenes (30 May) |
 
 ### Outstanding for Submission
 
