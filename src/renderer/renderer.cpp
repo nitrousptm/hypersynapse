@@ -189,17 +189,23 @@ void Renderer::draw_scene(const Timeline& tl) {
         draw_fullscreen_scene(scene_programs_[static_cast<int>(sc)], tl);
     }
 
-    // Crossfade overlay if we're transitioning to next scene
-    if (trans >= 0.0) {
+    // Crossfade overlay — only during the PRE-BOUNDARY half of the window (trans < 0.5).
+    // The window is centered on the boundary: once scene() has flipped (trans >= 0.5),
+    // the new scene is already the main draw and sc+1 would point to the wrong target.
+    if (trans >= 0.0 && trans < 0.5) {
         int next_scene_idx = (static_cast<int>(sc) + 1) % 7;
         uint32_t next_prog = scene_programs_[next_scene_idx];
 
+        // Use constant-alpha blend: glBlendColor drives the mix, not fragment alpha.
+        // Scenes output alpha=1, so GL_SRC_ALPHA would always snap to 100% opacity.
+        // Scale trans (0..0.5) to a blend factor (0..1) across the crossfade window.
+        float blend = static_cast<float>(trans * 2.0);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBlendColor(0.0f, 0.0f, 0.0f, blend);
+        glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
 
         glUseProgram(next_prog);
         set_standard_uniforms(next_prog, tl, width_, height_);
-        glUniform1f(glGetUniformLocation(next_prog, "u_fade"), static_cast<float>(trans));
 
         // Bind prev_fbo_tex as u_prev_frame for feedback shaders
         glActiveTexture(GL_TEXTURE0);
