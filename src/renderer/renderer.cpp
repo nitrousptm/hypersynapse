@@ -196,6 +196,14 @@ void Renderer::draw_scene(const Timeline& tl) {
         int next_scene_idx = (static_cast<int>(sc) + 1) % 7;
         uint32_t next_prog = scene_programs_[next_scene_idx];
 
+        // Scene 6 (ImpossibleSpace) needs portal FBOs pre-rendered so portals show
+        // properly during the crossfade from Scene 5. Without this, portals would
+        // sample from stale/black textures for the entire 0.6s transition.
+        if (next_scene_idx == static_cast<int>(Scene::ImpossibleSpace)) {
+            render_portal_level(kPortalDepth - 1, tl);
+            // render_portal_level restores GL_FRAMEBUFFER binding to fbo_
+        }
+
         // Use constant-alpha blend: glBlendColor drives the mix, not fragment alpha.
         // Scenes output alpha=1, so GL_SRC_ALPHA would always snap to 100% opacity.
         // Scale trans (0..0.5) to a blend factor (0..1) across the crossfade window.
@@ -211,6 +219,19 @@ void Renderer::draw_scene(const Timeline& tl) {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, prev_fbo_tex_);
         glUniform1i(glGetUniformLocation(next_prog, "u_prev_frame"), 0);
+
+        // For ImpossibleSpace: bind portal textures so recursive portals work in crossfade
+        if (next_scene_idx == static_cast<int>(Scene::ImpossibleSpace)) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, portal_fbos_[0].tex);
+            glUniform1i(glGetUniformLocation(next_prog, "u_portal_0"), 0);
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, portal_fbos_[1].tex);
+            glUniform1i(glGetUniformLocation(next_prog, "u_portal_1"), 1);
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, portal_fbos_[2].tex);
+            glUniform1i(glGetUniformLocation(next_prog, "u_portal_2"), 2);
+        }
 
         glBindVertexArray(fullscreen_vao_);
         glDrawArrays(GL_TRIANGLES, 0, 3);

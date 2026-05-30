@@ -131,24 +131,30 @@ float geo_connection(vec2 uv) {
 
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
+float sdSeg2D(vec2 q, vec2 a, vec2 b) {
+    vec2 pa = q - a, ba = b - a;
+    return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
+}
+
 float tendril(vec2 uv, float seed, float t) {
     float acc = 0.0;
-    vec2 p = uv;
+    vec2 p = vec2(0.0);  // grow from origin; uv-relative so tendrils radiate outward
     vec2 dir = normalize(vec2(cos(seed * 6.28), sin(seed * 6.28)));
     float w = 0.003;
 
     for (int i = 0; i < 8; i++) {
-        // Grow along direction with branching
-        vec2 next = p + dir * 0.08;
-        float d_line = length(uv - (p + dir * 0.04)) - length(next - p) * 0.04;
-        // Rotate direction slightly each step
+        // Rotate direction before stepping (branching / curling)
         float angle = sin(float(i) * 1.3 + seed + t * 0.5) * 0.4;
         float c = cos(angle), s = sin(angle);
-        dir = normalize(vec2(dir.x*c - dir.y*s, dir.x*s + dir.y*c));
+        dir = normalize(vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c));
 
-        float segment_d = length(uv - (p + dir*0.04));
-        acc += w / (segment_d + w);
-        w *= 0.7;
+        vec2 next = p + dir * 0.08;
+
+        // Proper line-segment SDF — gives each tendril segment its correct thickness
+        float d = sdSeg2D(uv, p, next);
+        acc += w / (d + w);
+
+        w *= 0.72;
         p = next;
     }
     return acc * u_scene_norm;

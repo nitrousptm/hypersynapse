@@ -194,19 +194,24 @@ vec3 cosmic_particles(vec2 uv) {
     col += vec3(0.0, 0.03, 0.08) * vnoise(vec3(uv * 2.0, u_time * 0.05)) * 0.4;
 
     // Spiral galaxy structure — the outer universe has its own Milky-Way-like shape
-    float r = length(uv - vec2(0.15, -0.1));
-    float a = atan((uv.y + 0.1), (uv.x - 0.15));
-    // Two-arm logarithmic spiral: arm brightness peaks along arm angle
-    float arm1 = abs(sin(a * 2.0 - r * 8.0 + u_time * 0.05));
-    float arm2 = abs(sin(a * 2.0 - r * 8.0 + 3.14159 + u_time * 0.05));
-    float spiral_arms = max(arm1, arm2);
-    // Gaussian envelope: bright core, fades with radius
-    float envelope = exp(-r * r * 8.0) * exp(-r * 3.5);
+    vec2 gal_center = vec2(0.15, -0.1);
+    float r = length(uv - gal_center);
+    float a = atan((uv.y - gal_center.y), (uv.x - gal_center.x));
+    // True 2-arm logarithmic spiral: each arm is a raised-cosine peak at ±π apart.
+    // Using cos^N avoids the 4-arm artifact that abs(sin) creates.
+    float phase = a - r * 4.5 + u_time * 0.025;
+    float arm1 = pow(max(cos(phase),         0.0), 10.0);
+    float arm2 = pow(max(cos(phase + 3.14159), 0.0), 10.0);
+    float spiral_arms = arm1 + arm2;
+    // Gaussian envelope: bright core, exponential falloff with radius
+    float envelope = exp(-r * r * 10.0) * exp(-r * 4.0);
     float arm_dens = spiral_arms * envelope;
-    // Warm core glow + cool arm tint
-    col += arm_dens * mix(vec3(0.35, 0.25, 0.5), vec3(0.05, 0.15, 0.4), smoothstep(0.0, 0.3, r)) * 2.5;
-    // Extra bright galactic core
-    col += exp(-r * r * 40.0) * vec3(0.4, 0.3, 0.6) * 3.0;
+    // Dusty arm color (bluish-white in arms, warm orange in core)
+    col += arm_dens * mix(vec3(0.4, 0.55, 1.0), vec3(0.5, 0.35, 0.6), smoothstep(0.0, 0.25, r)) * 3.0;
+    // Extra bright galactic core with warm glow
+    col += exp(-r * r * 40.0) * vec3(0.5, 0.35, 0.7) * 3.5;
+    // Faint outer halo (older star population)
+    col += exp(-r * r * 2.5) * vec3(0.08, 0.06, 0.15) * envelope * 0.5;
 
     return col;
 }
