@@ -28,6 +28,61 @@ float fbm(vec3 p) {
     return v;
 }
 
+// ─── sky background (Act III: deep violet starfield + aurora curtains) ────────
+
+vec3 sky_background(vec3 rd) {
+    // Base gradient: zenith (deep indigo) → horizon (near-black)
+    float horizon = smoothstep(-0.15, 0.40, rd.y);
+    vec3 sky = mix(vec3(0.010, 0.004, 0.028), vec3(0.038, 0.0, 0.110), horizon);
+
+    // Nebula haze from DESIGN.md Act III palette
+    sky += fbm(rd * 2.2 + u_time * 0.04) * vec3(0.020, 0.0, 0.048);
+    sky += max(fbm(rd * 4.5 + vec3(7.1, u_time*0.025, 2.3)) - 0.45, 0.0)
+           * vec3(0.06, 0.02, 0.12);
+
+    // Multi-layer starfield (3 scales, magenta/violet tint for Act III)
+    for (int si = 0; si < 3; si++) {
+        float fi = float(si);
+        float scale = 55.0 + fi * 35.0;
+        vec3 p  = rd * scale + vec3(fi * 21.7, fi * 13.3, fi * 37.1);
+        vec3 id = floor(p);
+        vec3 fr = fract(p);
+        vec2 ha = vec2(hash2(id.xy + fi * 0.3), hash2(id.yz + fi * 0.7));
+        float hz = hash2(id.xz + fi * 1.1);
+        if (ha.x < 0.20) {
+            float size    = 0.0014 + ha.x * 0.004;
+            float twinkle = 0.80 + 0.20 * sin(u_time * (1.8 + ha.y * 4.0) + hz * 30.0);
+            float d       = length(fr - 0.5);
+            vec3  sc      = mix(vec3(0.90, 0.72, 1.0), vec3(0.65, 0.80, 1.0), hz);
+            sky += sc * size / (d * d + size * size) * 0.32 * twinkle;
+        }
+    }
+
+    // Aurora curtains — two shimmering bands of violet/magenta/cyan.
+    // Only rendered in upper hemisphere; intensity grows with scene_norm so
+    // the sky "awakens" progressively as the fractals bloom into view.
+    float aurora_gate = smoothstep(0.10, 0.45, rd.y);
+    if (aurora_gate > 0.001) {
+        float beat_flare = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.9 * u_scene_norm;
+        float t_a = u_time * 0.055;
+        float az_base = atan(rd.z, rd.x);
+        for (int ci = 0; ci < 2; ci++) {
+            float coff = float(ci) * 2.094;  // 120° apart
+            float az   = az_base + coff;
+            float wave = vnoise(vec3(az * 1.6,  rd.y * 3.0, t_a + float(ci) * 5.7)) * 0.50
+                       + vnoise(vec3(az * 3.2,  rd.y * 6.0, t_a * 1.8 + float(ci) * 3.1)) * 0.25;
+            float sway = sin(t_a * 0.35 + float(ci) * 2.1) * 0.75;
+            float curtain = smoothstep(0.32, 0.0, abs(az - sway)) * wave;
+            vec3 aurora_col = (ci == 0)
+                ? mix(vec3(0.30, 0.0, 0.90), vec3(0.90, 0.12, 0.70), wave)
+                : mix(vec3(0.05, 0.45, 0.90), vec3(0.50, 0.0, 0.80), wave);
+            sky += aurora_col * curtain * aurora_gate * 0.22 * beat_flare * u_scene_norm;
+        }
+    }
+
+    return sky;
+}
+
 // ─── SDF primitives ───────────────────────────────────────────────────────────
 
 float sdSphere(vec3 p, float r) { return length(p) - r; }
@@ -216,10 +271,7 @@ void main() {
     vec3 up = cross(ri, fw);
     vec3 rd = normalize(uv.x*ri + uv.y*up + 2.0*fw);
 
-    // Deep violet sky
-    vec3 sky = mix(vec3(0.02, 0.0, 0.08), vec3(0.08, 0.0, 0.2), uv.y*0.5+0.5);
-    sky += fbm(rd * 2.0 + u_time * 0.05) * vec3(0.03, 0.0, 0.06);
-    vec3 col = sky;
+    vec3 col = sky_background(rd);
 
     int steps;
     float t = march(ro, rd, steps);

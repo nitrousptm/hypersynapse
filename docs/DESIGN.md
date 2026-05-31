@@ -171,7 +171,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Post FX beat-vignette | Vignette tightens on strong kicks (Acts II/III): vig_str += kick * 0.6 — heartbeat compression effect (31 May) |
 | Post FX dither | Triangular dither (1/255 amplitude, 2-sample triangle distribution) added after ACES tonemap — eliminates banding in dark areas (31 May) |
 
-## Implementation Status (30 May 2026 — late night / 31 May)
+## Implementation Status (31 May 2026 — night)
 
 ### Completed Systems
 
@@ -211,6 +211,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 6 reality-fracture | ✅ Added | White flash burst at scene_norm 0.80 sharpens the zoom-transition onset (31 May) |
 | Post FX beat vignette | ✅ Added | Beat-driven vignette compression (kick * 0.6) in Acts II/III — heartbeat feel (31 May) |
 | Post FX dither | ✅ Added | Triangular dither 1/255 after ACES — eliminates dark-area banding (31 May) |
+| Scene 5 sky | ✅ Upgraded | Replaced 2-line gradient with: proper 3-layer magenta/violet starfield + twinkle + aurora curtains (2 swaying bands, beat-pulse, scene_norm fade-in) + dual-scale nebula haze — matches Act III color palette (31 May) |
 
 ### Outstanding for Submission
 
