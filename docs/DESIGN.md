@@ -175,7 +175,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 
-## Implementation Status (31 May 2026 — evening)
+## Implementation Status (31 May 2026 — night)
 
 ### Completed Systems
 
@@ -221,6 +221,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 kaleidoscope sky | ✅ Added | 6-fold azimuthal mirror on sky background rd, blends in at scene_norm 0.38→0.60 — aurora + nebulae fold into symmetric mandala (31 May morning) |
 | Scene 4 crack lines | ✅ Added | Glowing spacetime fracture cracks: fracture_arm() grows 7 branching segments from 3 impact sites; electric-blue (#1e74ff) + white-hot core on beat; spread driven by scene_norm — sells "time breaking apart" literally (31 May afternoon) |
 | Scene 7 full title text | ✅ Added | "SINGULARITY GARDEN" rendered in 5×7 pixel bitmap font (13 unique chars, 91-int bitmask table); glowing dot-pixels appear at scene_norm 0.920→0.945 between SG monogram and separator line; credit-dot timing shifted to 0.970→0.990 (31 May eve) |
+| Scene 2 renderer upgrade | ✅ Fixed | Renderer switched from 02_awakening_monolith.frag to 02_awakening_core.frag — the richer shader with sacred geometry engravings (Metatron's Cube), dramatic push-in→pull-back camera, particle cloud SDF materialisation, and proper ground reflection (31 May night) |
+| Scene 2 sdf_monolith bug | ✅ Fixed | Rise and split effects now compose correctly: all SDF work done in monolith-local frame (pl = p + rise offset); split_gap applied to pl not raw p; shade_monolith engraving UV also uses local frame — split opening now actually visible at scene end (31 May night) |
+| Scene 2 split particle burst | ✅ Added | Particle system emits 200–400 white-hot/cyan particles per beat from the crack line when split_progress > 0.01 — shoots outward along X + slight upward arc; switches back to surface-materialisation burst in pre-split phase (31 May night) |
 
 ### Outstanding for Submission
 

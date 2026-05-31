@@ -78,38 +78,39 @@ float sacred_geometry(vec2 uv_surface) {
 // ─── Monolith SDF ─────────────────────────────────────────────────────────────
 // Ratio 1:5:0.5 (width:height:depth), appears from void
 float sdf_monolith(vec3 p, float reveal) {
-    // Monolith base: 0.7 wide, 3.5 tall, 0.35 deep
-    float base = sdBox(p, vec3(0.35, 1.75, 0.175));
+    // Work in monolith-local frame: shift p to account for rise animation.
+    // At reveal=0 the monolith is 3.5 units below frame; at reveal=1 it's centred.
+    float rise = 3.5 * (1.0 - reveal);
+    vec3 pl = p + vec3(0.0, rise, 0.0);
 
-    // Surface engravings: sacred geometry carved in (subtracted)
-    // Front face (z=+0.175)
-    vec2 front_uv = p.xy * vec2(1.0/0.35, 1.0/1.75);
-    float front_eng = sacred_geometry(front_uv * 0.4) * step(0.17, p.z);
-    float back_eng  = sacred_geometry(front_uv * 0.4 + vec2(0.3)) * step(0.17, -p.z);
+    // Base shape in local frame
+    float base = sdBox(pl, vec3(0.35, 1.75, 0.175));
 
-    // Vertical ribbing on sides
-    float ribs = sdBox(vec3(mod(abs(p.x)-0.0, 0.07)-0.035, p.y, p.z), vec3(0.008, 1.75, 0.18));
-    float ribs_mask = step(0.32, abs(p.x));
+    // Sacred geometry engravings (local-frame UV so they stay on the surface)
+    vec2 front_uv = pl.xy * vec2(1.0/0.35, 1.0/1.75);
+    float front_eng = sacred_geometry(front_uv * 0.4) * step(0.17, pl.z);
+    float back_eng  = sacred_geometry(front_uv * 0.4 + vec2(0.3)) * step(0.17, -pl.z);
+
+    // Vertical ribbing on sides (local frame)
+    float ribs = sdBox(vec3(mod(abs(pl.x), 0.07) - 0.035, pl.y, pl.z), vec3(0.008, 1.75, 0.18));
+    float ribs_mask = step(0.32, abs(pl.x));
     float rib_depth = ribs * ribs_mask;
 
-    // Opening split: at scene_norm > 0.8, the monolith splits along center X
+    // Opening split: at scene_norm > 0.82 the monolith splits along the Y-axis.
+    // Applied in local frame so rise and split compose correctly.
     float split_progress = smoothstep(0.82, 1.0, reveal);
-    float split_gap = split_progress * 0.5; // up to 0.5 units apart
-    vec3 p_split = p;
-    p_split.x = abs(p.x) - split_gap;
+    float split_gap = split_progress * 0.5;
+    vec3 p_split = pl;
+    p_split.x = abs(pl.x) - split_gap;
     float split_half = sdBox(p_split, vec3(0.35, 1.75, 0.175));
 
+    // Combine base + split, then subtract detail
     float monolith = mix(base, split_half, split_progress);
-    monolith -= front_eng + back_eng;
+    monolith -= (front_eng + back_eng) * step(0.7, reveal);
     monolith -= max(0.0, -rib_depth) * 0.5;
 
-    // Emergence: monolith rises from below (reveal = 0→1 as scene progresses)
-    float rise = 3.5 * (1.0 - reveal);
-    monolith = sdBox(p + vec3(0.0, rise, 0.0), vec3(0.35, 1.75, 0.175));
-    monolith -= front_eng * step(0.7, reveal) + back_eng * step(0.7, reveal);
-
-    // Surface noise displacement (procedural growth effect)
-    float growth_noise = fbm3(p * 4.0 + u_time * 0.08) * 0.05 * reveal;
+    // Surface noise displacement (procedural growth effect in local frame)
+    float growth_noise = fbm3(pl * 4.0 + u_time * 0.08) * 0.05 * reveal;
     monolith -= growth_noise;
 
     return monolith;
@@ -210,7 +211,9 @@ vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     vec3 mat = vec3(0.018, 0.020, 0.028);
 
     // Sacred geometry engravings glow when reveal > 0.4
-    vec2 eng_uv = p.xy * vec2(1.0/0.35, 1.0/1.75) * 0.4;
+    // Use local frame (risen) position so UV tracks the monolith surface
+    vec3 pl_shade = p + vec3(0.0, 3.5 * (1.0 - reveal), 0.0);
+    vec2 eng_uv = pl_shade.xy * vec2(1.0/0.35, 1.0/1.75) * 0.4;
     float eng = sacred_geometry(eng_uv);
     float eng_glow = eng * smoothstep(0.4, 0.8, reveal);
     mat += eng_glow * vec3(0.1, 0.5, 1.0) * 3.0;

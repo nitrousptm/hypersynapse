@@ -62,7 +62,7 @@ bool Renderer::init(int width, int height) {
     // Scene fragment shaders (fullscreen quad, no mesh)
     const char* scene_frags[7] = {
         HYP_SHADER_DIR "/scenes/01_boot_void.frag",
-        HYP_SHADER_DIR "/scenes/02_awakening_monolith.frag",
+        HYP_SHADER_DIR "/scenes/02_awakening_core.frag",
         HYP_SHADER_DIR "/scenes/03_city_corruption.frag",  // used as overlay on top of mesh pass
         HYP_SHADER_DIR "/scenes/04_time_fracture.frag",
         HYP_SHADER_DIR "/scenes/05_geometry_bloom.frag",
@@ -272,7 +272,6 @@ void Renderer::draw_mesh_scene(const Timeline& tl) {
 
     // Camera: fast FPV flying through city canyons
     float t = static_cast<float>(tl.time());
-    float sn = static_cast<float>(tl.scene_norm());
 
     glm::vec3 cam_pos = glm::vec3(
         std::sin(t * 0.4f) * 15.0f + t * 2.0f,  // moving forward
@@ -442,16 +441,39 @@ void Renderer::emit_particles(const Timeline& tl) {
         break;
     }
     case Scene::AwakeningCore: {
-        // Dense burst from monolith surface
-        int burst = 120 + int(80.0f * static_cast<float>(tl.scene_norm()));
-        for (int i = 0; i < burst; i++) {
-            glm::vec3 pos = glm::ballRand(0.4f);
-            pos.y = std::abs(pos.y) * 3.2f - 0.8f;  // along monolith
-            glm::vec3 vel = glm::normalize(glm::vec3(pos.x, 0, pos.z)) * 2.0f;
-            vel.y += 0.5f;
-            glm::vec3 col = glm::mix(glm::vec3(0.2f, 0.4f, 1.0f),
-                                     glm::vec3(0.8f, 1.0f, 1.0f), beat);
-            particles_->emit(pos, vel, 0, 1.0f, col);
+        float sn = static_cast<float>(tl.scene_norm());
+        float split_progress = glm::smoothstep(0.82f, 1.0f, sn);
+        float heat = glm::linearRand(0.0f, 1.0f);
+
+        if (split_progress > 0.01f) {
+            // Dramatic burst from the opening crack: particles shoot sideways
+            // from the Y-axis as the two monolith halves separate.
+            int crack_burst = 200 + int(200.0f * split_progress);
+            for (int i = 0; i < crack_burst; i++) {
+                // Start on the crack line (x≈0), somewhere along the height
+                float fy = glm::linearRand(-1.75f, 1.75f);
+                float fz = glm::linearRand(-0.18f, 0.18f);
+                glm::vec3 pos = glm::vec3(glm::linearRand(-0.05f, 0.05f), fy, fz);
+                // Velocity: outward along X + slight upward arc
+                float side = (glm::linearRand(0.0f, 1.0f) > 0.5f) ? 1.0f : -1.0f;
+                float speed = glm::linearRand(1.5f, 4.5f) * split_progress;
+                glm::vec3 vel = glm::vec3(side * speed, glm::linearRand(0.2f, 1.2f), glm::linearRand(-0.5f, 0.5f));
+                // Colour: white-hot core → electric cyan
+                glm::vec3 col = glm::mix(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.0f, 0.8f, 1.0f), heat);
+                particles_->emit(pos, vel, 0, 0.7f, col);
+            }
+        } else {
+            // Pre-split: dense bursts from the monolith surface as it materialises
+            int burst = 120 + int(80.0f * sn);
+            for (int i = 0; i < burst; i++) {
+                glm::vec3 pos = glm::ballRand(0.4f);
+                pos.y = std::abs(pos.y) * 3.2f - 0.8f;
+                glm::vec3 vel = glm::normalize(glm::vec3(pos.x, 0, pos.z)) * 2.0f;
+                vel.y += 0.5f;
+                glm::vec3 col = glm::mix(glm::vec3(0.2f, 0.4f, 1.0f),
+                                         glm::vec3(0.8f, 1.0f, 1.0f), heat);
+                particles_->emit(pos, vel, 0, 1.0f, col);
+            }
         }
         break;
     }
