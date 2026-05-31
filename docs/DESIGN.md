@@ -174,7 +174,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 
-## Implementation Status (31 May 2026 — morning)
+## Implementation Status (31 May 2026 — afternoon)
 
 ### Completed Systems
 
@@ -218,6 +218,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 normal estimation | ✅ Fixed | Tetrahedron method (4 evals) in calc_normal() — code was still central-differences despite DESIGN.md claim (31 May morning) |
 | Scene 3 rain atmosphere | ✅ Added | 12 vertical rain streak dashes in post.frag (scene_idx==2): electric-blue city-light catch, kick-driven intensity, fade with scene_norm (31 May morning) |
 | Scene 5 kaleidoscope sky | ✅ Added | 6-fold azimuthal mirror on sky background rd, blends in at scene_norm 0.38→0.60 — aurora + nebulae fold into symmetric mandala (31 May morning) |
+| Scene 4 crack lines | ✅ Added | Glowing spacetime fracture cracks: fracture_arm() grows 7 branching segments from 3 impact sites; electric-blue (#1e74ff) + white-hot core on beat; spread driven by scene_norm — sells "time breaking apart" literally (31 May afternoon) |
 
 ### Outstanding for Submission
 

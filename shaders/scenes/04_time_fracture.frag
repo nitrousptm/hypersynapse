@@ -27,6 +27,64 @@ float vnoise(vec2 p) {
                mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
 }
 
+// ─── space fracture crack lines ──────────────────────────────────────────────
+// Glowing fractures in the fabric of spacetime — literal "time fracture" visual.
+// Branching crack pattern grows outward from impact points, pulsing on beats.
+
+float crack_seg(vec2 uv, vec2 a, vec2 b, float w) {
+    vec2 pa = uv - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return w / (length(pa - ba * h) + w);
+}
+
+float fracture_arm(vec2 uv, vec2 origin, float seed, float spread) {
+    float acc = 0.0;
+    vec2 p = origin;
+    vec2 dir = normalize(vec2(cos(seed * 6.28318), sin(seed * 6.28318)));
+    float w = 0.0005;
+
+    for (int i = 0; i < 7; i++) {
+        float fi = float(i);
+        float bend = (hash1(seed * 13.7 + fi * 5.3) - 0.5) * 0.65;
+        float c = cos(bend), s = sin(bend);
+        dir = normalize(vec2(dir.x*c - dir.y*s, dir.x*s + dir.y*c));
+
+        float seg_len = (0.05 + hash1(seed * 7.1 + fi * 3.7) * 0.10) * spread;
+        vec2 next = p + dir * seg_len;
+
+        acc += crack_seg(uv, p, next, w);
+
+        // Secondary branch at ~55% chance
+        if (hash1(seed * 11.3 + fi * 2.9) > 0.45) {
+            float ba = bend + (hash1(seed * 1.7 + fi * 0.3) - 0.5) * 1.4;
+            float bc = cos(ba), bs = sin(ba);
+            vec2 bdir = normalize(vec2(dir.x*bc - dir.y*bs, dir.x*bs + dir.y*bc));
+            acc += crack_seg(uv, p, p + bdir * seg_len * 0.45, w * 0.5);
+        }
+
+        w *= 0.77;
+        p = next;
+    }
+    return acc;
+}
+
+float space_cracks(vec2 uv, float beat_boost) {
+    // Three impact sites in screen space (aspect-ratio adjusted to ~1.78)
+    const vec2 IMP0 = vec2( 0.14,  0.10);
+    const vec2 IMP1 = vec2(-0.30,  0.22);
+    const vec2 IMP2 = vec2( 0.06, -0.33);
+    float acc = 0.0;
+    for (int ci = 0; ci < 3; ci++) {
+        vec2 imp = (ci==0) ? IMP0 : (ci==1) ? IMP1 : IMP2;
+        float sb = float(ci) * 0.37;
+        float spread = u_scene_norm * (1.0 + beat_boost * float(3-ci) * 0.15);
+        for (int ai = 0; ai < 5; ai++) {
+            acc += fracture_arm(uv, imp, sb + float(ai) * 0.19 + 0.03, spread);
+        }
+    }
+    return clamp(acc, 0.0, 2.0);
+}
+
 // ─── debris field (frozen particles) ─────────────────────────────────────────
 
 float debris(vec2 uv, float time_offset) {
@@ -155,6 +213,11 @@ void main() {
     // Beat sync: reality "shatters" on downbeat
     float beat_shatter = smoothstep(0.03, 0.0, u_beat);
     col += beat_shatter * vec3(0.2, 0.5, 1.0) * 0.4;
+
+    // Fracture crack lines — glowing spacetime tears spreading with the scene
+    float cracks = space_cracks(uv, beat_shatter);
+    col += cracks * vec3(0.12, 0.45, 1.00) * (0.7 + beat_shatter * 1.2);
+    col += cracks * beat_shatter * vec3(0.80, 0.90, 1.00) * 0.5;  // white-hot on beat
 
     // Scanlines subtle
     col *= 0.9 + 0.1 * sin(gl_FragCoord.y * 2.0);

@@ -47,12 +47,12 @@ void Audio::play(const char* path) {
 
 void Audio::seek(double seconds) {
     if (!valid_) return;
-    ma_sound_seek_to_pcm_frame(&sound_, (uint64_t)(seconds * 48000.0));
+    ma_sound_seek_to_pcm_frame(&sound_, (ma_uint64)(seconds * 48000.0));
 }
 
 double Audio::position() {
     if (!valid_) return 0.0;
-    uint64_t frame = 0;
+    ma_uint64 frame = 0;
     ma_sound_get_cursor_in_pcm_frames(&sound_, &frame);
     return (double)frame / 48000.0;
 }
