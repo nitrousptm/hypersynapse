@@ -122,6 +122,14 @@ uint32_t load_program(std::string_view vert_path, std::string_view frag_path) {
     return link({v, f}, frag_path);
 }
 
+uint32_t load_program_from_src(std::string_view vert_src, std::string_view frag_src) {
+    uint32_t v = compile(GL_VERTEX_SHADER, vert_src, "vert_inline");
+    if (!v) return 0;
+    uint32_t f = compile(GL_FRAGMENT_SHADER, frag_src, "frag_inline");
+    if (!f) { glDeleteShader(v); return 0; }
+    return link({v, f}, "inline_program");
+}
+
 uint32_t load_compute(std::string_view comp_path) {
     auto src = read_file(comp_path);
     if (src.empty()) return 0;

@@ -129,6 +129,12 @@ bool Renderer::init(int width, int height) {
         return false;
     }
 
+    // Debug UI
+    if (!debug_ui_.init()) {
+        std::fprintf(stderr, "[renderer] debug UI init failed\n");
+        return false;
+    }
+
     glViewport(0, 0, width_, height_);
     return true;
 }
@@ -166,6 +172,7 @@ void Renderer::render(const Timeline& tl) {
     draw_scene(tl);
     if (particles_) draw_particles(tl);
     draw_post(tl);
+    debug_ui_.render(tl, width_, height_);
 
     last_scene_ = static_cast<uint8_t>(tl.scene());
 }
@@ -526,6 +533,7 @@ void Renderer::emit_particles(const Timeline& tl) {
 // ─── shutdown ─────────────────────────────────────────────────────────────────
 
 void Renderer::shutdown() {
+    debug_ui_.shutdown();
     if (particles_) { particles_->shutdown(); particles_.reset(); }
 
     if (fullscreen_vao_)    glDeleteVertexArrays(1, &fullscreen_vao_);

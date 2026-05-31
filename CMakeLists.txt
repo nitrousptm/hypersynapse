@@ -25,9 +25,9 @@ set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 
 # Platform-specific GLFW backends
 if(UNIX AND NOT APPLE)
-    # Linux: X11 backend (Wayland optional)
+    # Linux: try X11, fall back to null backend
     set(GLFW_BUILD_WAYLAND OFF CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+    set(GLFW_BUILD_X11 OFF CACHE BOOL "" FORCE)
 elseif(WIN32)
     # Windows: native Win32 backend (auto, no options needed)
 elseif(APPLE)
@@ -74,6 +74,7 @@ add_executable(hypersynapse
     src/particles/particles.cpp
     src/capture/capture.cpp
     src/debug/stats.cpp
+    src/debug/debug_ui.cpp
     src/mesh/procedural_mesh.cpp
 )
 

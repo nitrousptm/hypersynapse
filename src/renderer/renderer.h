@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include "debug/stats.h"
+#include "debug/debug_ui.h"
 
 namespace hyp {
 
@@ -90,6 +91,9 @@ private:
 
     // Performance stats
     Stats stats_;
+
+    // Debug UI overlay
+    DebugUI debug_ui_;
 
     // Track last scene for transition detection
     uint8_t last_scene_ = 0;
