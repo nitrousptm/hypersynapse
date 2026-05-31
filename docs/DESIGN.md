@@ -165,6 +165,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Tendril SDF (Scene 7) | sdSeg2D line-segment SDF in tendril() — correct tube glow instead of point-glow chain; origin-relative growth (30 May eve) |
 | Scene 4 portal interiors | portal_interior() samples prev_frame through each ring with unique time-offset tint + Y-flip — portals now show actual time-shifted scene content, not just decorative rings (30 May night) |
 | SUBMISSION.md music path | Corrected to assets\music\Concrete-Syncope.wav (was wrong assets\music.wav) (30 May night) |
+| Scene 7 logo text | Full title "SINGULARITY GARDEN" in 5×7 pixel bitmap font replaces SG-initials-only: design doc always said "SINGULARITY GARDEN logo", not monogram (31 May eve) |
 | Scene 6 outer universe | 3 distinct galaxies in cosmic_particles(): Milky-Way (bluish-violet), Andromeda companion (reddish-orange), edge-on sliver streak + faint intergalactic filament between them (31 May) |
 | Scene 6 universe-particle | Shrunken universe now shows a spiral galaxy structure + concentric pulse rings emanating outward — sells "it IS a universe" identity (31 May) |
 | Scene 6 reality-fracture flash | Brief white burst at scene_norm 0.80 marks the exact zoom transition — sharpens the wow-moment onset (31 May) |
@@ -174,7 +175,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 
-## Implementation Status (31 May 2026 — afternoon)
+## Implementation Status (31 May 2026 — evening)
 
 ### Completed Systems
 
@@ -219,6 +220,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 rain atmosphere | ✅ Added | 12 vertical rain streak dashes in post.frag (scene_idx==2): electric-blue city-light catch, kick-driven intensity, fade with scene_norm (31 May morning) |
 | Scene 5 kaleidoscope sky | ✅ Added | 6-fold azimuthal mirror on sky background rd, blends in at scene_norm 0.38→0.60 — aurora + nebulae fold into symmetric mandala (31 May morning) |
 | Scene 4 crack lines | ✅ Added | Glowing spacetime fracture cracks: fracture_arm() grows 7 branching segments from 3 impact sites; electric-blue (#1e74ff) + white-hot core on beat; spread driven by scene_norm — sells "time breaking apart" literally (31 May afternoon) |
+| Scene 7 full title text | ✅ Added | "SINGULARITY GARDEN" rendered in 5×7 pixel bitmap font (13 unique chars, 91-int bitmask table); glowing dot-pixels appear at scene_norm 0.920→0.945 between SG monogram and separator line; credit-dot timing shifted to 0.970→0.990 (31 May eve) |
 
 ### Outstanding for Submission
 

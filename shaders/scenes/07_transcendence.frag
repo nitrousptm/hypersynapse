@@ -160,6 +160,59 @@ float tendril(vec2 uv, float seed, float t) {
     return acc * u_scene_norm;
 }
 
+// ─── 5×7 pixel font — "SINGULARITY GARDEN" ──────────────────────────────────
+// Row bitmasks (bit4=leftmost). 13 unique chars: S=0 I=1 N=2 G=3 U=4 L=5 A=6
+// R=7 T=8 Y=9 D=10 E=11 SP=12.
+const int FONT_DATA[91] = int[91](
+    14,17,16,14, 1,17,14,  // S
+    31, 4, 4, 4, 4, 4,31,  // I
+    17,25,21,19,17,17,17,  // N
+    14,17,16,23,17,17,14,  // G
+    17,17,17,17,17,17,14,  // U
+    16,16,16,16,16,16,31,  // L
+    14,17,17,31,17,17,17,  // A
+    30,17,17,30,20,18,17,  // R
+    31, 4, 4, 4, 4, 4, 4,  // T
+    17,17,10, 4, 4, 4, 4,  // Y
+    30,17,17,17,17,17,30,  // D
+    31,16,16,30,16,16,31,  // E
+     0, 0, 0, 0, 0, 0, 0   // SP
+);
+// SINGULARITY GARDEN
+const int TITLE_STR[18] = int[18](0,1,2,3,4,5,6,7,1,8,9,12,3,6,7,10,11,2);
+
+float render_title_text(vec2 uv, float appear) {
+    if (appear < 0.001) return 0.0;
+    const float CW   = 0.060;    // cell width  (5 cols)
+    const float CH   = 0.084;    // cell height (7 rows)
+    const float GAP  = 0.015;    // inter-char gap
+    const float STEP = CW + GAP;
+    float x0 = -(18.0 * STEP - GAP) * 0.5;
+    const float TY   = -0.22;    // vertical center (below SG logo)
+
+    float acc = 0.0;
+    for (int ci = 0; ci < 18; ci++) {
+        int ch_idx = TITLE_STR[ci];
+        float cx   = x0 + float(ci) * STEP;
+        vec2 local = uv - vec2(cx, TY + CH * 0.5);
+        // flip y so row 0 = top
+        float gx = local.x * (5.0 / CW);
+        float gy = -local.y * (7.0 / CH);
+        int col  = int(floor(gx));
+        int row  = int(floor(gy));
+        if (col >= 0 && col < 5 && row >= 0 && row < 7) {
+            int mask = FONT_DATA[ch_idx * 7 + row];
+            if (((mask >> (4 - col)) & 1) != 0) {
+                float dx = gx - float(col) - 0.5;
+                float dy = gy - float(row) - 0.5;
+                float d  = length(vec2(dx, dy));
+                acc += (1.0 - smoothstep(0.26, 0.52, d)) * appear;
+            }
+        }
+    }
+    return min(acc, 2.5);
+}
+
 // ─── logo formation (final 10 seconds) ───────────────────────────────────────
 
 float sdSeg(vec2 p, vec2 a, vec2 b) {
@@ -284,17 +337,22 @@ void main() {
     float logo_breath = logo_appear * (0.85 + 0.15 * sin(u_time * 3.14));
     col *= mix(1.0, logo_breath, logo_appear * 0.3);
 
+    // Full title: "SINGULARITY GARDEN" in 5×7 pixel font (fades in just after SG logo)
+    float title_appear = smoothstep(0.920, 0.945, u_scene_norm);
+    float title_px = render_title_text(uv, title_appear);
+    vec3 title_col = mix(vec3(0.55, 0.78, 1.0), vec3(0.85, 0.92, 1.0), title_appear);
+    col += title_px * title_col * 2.0;
+
     // Decorative separator line below logo (scene_norm > 0.94)
-    float sep_appear = smoothstep(0.935, 0.955, u_scene_norm);
+    float sep_appear = smoothstep(0.950, 0.968, u_scene_norm);
     float sep_y      = uv.y + 0.30;
     float sep_mask   = smoothstep(0.0015, 0.0, abs(sep_y)) *
                        smoothstep(0.0, 0.55, 0.55 - abs(uv.x)) *
                        sep_appear;
     col += sep_mask * vec3(0.4, 0.6, 1.0) * 1.5;
 
-    // Group credit dots: small glowing points below separator (scene_norm > 0.95)
+    // Group credit dots: small glowing points below separator (scene_norm > 0.970)
     // Two groups of 10, each centered symmetrically around ±0.28 with a clear gap.
-    float cred_appear = smoothstep(0.955, 0.975, u_scene_norm);
     for (int i = 0; i < 20; i++) {
         float fi = float(i);
         // Group 1 (i<10): center at -0.28; group 2 (i≥10): center at +0.28.
@@ -305,8 +363,8 @@ void main() {
         float h    = hash(fi * 5.91);
         float d    = length(uv - vec2(xoff, yoff));
         float sz   = 0.006 + h * 0.004;
-        // Stagger the appear animation — each dot fades in 0.001 s_n later than the last
-        float dot_appear = smoothstep(0.955 + float(i) * 0.001, 0.975 + float(i) * 0.001, u_scene_norm);
+        // Stagger the appear animation
+        float dot_appear = smoothstep(0.970 + float(i) * 0.001, 0.990 + float(i) * 0.001, u_scene_norm);
         col += sz / (d + sz) * 0.07 * vec3(0.45 + fi * 0.012, 0.70, 1.0) * dot_appear;
     }
 
