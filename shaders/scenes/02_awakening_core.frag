@@ -170,12 +170,15 @@ HitInfo march(vec3 ro, vec3 rd, float reveal) {
 }
 
 vec3 calc_normal(vec3 p, float reveal) {
-    float e = 0.001;
-    return normalize(vec3(
-        sdf_scene(p+vec3(e,0,0),reveal) - sdf_scene(p-vec3(e,0,0),reveal),
-        sdf_scene(p+vec3(0,e,0),reveal) - sdf_scene(p-vec3(0,e,0),reveal),
-        sdf_scene(p+vec3(0,0,e),reveal) - sdf_scene(p-vec3(0,0,e),reveal)
-    ));
+    // Tetrahedron method: 4 SDF evaluations (vs 6 central-differences)
+    const float e = 0.001;
+    const vec2  k = vec2(1, -1);
+    return normalize(
+        k.xyy * sdf_scene(p + k.xyy * e, reveal) +
+        k.yyx * sdf_scene(p + k.yyx * e, reveal) +
+        k.yxy * sdf_scene(p + k.yxy * e, reveal) +
+        k.xxx * sdf_scene(p + k.xxx * e, reveal)
+    );
 }
 
 // ─── Volumetric Fog / Atmosphere ──────────────────────────────────────────────

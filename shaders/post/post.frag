@@ -226,6 +226,30 @@ void main() {
                        (1.0 - smoothstep(0.80, 0.90, demo_norm));
     col += lens_flare(uv, kick * flare_gate);
 
+    // 4b. Rain streaks — Scene 3 (City Corruption): dystopian megacity atmosphere.
+    // Thin vertical dashes catching electric-blue city light; vanish as buildings dissolve.
+    if (u_scene_idx == 2) {
+        float rain_fade = 1.0 - u_scene_norm * u_scene_norm;
+        float rain_str  = rain_fade * (0.45 + kick * 0.65);
+        if (rain_str > 0.005) {
+            float asp = u_res.x / u_res.y;
+            for (int ri = 0; ri < 12; ri++) {
+                float fi  = float(ri);
+                float xp  = (hash21(vec2(fi * 7.31, 0.13)) - 0.5) * asp;
+                float xw  = 0.0006 + hash21(vec2(fi * 3.17, 0.27)) * 0.0010;
+                float spd = 1.0 + hash21(vec2(fi * 11.3, 0.41)) * 2.5;
+                float ph  = fract(hash21(vec2(fi * 5.43, 0.55)) + u_time * spd * 0.08);
+                float cx  = ctr.x * asp;
+                float dx  = abs(cx - xp);
+                float glo = xw / (dx + xw);
+                float sy  = fract(ctr.y * 0.4 + ph);
+                float win = clamp(1.0 - abs(sy - 0.5) * 7.0, 0.0, 1.0);
+                float br  = 0.15 + hash21(vec2(fi * 2.13, 0.61)) * 0.25;
+                col      += glo * win * br * rain_str * vec3(0.18, 0.52, 1.00);
+            }
+        }
+    }
+
     // 5. Scanlines — only Acts I/II, fade out in III/IV
     float scan_fade = 1.0 - smoothstep(0.3, 0.5, demo_norm);
     float scanline  = sin(uv.y * u_res.y * 3.14159) * 0.5 + 0.5;

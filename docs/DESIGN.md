@@ -170,8 +170,11 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 6 reality-fracture flash | Brief white burst at scene_norm 0.80 marks the exact zoom transition — sharpens the wow-moment onset (31 May) |
 | Post FX beat-vignette | Vignette tightens on strong kicks (Acts II/III): vig_str += kick * 0.6 — heartbeat compression effect (31 May) |
 | Post FX dither | Triangular dither (1/255 amplitude, 2-sample triangle distribution) added after ACES tonemap — eliminates banding in dark areas (31 May) |
+| Scene 2 normal estimation | calc_normal() upgraded to tetrahedron method (4 SDF evals) — was still using central differences despite DESIGN.md claiming fix (31 May morning) |
+| Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
+| Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 
-## Implementation Status (31 May 2026 — night)
+## Implementation Status (31 May 2026 — morning)
 
 ### Completed Systems
 
@@ -212,6 +215,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Post FX beat vignette | ✅ Added | Beat-driven vignette compression (kick * 0.6) in Acts II/III — heartbeat feel (31 May) |
 | Post FX dither | ✅ Added | Triangular dither 1/255 after ACES — eliminates dark-area banding (31 May) |
 | Scene 5 sky | ✅ Upgraded | Replaced 2-line gradient with: proper 3-layer magenta/violet starfield + twinkle + aurora curtains (2 swaying bands, beat-pulse, scene_norm fade-in) + dual-scale nebula haze — matches Act III color palette (31 May) |
+| Scene 2 normal estimation | ✅ Fixed | Tetrahedron method (4 evals) in calc_normal() — code was still central-differences despite DESIGN.md claim (31 May morning) |
+| Scene 3 rain atmosphere | ✅ Added | 12 vertical rain streak dashes in post.frag (scene_idx==2): electric-blue city-light catch, kick-driven intensity, fade with scene_norm (31 May morning) |
+| Scene 5 kaleidoscope sky | ✅ Added | 6-fold azimuthal mirror on sky background rd, blends in at scene_norm 0.38→0.60 — aurora + nebulae fold into symmetric mandala (31 May morning) |
 
 ### Outstanding for Submission
 

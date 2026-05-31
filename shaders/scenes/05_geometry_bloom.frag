@@ -271,7 +271,23 @@ void main() {
     vec3 up = cross(ri, fw);
     vec3 rd = normalize(uv.x*ri + uv.y*up + 2.0*fw);
 
-    vec3 col = sky_background(rd);
+    // Kaleidoscope sky: 6-fold azimuthal mirror emerges as scene blooms.
+    // Folds aurora curtains and nebulae into a symmetric mandala backdrop.
+    float kaleido_sky = smoothstep(0.38, 0.60, u_scene_norm);
+    vec3 col;
+    if (kaleido_sky > 0.001) {
+        float az  = atan(rd.z, rd.x);
+        float el  = atan(rd.y, length(rd.xz));
+        const float SECTOR = 1.047197551;   // π/3 — 6-fold symmetry
+        az = mod(az + 3.14159265, 2.0 * SECTOR);
+        if (az > SECTOR) az = 2.0 * SECTOR - az;
+        az -= SECTOR * 0.5;
+        float cel = cos(el);
+        vec3 rd_k = normalize(vec3(cel * cos(az), sin(el), cel * sin(az)));
+        col = mix(sky_background(rd), sky_background(rd_k), kaleido_sky);
+    } else {
+        col = sky_background(rd);
+    }
 
     int steps;
     float t = march(ro, rd, steps);
