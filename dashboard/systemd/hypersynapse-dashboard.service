@@ -1,0 +1,18 @@
+[Unit]
+Description=hypersynapse — Agentix project dashboard (FastAPI on 0.0.0.0:8088)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=openclaw
+Group=openclaw
+WorkingDirectory=/home/openclaw/.openclaw/workspace/dashboard
+ExecStart=/home/openclaw/.openclaw/workspace/dashboard/.venv/bin/uvicorn server:app --host 0.0.0.0 --port 8088 --log-level info
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -291,5 +291,89 @@
     "skills": ["Data Pipelines", "ETL", "Data Warehousing", "Spark"],
     "status": "inactive",
     "direct_reports": []
+  },
+
+  "demo_director": {
+    "agent_name": "demo_director",
+    "agent_id": "agent-hyp-director-001",
+    "full_title": "Demo Director / Timeline & Scene Choreography (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "creative_director",
+    "skills": ["Timeline Authoring", "Scene Choreography", "Demo Team Coordination", "Director's Cut"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": ["demo_researcher", "shader_specialist", "procedural_specialist", "audio_specialist", "postfx_specialist", "build_specialist"]
+  },
+
+  "demo_researcher": {
+    "agent_name": "demo_researcher",
+    "agent_id": "agent-hyp-researcher-001",
+    "full_title": "Demoscene Researcher (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["Pouet Crawl", "Competitive Analysis", "Visual Trend Mining", "BPM/Genre Trends"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
+  },
+
+  "shader_specialist": {
+    "agent_name": "shader_specialist",
+    "agent_id": "agent-hyp-shader-001",
+    "full_title": "Shader Specialist (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["GLSL 4.6", "Compute Shaders", "Mesh Shaders", "Shader Hot-Reload", "GPU Profiling"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
+  },
+
+  "procedural_specialist": {
+    "agent_name": "procedural_specialist",
+    "agent_id": "agent-hyp-procedural-001",
+    "full_title": "Procedural Content Specialist (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["SDFs", "Noise (Perlin/Simplex/Worley)", "Fractals/IFS", "Geometry Generation"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
+  },
+
+  "audio_specialist": {
+    "agent_name": "audio_specialist",
+    "agent_id": "agent-hyp-audio-001",
+    "full_title": "Audio Specialist (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["AI Music Generation (Suno/Udio)", "FFT/Spectral Analysis", "Beat Detection", "miniaudio Integration"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
+  },
+
+  "postfx_specialist": {
+    "agent_name": "postfx_specialist",
+    "agent_id": "agent-hyp-postfx-001",
+    "full_title": "Post-Processing Specialist (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["Bloom", "DoF/Bokeh", "Motion Blur", "Chromatic Aberration", "Color Grading", "ACES Tonemap"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
+  },
+
+  "build_specialist": {
+    "agent_name": "build_specialist",
+    "agent_id": "agent-hyp-build-001",
+    "full_title": "Build & Packaging Specialist (hypersynapse)",
+    "created_at": "2026-05-27T09:30:00Z",
+    "reports_to": "demo_director",
+    "skills": ["CMake", "GitHub Actions CI", "MSVC/GCC Toolchains", "Static Linking", "Asset Packing"],
+    "status": "active",
+    "project": "hypersynapse",
+    "direct_reports": []
   }
 }

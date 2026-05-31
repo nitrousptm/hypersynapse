@@ -1,0 +1,34 @@
+/* Minimal extras on top of Tailwind. */
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background:
+    radial-gradient(circle at 20% 10%, rgba(168,85,247,0.10), transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(29,233,255,0.08), transparent 40%),
+    #05060d;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0a0d1a; }
+::-webkit-scrollbar-thumb { background: #293048; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4360; }
+
+/* Subtle scanline overlay for that demoscene vibe. */
+body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.015) 0px,
+    rgba(255,255,255,0.015) 1px,
+    transparent 1px,
+    transparent 3px);
+}
