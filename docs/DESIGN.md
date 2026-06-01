@@ -175,8 +175,10 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
 | Scene 3 digital glitch | Row displacement + R/B channel-split fringe in post FX at scene_norm²; strips narrow as corruption grows; tape-dropout noise bands when gs>0.20 — demoscene "data rewrite" read (1 June) |
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
+| Scene 5 flower geometry | 7-petal symmetry (was 5): fuller and more organic; rounded box petals (sdBox - 0.018); dual-axis curl (primary X-wave + secondary Z-twist per petal); stamen ring at r=0.10; temple 4th octahedron level adds filigree fractal detail (1 June) |
+| Scene 5 heat shimmer | Post FX UV warp (4-term sinusoidal turbulence, coprime freq 11.7–33.7): reality visually warps as fractals bloom; beat_amp surges on kicks; applied pre-sampling so CA+bloom+grading all inherit the warp (1 June) |
 
-## Implementation Status (31 May 2026 — night)
+## Implementation Status (1 June 2026 — morning)
 
 ### Completed Systems
 
@@ -226,6 +228,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 sdf_monolith bug | ✅ Fixed | Rise and split effects now compose correctly: all SDF work done in monolith-local frame (pl = p + rise offset); split_gap applied to pl not raw p; shade_monolith engraving UV also uses local frame — split opening now actually visible at scene end (31 May night) |
 | Scene 2 split particle burst | ✅ Added | Particle system emits 200–400 white-hot/cyan particles per beat from the crack line when split_progress > 0.01 — shoots outward along X + slight upward arc; switches back to surface-materialisation burst in pre-split phase (31 May night) |
 | Scene 3 digital glitch | ✅ Added | Row-displacement glitch in post.frag (scene_idx==2): strips narrow from h=0.055→0.016 as scene_norm grows; R/B channels shift by different factors → analog color fringe; occasional white-noise tape-dropout bands; intensity = scene_norm² * 0.75 + kick * 0.5 — sells "AI rewriting city data stream" for demoscene judges (1 June) |
+| Scene 5 flower polish | ✅ Added | 7-petal flower (was 5): rounded petal boxes + dual-axis curl (X + Z twist), stamen ring SDF; 4th octahedron level in temple for finer filigree (1 June) |
+| Scene 5 heat shimmer | ✅ Added | Pre-sampling UV warp in post.frag (scene_idx==4): 4-term sinusoidal turbulence; beat_amp surge; smoothstep 0.05→0.45 onset — CA + bloom + grading all warped together (1 June) |
 
 ### Outstanding for Submission
 

@@ -197,6 +197,19 @@ void main() {
 
     float kick = exp(-u_beat * 10.0);
 
+    // 0. Scene 5 — organic heat shimmer: reality warping as fractal geometry blooms.
+    // Applied before any sampling so CA, bloom, and grading all inherit the warp.
+    // Layered sinusoidal displacement: 4 terms at coprime frequencies → turbulent feel.
+    if (u_scene_idx == 4) {
+        float hd = smoothstep(0.05, 0.45, u_scene_norm);
+        float beat_amp = 1.0 + exp(-u_beat * 9.0) * 0.75 * u_scene_norm;
+        float wx = sin(uv.y * 33.7 + u_time * 1.55) * 0.0026
+                 + sin(uv.y * 18.1 - u_time * 0.85 + uv.x * 6.3) * 0.0017;
+        float wy = cos(uv.x * 27.3 + u_time * 1.20) * 0.0021
+                 + cos(uv.x * 11.7 - u_time * 0.65 + uv.y * 8.1) * 0.0013;
+        uv = clamp(uv + vec2(wx, wy) * hd * beat_amp, 0.001, 0.999);
+    }
+
     // 1. Chromatic aberration (barrel-distorted)
     float ca_base = 0.003 + demo_norm * 0.005;
     float ca_beat = kick * 0.008;

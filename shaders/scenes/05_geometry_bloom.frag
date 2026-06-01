@@ -103,34 +103,43 @@ float smin(float a, float b, float k) {
 // ─── fractal flower / temple SDF ─────────────────────────────────────────────
 
 float sdf_flower(vec3 p) {
-    // Petal rotation: 5-fold symmetry
+    // Petal rotation: 7-fold symmetry for richer, more organic look
     const float PI2 = 6.28318;
+    const int NUM_PETALS = 7;
     float min_d = 1e9;
-    for (int i = 0; i < 5; i++) {
-        float angle = float(i) * PI2 / 5.0;
+    for (int i = 0; i < NUM_PETALS; i++) {
+        float angle = float(i) * PI2 / float(NUM_PETALS);
         vec3 pp = p;
         float c = cos(angle), s = sin(angle);
         pp.xz = mat2(c,-s,s,c) * pp.xz;
         pp -= vec3(0.5, 0.0, 0.0);
-        float petal = sdBox(pp, vec3(0.18, 0.05, 0.12));
-        // Petal curves inward
-        petal -= 0.04 * sin(pp.x * 8.0 + u_time * 2.0);
-        min_d = smin(min_d, petal, 0.08);
+        // Elongated rounded box: thinner and smoother than plain sdBox
+        float petal = sdBox(pp, vec3(0.19, 0.038, 0.10)) - 0.018;
+        // Primary inward curve along petal axis
+        petal -= 0.042 * sin(pp.x * 7.5 + u_time * 2.1);
+        // Secondary Z-twist: petal rolls as it opens, driven by time
+        petal -= 0.016 * sin(pp.z * 5.5 + u_time * 1.4 + float(i) * 0.9);
+        min_d = smin(min_d, petal, 0.07);
     }
-    // Center sphere
-    float center = sdSphere(p, 0.18);
-    center -= fbm(p * 4.0 + u_time * 0.3) * 0.06;
+    // Center sphere with procedural surface detail
+    float center = sdSphere(p, 0.17);
+    center -= fbm(p * 5.0 + u_time * 0.28) * 0.055;
+    // Stamens: tiny spheres in a ring at the center
+    float stamen_ring = length(vec2(length(p.xz) - 0.10, p.y)) - 0.025;
+    center = smin(center, stamen_ring, 0.04);
     return smin(min_d, center, 0.06);
 }
 
 float sdf_temple(vec3 p) {
-    // Recursive nested octahedra
+    // Recursive nested octahedra — 4 levels for proper fractal depth
     vec3 pp = p;
     float d = sdOctahedron(pp, 0.9);
     pp *= 2.5; pp = abs(pp) - 0.7;
     d = smin(d, sdOctahedron(pp, 0.35), 0.1);
     pp *= 2.5; pp = abs(pp) - 0.5;
     d = smin(d, sdOctahedron(pp, 0.14), 0.05);
+    pp *= 2.5; pp = abs(pp) - 0.38;  // 4th level: fine filigree detail
+    d = smin(d, sdOctahedron(pp, 0.054), 0.018);
     return d;
 }
 
