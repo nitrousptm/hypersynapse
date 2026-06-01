@@ -217,6 +217,18 @@ void main() {
     float ca_str  = (ca_base + ca_beat) * ca_fade;
     vec3 col = chroma(uv, ca_str);
 
+    // 1b. Time echo — Scene 4 (Time Fracture): temporal ghost images.
+    // Two scene copies at offset UVs — blue-shifted (future) + red-shifted (past)
+    // Doppler-like read: parallel timelines visible as translucent afterimages.
+    if (u_scene_idx == 3) {
+        float echo_str = 0.18 + u_scene_norm * 0.22;
+        vec2 e = vec2(sin(u_time * 0.23) * 0.008, cos(u_time * 0.19) * 0.005);
+        vec3 past   = texture(u_scene, clamp(uv - e, 0.001, 0.999)).rgb;
+        vec3 future = texture(u_scene, clamp(uv + e, 0.001, 0.999)).rgb;
+        col += future * vec3(0.10, 0.25, 1.00) * echo_str;
+        col += past   * vec3(1.00, 0.18, 0.08) * echo_str * 0.60;
+    }
+
     // 2. Dual-layer bloom (richer in Acts III/IV)
     float bloom_thresh   = mix(0.82, 0.50, demo_norm);
     float bloom_radius   = mix(5.0, 14.0, demo_norm) + kick * 6.0;
@@ -261,6 +273,15 @@ void main() {
                 col      += glo * win * br * rain_str * vec3(0.18, 0.52, 1.00);
             }
         }
+    }
+
+    // 4d. Cosmic beat ripple — Scene 7 (Transcendence): expanding ring on each kick.
+    // Starts at screen center and races outward between beats — "universe heartbeat".
+    if (u_scene_idx == 6) {
+        float rr   = u_beat * 1.8;
+        float ring = smoothstep(0.018, 0.0, abs(length(ctr * 2.2) - rr));
+        float fade = exp(-u_beat * 2.2) * u_scene_norm;
+        col += ring * fade * vec3(0.35, 0.55, 1.0) * 1.4;
     }
 
     // 4c. Digital glitch — Scene 3 (City Corruption): AI rewriting the city data stream.

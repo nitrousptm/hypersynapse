@@ -63,6 +63,20 @@ vec3 rotate4d(vec3 p, float t) {
     return vec3(nx, p.y, p.z + nw * 0.3);
 }
 
+// ─── Missing helpers (smin, fbm3) ────────────────────────────────────────────
+
+float smin(float a, float b, float k) {
+    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    return mix(b, a, h) - k * h * (1.0 - h);
+}
+
+float fbm3(vec3 p) {
+    float v = 0.0, a = 0.5;
+    mat3 rot = mat3(0.8, 0.6, 0.0, -0.6, 0.8, 0.0, 0.0, 0.0, 1.0);
+    for (int i = 0; i < 6; i++) { v += a * vnoise(p); p = rot * p * 2.1 + vec3(0.9, 1.7, 2.3); a *= 0.5; }
+    return v;
+}
+
 // ─── SDF for impossible space ─────────────────────────────────────────────────
 
 float sdBox(vec3 p, vec3 b) {

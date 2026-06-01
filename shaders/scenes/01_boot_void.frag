@@ -442,6 +442,24 @@ void main() {
     vig = mix(vig, 1.0 - dot(uv*0.5, uv*0.5), sin(u_time*0.3)*0.5+0.5);
     col *= max(vig, 0.0);
 
+    // ── Boot Progress Ring — clockwise arc sweeping from top as boot completes ──
+    // Use aspect-uncorrected centered UV so the ring stays circular.
+    vec2 uv_c = uv_rot * 2.0 - 1.0;
+    {
+        const float RING_R = 0.45;
+        float d_ring = abs(length(uv_c) - RING_R);
+        // atan output: -π..π. Remap to 0=top, clockwise: fract((atan/2π) - 0.25) → 0..1
+        float ang = fract(atan(uv_c.y, uv_c.x) / 6.28318 - 0.25);
+        // Filled arc spans 0..scene_norm
+        float arc = step(ang, u_scene_norm);
+        float ring_glow = smoothstep(0.016, 0.0, d_ring) * arc;
+        // Bright leading-edge tip
+        float tip_phase = fract(ang - u_scene_norm + 0.5) - 0.5;  // 0 at tip
+        float tip = exp(-tip_phase * tip_phase * 1800.0) * exp(-d_ring * d_ring * 2000.0);
+        ring_glow += tip * 2.5;
+        col += ring_glow * vec3(0.20, 0.50, 1.0) * (0.25 + 0.75 * u_scene_norm);
+    }
+
     // ── Anticipation Pulse (kick flash) ──
     float kick_flash = smoothstep(0.85, 1.0, u_scene_norm) * 0.4;
     kick_flash += smoothstep(0.90, 0.75, u_scene_norm) * sin(u_time * 8.0) * 0.2;
