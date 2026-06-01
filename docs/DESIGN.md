@@ -178,7 +178,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 flower geometry | 7-petal symmetry (was 5): fuller and more organic; rounded box petals (sdBox - 0.018); dual-axis curl (primary X-wave + secondary Z-twist per petal); stamen ring at r=0.10; temple 4th octahedron level adds filigree fractal detail (1 June) |
 | Scene 5 heat shimmer | Post FX UV warp (4-term sinusoidal turbulence, coprime freq 11.7–33.7): reality visually warps as fractals bloom; beat_amp surges on kicks; applied pre-sampling so CA+bloom+grading all inherit the warp (1 June) |
 
-## Implementation Status (1 June 2026 — evening)
+## Implementation Status (1 June 2026 — night)
 
 ### Completed Systems
 
@@ -230,6 +230,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 digital glitch | ✅ Added | Row-displacement glitch in post.frag (scene_idx==2): strips narrow from h=0.055→0.016 as scene_norm grows; R/B channels shift by different factors → analog color fringe; occasional white-noise tape-dropout bands; intensity = scene_norm² * 0.75 + kick * 0.5 — sells "AI rewriting city data stream" for demoscene judges (1 June) |
 | Scene 5 flower polish | ✅ Added | 9-petal flower (DESIGN said 7, code went further): rounded petal boxes + dual-axis curl (X + Z twist), stamen ring SDF; 4th octahedron level in temple for finer filigree (1 June) |
 | Scene 5 heat shimmer | ✅ Added | Pre-sampling UV warp in post.frag (scene_idx==4): 4-term sinusoidal turbulence; beat_amp surge; smoothstep 0.05→0.45 onset — CA + bloom + grading all warped together (1 June) |
+| Scene 7 singularity vortex | ✅ Added | pre-sampling UV warp in post.frag (scene_idx==6): center-heavy rotation (exp(-r*4)) ramps scene_norm 0.50→0.875, snaps off at silence onset; beat-kick surge (0.06+0.14)*PI → 10/36° center rotation; entire galaxy/tendril field spirals inward before logo freeze (1 June night) |
+| Scene 7 tendril expansion | ✅ Added | UV scale tendril_scale=1/(1+scene_norm*0.9) applied to tendril(uv_t): tendrils grow 1.9× larger by scene end; fills the frame with light-as-plant-growth as per DESIGN concept (1 June night) |
 | Scene 6 smin+fbm3 fix | ✅ Fixed | Runtime-only GL shader compile bug: smin() + fbm3() used but never defined in 06_impossible_space.frag. Added both inline before sdf_room() (1 June PM) |
 | Scene 4 time echo | ✅ Added | post.frag (scene_idx==3): 2 ghost copies at ±(0.008, 0.005) UV offsets — blue-tinted future + red-tinted past; strength 0.18+scene_norm*0.22; inserted pre-bloom so ghosts glow (1 June PM) |
 | Scene 7 cosmic beat ripple | ✅ Added | post.frag (scene_idx==6): ring expanding at rr=u_beat*1.8, fade=exp(-u_beat*2.2)*scene_norm — "universe heartbeat" on every 133 BPM kick in Act IV finale (1 June PM) |

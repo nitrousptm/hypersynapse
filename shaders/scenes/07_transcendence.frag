@@ -278,12 +278,16 @@ void main() {
     float geo = geo_connection(uv * (1.0 - pullback * 0.3));
     col += geo * vec3(0.3, 0.6, 1.0) * (0.5 + 0.5 * u_scene_norm);
 
-    // Light tendrils growing outward from center
+    // Light tendrils growing outward from center.
+    // Scale UV inward as scene progresses so tendrils expand to fill the frame —
+    // "light grows like plants, eventually consuming all space" before the silence.
+    float tendril_scale = 1.0 / (1.0 + u_scene_norm * 0.9);
+    vec2  uv_t = uv * tendril_scale;
     float tendrils_total = 0.0;
     for (int i = 0; i < 8; i++) {
         float seed = float(i) / 8.0;
         float t_offset = hash(float(i) * 7.3) * 2.0;
-        tendrils_total += tendril(uv, seed, u_time + t_offset);
+        tendrils_total += tendril(uv_t, seed, u_time + t_offset);
     }
     vec3 tendril_col = mix(vec3(0.1, 0.5, 1.0), vec3(0.8, 0.3, 1.0), sin(u_time * 0.5) * 0.5 + 0.5);
     col += tendrils_total * tendril_col * 1.5;

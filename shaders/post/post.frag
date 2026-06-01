@@ -197,7 +197,26 @@ void main() {
 
     float kick = exp(-u_beat * 10.0);
 
-    // 0. Scene 5 — organic heat shimmer: reality warping as fractal geometry blooms.
+    // 0. Scene 7 (Transcendence) — singularity vortex: universe coils inward as the demo
+    // approaches the 4-minute silence. Center-heavy rotation grows from scene_norm=0.50
+    // to 0.875, snaps off instantly at silence onset. Beat-kick drives a hard surge.
+    // The sudden stillness when the logo appears contrasts powerfully against the spin.
+    if (u_scene_idx == 6) {
+        float sil  = smoothstep(0.870, 0.875, u_scene_norm);
+        float ramp = smoothstep(0.50, 0.87, u_scene_norm) * (1.0 - sil);
+        if (ramp > 0.001) {
+            vec2  d      = uv - 0.5;
+            float r      = length(d);
+            float vkick  = exp(-u_beat * 8.0);
+            // Rotation angle: center-heavy falloff (exp) so outer stars barely move
+            float rot    = ramp * (0.06 + vkick * 0.14) * exp(-r * 4.0) * 3.14159;
+            float c_r  = cos(rot), s_r = sin(rot);
+            vec2  dw   = vec2(d.x * c_r - d.y * s_r, d.x * s_r + d.y * c_r);
+            uv = clamp(0.5 + dw, 0.001, 0.999);
+        }
+    }
+
+    // 0b. Scene 5 — organic heat shimmer: reality warping as fractal geometry blooms.
     // Applied before any sampling so CA, bloom, and grading all inherit the warp.
     // Layered sinusoidal displacement: 4 terms at coprime frequencies → turbulent feel.
     if (u_scene_idx == 4) {
