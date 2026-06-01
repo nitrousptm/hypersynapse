@@ -103,30 +103,50 @@ float smin(float a, float b, float k) {
 // ─── fractal flower / temple SDF ─────────────────────────────────────────────
 
 float sdf_flower(vec3 p) {
-    // Petal rotation: 7-fold symmetry for richer, more organic look
+    // 9-fold petal symmetry with sub-petal detail
     const float PI2 = 6.28318;
-    const int NUM_PETALS = 7;
+    const int NUM_PETALS = 9;
     float min_d = 1e9;
+
     for (int i = 0; i < NUM_PETALS; i++) {
         float angle = float(i) * PI2 / float(NUM_PETALS);
         vec3 pp = p;
         float c = cos(angle), s = sin(angle);
         pp.xz = mat2(c,-s,s,c) * pp.xz;
         pp -= vec3(0.5, 0.0, 0.0);
-        // Elongated rounded box: thinner and smoother than plain sdBox
+
+        // Primary petal shape
         float petal = sdBox(pp, vec3(0.19, 0.038, 0.10)) - 0.018;
-        // Primary inward curve along petal axis
         petal -= 0.042 * sin(pp.x * 7.5 + u_time * 2.1);
-        // Secondary Z-twist: petal rolls as it opens, driven by time
         petal -= 0.016 * sin(pp.z * 5.5 + u_time * 1.4 + float(i) * 0.9);
+
+        // Sub-petals (veins/ridges on each main petal)
+        for(int j=0; j<3; j++) {
+            float sub_angle = float(j) * 1.047 - 1.047;
+            vec3 pps = pp;
+            float sc = cos(sub_angle), ss = sin(sub_angle);
+            pps.yz = mat2(sc,-ss,ss,sc) * pps.yz;
+            float sub_petal = sdBox(pps + vec3(0.0, 0.05, 0.0), vec3(0.08, 0.02, 0.04)) - 0.008;
+            petal = smin(petal, sub_petal, 0.05);
+        }
+
         min_d = smin(min_d, petal, 0.07);
     }
-    // Center sphere with procedural surface detail
+
+    // Complex center structure
     float center = sdSphere(p, 0.17);
-    center -= fbm(p * 5.0 + u_time * 0.28) * 0.055;
-    // Stamens: tiny spheres in a ring at the center
-    float stamen_ring = length(vec2(length(p.xz) - 0.10, p.y)) - 0.025;
-    center = smin(center, stamen_ring, 0.04);
+    center -= fbm(p * 8.0 + u_time * 0.28) * 0.07;
+    center -= fbm(p * 15.0 + vec3(u_time*0.3)) * 0.03;
+
+    // Multiple stamen rings
+    float stamen_ring1 = length(vec2(length(p.xz) - 0.10, p.y)) - 0.025;
+    float stamen_ring2 = length(vec2(length(p.xz) - 0.06, p.y - 0.05)) - 0.015;
+    float stamen_ring3 = length(vec2(length(p.xz) - 0.14, p.y + 0.04)) - 0.018;
+
+    center = smin(center, stamen_ring1, 0.04);
+    center = smin(center, stamen_ring2, 0.03);
+    center = smin(center, stamen_ring3, 0.035);
+
     return smin(min_d, center, 0.06);
 }
 

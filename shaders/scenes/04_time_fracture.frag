@@ -27,23 +27,22 @@ float vnoise(vec2 p) {
                mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y);
 }
 
-// ─── space fracture crack lines ──────────────────────────────────────────────
-// Glowing fractures in the fabric of spacetime — literal "time fracture" visual.
-// Branching crack pattern grows outward from impact points, pulsing on beats.
-
+// ─── Advanced Fracture System (Multi-generation branching) ────────────────────
+// Recursive space-cracks with secondary and tertiary branching
 float crack_seg(vec2 uv, vec2 a, vec2 b, float w) {
     vec2 pa = uv - a, ba = b - a;
     float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-    return w / (length(pa - ba * h) + w);
+    float d = length(pa - ba * h);
+    return w / (d + w);
 }
 
-float fracture_arm(vec2 uv, vec2 origin, float seed, float spread) {
+float fracture_arm(vec2 uv, vec2 origin, float seed, float spread, int depth) {
     float acc = 0.0;
     vec2 p = origin;
     vec2 dir = normalize(vec2(cos(seed * 6.28318), sin(seed * 6.28318)));
     float w = 0.0005;
 
-    for (int i = 0; i < 7; i++) {
+    for (int i = 0; i < 10; i++) {
         float fi = float(i);
         float bend = (hash1(seed * 13.7 + fi * 5.3) - 0.5) * 0.65;
         float c = cos(bend), s = sin(bend);
@@ -54,15 +53,23 @@ float fracture_arm(vec2 uv, vec2 origin, float seed, float spread) {
 
         acc += crack_seg(uv, p, next, w);
 
-        // Secondary branch at ~55% chance
+        // Primary branch (55% chance)
         if (hash1(seed * 11.3 + fi * 2.9) > 0.45) {
             float ba = bend + (hash1(seed * 1.7 + fi * 0.3) - 0.5) * 1.4;
             float bc = cos(ba), bs = sin(ba);
             vec2 bdir = normalize(vec2(dir.x*bc - dir.y*bs, dir.x*bs + dir.y*bc));
-            acc += crack_seg(uv, p, p + bdir * seg_len * 0.45, w * 0.5);
+            acc += crack_seg(uv, p, p + bdir * seg_len * 0.45, w * 0.5) * 0.7;
         }
 
-        w *= 0.77;
+        // Secondary branch (tertiary generation)
+        if (depth > 0 && hash1(seed * 7.5 + fi * 1.3) > 0.65) {
+            float ba2 = bend * 0.7 + (hash1(seed * 3.2 + fi * 0.7) - 0.5) * 1.8;
+            float bc2 = cos(ba2), bs2 = sin(ba2);
+            vec2 bdir2 = normalize(vec2(dir.x*bc2 - dir.y*bs2, dir.x*bs2 + dir.y*bc2));
+            acc += crack_seg(uv, p, p + bdir2 * seg_len * 0.25, w * 0.3) * 0.4;
+        }
+
+        w *= 0.72;
         p = next;
     }
     return acc;

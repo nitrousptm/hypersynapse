@@ -73,12 +73,26 @@ float sdBox(vec3 p, vec3 b) {
 float sdSphere(vec3 p, float r) { return length(p)-r; }
 
 float sdf_room(vec3 p) {
-    // Room walls (inside = negative)
+    // Multi-wall chamber with recursive geometry
     float room = -sdBox(p, vec3(2.0, 1.5, 2.0));
 
-    // Floating recursive boxes inside the room
+    // Primary recursive box
     vec3 pp = rotate4d(fold_space(p * 0.4) * 0.5, u_time * 0.3);
     float inner = sdBox(pp, vec3(0.3, 0.5, 0.3));
+
+    // Secondary nested structure (smaller, faster rotation)
+    vec3 pp2 = rotate4d(fold_space(p * 0.7) * 0.3, u_time * 0.6);
+    float inner2 = sdBox(pp2 - vec3(0.5, 0.2, 0.3), vec3(0.15, 0.25, 0.15));
+    inner = smin(inner, inner2, 0.08);
+
+    // Tertiary micro-structure (even smaller)
+    vec3 pp3 = rotate4d(p * 1.2, u_time * 0.9);
+    float inner3 = sdBox(pp3 + vec3(0.2, -0.3, 0.0), vec3(0.08, 0.12, 0.1));
+    inner = smin(inner, inner3, 0.04);
+
+    // Fractal detail on walls
+    float wall_detail = fbm3(p * 4.0 + u_time * 0.1) * 0.08;
+    room -= wall_detail * step(-1.9, room);
 
     return min(room, inner);
 }

@@ -24,28 +24,44 @@ in float v_corruption;  // per-building corruption 0..1
 float hash(float n) { return fract(sin(n) * 43758.5453); }
 float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
-// ─── window pattern (light arteries on buildings) ─────────────────────────────
-
+// ─── Advanced Window System (multi-layer, flickering networks) ────────────────
 float window_grid(vec2 uv, float id) {
     vec2 wuv = fract(uv * vec2(6.0, 12.0));
     vec2 wid = floor(uv * vec2(6.0, 12.0));
     float lit = step(0.7, hash2(wid + id * 0.3));
+
+    // Multi-layer flickering
     float flicker = step(0.98, hash2(wid + floor(u_time * 4.0)));
-    return lit * smoothstep(0.15, 0.0, min(wuv.x, min(1.0-wuv.x, min(wuv.y, 1.0-wuv.y)))) * (1.0 - flicker);
+    flicker += step(0.95, hash2(wid + floor(u_time * 2.3))) * 0.5;
+    flicker += step(0.92, hash2(wid + floor(u_time * 7.0))) * 0.3;
+
+    // Window edge glow
+    float edge = min(wuv.x, min(1.0-wuv.x, min(wuv.y, 1.0-wuv.y)));
+    float window_glow = smoothstep(0.15, 0.0, edge);
+
+    // Color temperature variation
+    float color_var = hash2(wid) * 0.3;
+
+    return lit * window_glow * (1.0 - flicker) * (0.8 + color_var);
 }
 
-// ─── light artery spreading fractal ──────────────────────────────────────────
-
-float artery(vec2 uv) {
-    // Spreading electric blue veins across facades
-    float spread = u_scene_norm;
+// ─── Multi-level Artery System (recursive spreading fractals) ──────────────────
+float artery_main(vec2 uv, float spread, int depth) {
     vec2 p = uv * 8.0;
     float v = 0.0;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < depth; i++) {
         p = abs(p) / dot(p, p) - vec2(0.5, 0.5);
         v += 1.0 / (1.0 + dot(p, p) * (5.0 - spread * 3.0));
     }
     return clamp(v * spread, 0.0, 1.0);
+}
+
+float artery(vec2 uv) {
+    float spread = u_scene_norm;
+    float v = artery_main(uv, spread, 5) * 0.7;
+    v += artery_main(uv * 0.5 + vec2(0.1, 0.2), spread, 4) * 0.3;
+    v += artery_main(uv * 1.5, spread * 0.8, 3) * 0.2;
+    return clamp(v, 0.0, 1.0);
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────

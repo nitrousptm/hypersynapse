@@ -75,52 +75,70 @@ float sacred_geometry(vec2 uv_surface) {
     return pattern * 0.04;
 }
 
-// ─── Monolith SDF ─────────────────────────────────────────────────────────────
-// Ratio 1:5:0.5 (width:height:depth), appears from void
+// ─── Advanced Monolith SDF (Multi-detail) ─────────────────────────────────────
+// Ratio 1:5:0.5, with fractal detail, micro-patterns, recursive structure
 float sdf_monolith(vec3 p, float reveal) {
-    // Work in monolith-local frame: shift p to account for rise animation.
-    // At reveal=0 the monolith is 3.5 units below frame; at reveal=1 it's centred.
     float rise = 3.5 * (1.0 - reveal);
     vec3 pl = p + vec3(0.0, rise, 0.0);
 
-    // Base shape in local frame
+    // Multi-level base shape with bevels
     float base = sdBox(pl, vec3(0.35, 1.75, 0.175));
+    float bevel = sdBox(pl, vec3(0.345, 1.745, 0.18));
+    base = mix(base, bevel, 0.3);
 
-    // Sacred geometry engravings (local-frame UV so they stay on the surface)
+    // Multi-layer sacred geometry
     vec2 front_uv = pl.xy * vec2(1.0/0.35, 1.0/1.75);
     float front_eng = sacred_geometry(front_uv * 0.4) * step(0.17, pl.z);
-    float back_eng  = sacred_geometry(front_uv * 0.4 + vec2(0.3)) * step(0.17, -pl.z);
+    front_eng += sacred_geometry(front_uv * 0.6 + vec2(u_time*0.05)) * step(0.15, pl.z) * 0.5;
+    float back_eng = sacred_geometry(front_uv * 0.4 + vec2(0.3)) * step(0.17, -pl.z);
 
-    // Vertical ribbing on sides (local frame)
-    float ribs = sdBox(vec3(mod(abs(pl.x), 0.07) - 0.035, pl.y, pl.z), vec3(0.008, 1.75, 0.18));
+    // Complex ribbing (multiple scales)
+    float ribs1 = sdBox(vec3(mod(abs(pl.x), 0.07) - 0.035, pl.y, pl.z), vec3(0.008, 1.75, 0.18));
+    float ribs2 = sdBox(vec3(mod(abs(pl.x), 0.035) - 0.0175, pl.y, pl.z), vec3(0.003, 1.75, 0.18));
+    float ribs = min(ribs1, ribs2);
     float ribs_mask = step(0.32, abs(pl.x));
-    float rib_depth = ribs * ribs_mask;
 
-    // Opening split: at scene_norm > 0.82 the monolith splits along the Y-axis.
-    // Applied in local frame so rise and split compose correctly.
+    // Vertical edge erosion
+    float edge_erode = fbm3(pl * 8.0 + u_time * 0.1) * 0.02;
+    base -= edge_erode * reveal;
+
+    // Opening split with internal void structure
     float split_progress = smoothstep(0.82, 1.0, reveal);
     float split_gap = split_progress * 0.5;
     vec3 p_split = pl;
     p_split.x = abs(pl.x) - split_gap;
+
+    // Internal chambers (negative space)
+    float internal = sdBox(p_split + vec3(0.0, -0.3, 0.0), vec3(0.2, 0.5, 0.1));
+    internal = min(internal, sdBox(p_split + vec3(0.0, 0.4, 0.0), vec3(0.15, 0.4, 0.08)));
+
     float split_half = sdBox(p_split, vec3(0.35, 1.75, 0.175));
+    split_half = min(split_half, internal * (1.0 - reveal));
 
-    // Combine base + split, then subtract detail
+    // Combine all elements
     float monolith = mix(base, split_half, split_progress);
-    monolith -= (front_eng + back_eng) * step(0.7, reveal);
-    monolith -= max(0.0, -rib_depth) * 0.5;
+    monolith -= (front_eng + back_eng) * step(0.7, reveal) * 0.04;
+    monolith -= max(0.0, -ribs) * 0.5 * ribs_mask;
 
-    // Surface noise displacement (procedural growth effect in local frame)
-    float growth_noise = fbm3(pl * 4.0 + u_time * 0.08) * 0.05 * reveal;
-    monolith -= growth_noise;
+    // Fractal surface detail
+    float surface_detail = fbm3(pl * 12.0 + u_time * 0.08) * 0.03 * reveal;
+    monolith -= surface_detail;
+
+    // Micro-displacements
+    vec3 micro_seed = floor(pl * 20.0);
+    float micro = hash31(micro_seed + vec3(u_time*0.05)).x * 0.004;
+    monolith -= micro * step(0.5, hash31(micro_seed).y);
 
     return monolith;
 }
 
-// ─── Particle Cloud (materializing swarm) ────────────────────────────────────
-// Distance to a cloud of particles forming the monolith silhouette
+// ─── Advanced Particle Cloud (Multi-generation swarm) ───────────────────────
+// Recursive particle systems forming emergent monolith silhouette
 float particle_cloud(vec3 p, float density) {
     float acc = 0.0;
     float t_anim = u_time * 0.4;
+
+    // Primary generation (large particles)
     for(int i=0;i<16;i++){
         float fi = float(i);
         vec3 base_pos = vec3(
@@ -132,6 +150,33 @@ float particle_cloud(vec3 p, float density) {
         float d = length(p - base_pos) - r;
         acc = smin(acc, d, 0.2);
     }
+
+    // Secondary generation (medium particles, faster rotation)
+    for(int i=0;i<20;i++){
+        float fi = float(i);
+        vec3 base_pos2 = vec3(
+            sin(fi * 0.9 + t_anim * 1.3) * 0.3,
+            fi * 0.18 - 1.8 + cos(fi * 1.7 + t_anim * 0.8) * 0.15,
+            cos(fi * 1.2 + t_anim * 0.9) * 0.25
+        );
+        float r2 = 0.03 + hash11(fi * 0.5) * 0.04;
+        float d2 = length(p - base_pos2) - r2;
+        acc = smin(acc, d2, 0.15);
+    }
+
+    // Tertiary generation (fine particles, chaotic motion)
+    for(int i=0;i<12;i++){
+        float fi = float(i);
+        vec3 base_pos3 = vec3(
+            sin(fi * 2.1 + t_anim * 0.3) * 0.35 + cos(fi*1.7+t_anim)*0.1,
+            fi * 0.25 - 1.6 + sin(fi * 3.0 + t_anim * 1.5) * 0.2,
+            cos(fi * 2.5 + t_anim * 0.7) * 0.3 + sin(fi*0.9)*0.1
+        );
+        float r3 = 0.02 + hash11(fi * 0.7) * 0.03;
+        float d3 = length(p - base_pos3) - r3;
+        acc = smin(acc, d3, 0.1);
+    }
+
     return acc * density;
 }
 
