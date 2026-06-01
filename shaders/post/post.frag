@@ -250,6 +250,40 @@ void main() {
         }
     }
 
+    // 4c. Digital glitch — Scene 3 (City Corruption): AI rewriting the city data stream.
+    // Row displacement + R/B channel-split fringe; grows with scene_norm² + kick beat-spike.
+    // Strips narrow as corruption builds — visual read: city data collapsing into noise.
+    if (u_scene_idx == 2) {
+        float gs = u_scene_norm * u_scene_norm * 0.75 + kick * 0.5 * u_scene_norm;
+        if (gs > 0.006) {
+            float strip_h = mix(0.055, 0.016, u_scene_norm);
+            float si      = floor(uv.y / strip_h);
+            float st      = floor(u_time * 9.0);
+            float r1      = hash21(vec2(si, st));
+            float r2      = hash21(vec2(si * 5.7, st * 0.5 + 1.0));
+            float thresh  = 1.0 - gs * 0.55;
+            if (r1 > thresh) {
+                float shift = (r2 - 0.5) * 0.036 * gs;
+                // R and B shift by different amounts → analog color fringe on glitch edge
+                float gr = texture(u_scene, clamp(vec2(uv.x + shift * 1.5, uv.y), 0.001, 0.999)).r;
+                float gg = texture(u_scene, clamp(vec2(uv.x + shift,       uv.y), 0.001, 0.999)).g;
+                float gb = texture(u_scene, clamp(vec2(uv.x + shift * 0.3, uv.y), 0.001, 0.999)).b;
+                float bf = smoothstep(thresh, thresh + 0.18, r1);
+                col = mix(col, vec3(gr, gg, gb), bf * 0.90);
+            }
+            // Occasional white-noise band (magnetic tape dropout)
+            float bst  = floor(u_time * 5.0);
+            float br   = hash21(vec2(73.1, bst));
+            if (br > 0.88 && gs > 0.20) {
+                float by   = hash21(vec2(11.7, bst));
+                float bw   = 0.003 + hash21(vec2(31.3, bst)) * 0.008;
+                float band = smoothstep(bw, 0.0, abs(uv.y - by));
+                float nx   = hash21(vec2(uv.x * u_res.x * 0.5, bst * 7.3));
+                col = mix(col, vec3(nx * 0.5, nx * 0.75, nx), band * gs * 0.75);
+            }
+        }
+    }
+
     // 5. Scanlines — only Acts I/II, fade out in III/IV
     float scan_fade = 1.0 - smoothstep(0.3, 0.5, demo_norm);
     float scanline  = sin(uv.y * u_res.y * 3.14159) * 0.5 + 0.5;

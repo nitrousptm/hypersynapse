@@ -173,6 +173,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Post FX dither | Triangular dither (1/255 amplitude, 2-sample triangle distribution) added after ACES tonemap — eliminates banding in dark areas (31 May) |
 | Scene 2 normal estimation | calc_normal() upgraded to tetrahedron method (4 SDF evals) — was still using central differences despite DESIGN.md claiming fix (31 May morning) |
 | Scene 3 rain atmosphere | Post FX rain streaks (12 vertical dashes, city-light electric blue): dystopian megacity atmosphere; intensity driven by kick, fades as buildings dissolve into math (31 May morning) |
+| Scene 3 digital glitch | Row displacement + R/B channel-split fringe in post FX at scene_norm²; strips narrow as corruption grows; tape-dropout noise bands when gs>0.20 — demoscene "data rewrite" read (1 June) |
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 
 ## Implementation Status (31 May 2026 — night)
@@ -224,6 +225,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 renderer upgrade | ✅ Fixed | Renderer switched from 02_awakening_monolith.frag to 02_awakening_core.frag — the richer shader with sacred geometry engravings (Metatron's Cube), dramatic push-in→pull-back camera, particle cloud SDF materialisation, and proper ground reflection (31 May night) |
 | Scene 2 sdf_monolith bug | ✅ Fixed | Rise and split effects now compose correctly: all SDF work done in monolith-local frame (pl = p + rise offset); split_gap applied to pl not raw p; shade_monolith engraving UV also uses local frame — split opening now actually visible at scene end (31 May night) |
 | Scene 2 split particle burst | ✅ Added | Particle system emits 200–400 white-hot/cyan particles per beat from the crack line when split_progress > 0.01 — shoots outward along X + slight upward arc; switches back to surface-materialisation burst in pre-split phase (31 May night) |
+| Scene 3 digital glitch | ✅ Added | Row-displacement glitch in post.frag (scene_idx==2): strips narrow from h=0.055→0.016 as scene_norm grows; R/B channels shift by different factors → analog color fringe; occasional white-noise tape-dropout bands; intensity = scene_norm² * 0.75 + kick * 0.5 — sells "AI rewriting city data stream" for demoscene judges (1 June) |
 
 ### Outstanding for Submission
 
