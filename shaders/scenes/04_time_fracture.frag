@@ -109,6 +109,94 @@ float debris(vec2 uv, float time_offset) {
     return acc;
 }
 
+// ─── 4D Tesseract (hypercube) ─────────────────────────────────────────────────
+// A unit hypercube rotated in 4D space projected to screen — a classic
+// demoscene "impossible object" perfectly suited to Time Fracture.
+// 4D rotation: two independent plane rotations (XW + YZ), beat-synced speed.
+
+// 4D→3D perspective projection (W is the extra axis)
+vec3 proj4d(vec4 p, float fov4) {
+    float w_dist = fov4 - p.w;
+    return p.xyz / w_dist;
+}
+
+// Signed distance to a 2D line segment (screen-space edge rendering)
+float sdEdge(vec2 uv, vec2 a, vec2 b) {
+    vec2 pa = uv - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h);
+}
+
+// Render all 32 edges of a 4D hypercube projected to screen.
+// beat_t: beat phase (0..1) used to pulse rotation speed.
+// Returns accumulated glow brightness.
+float tesseract(vec2 uv, float beat_t) {
+    // Beat-reactive rotation speeds: spins faster on kick, then settles
+    float kick = smoothstep(0.05, 0.0, u_beat);
+    float spd_xw = 0.25 + kick * 0.6;
+    float spd_yz = 0.17 + kick * 0.4;
+    float spd_xy = 0.09;
+
+    float a_xw = u_time * spd_xw + u_scene_norm * 1.2;
+    float a_yz = u_time * spd_yz;
+    float a_xy = u_time * spd_xy;
+
+    // Build rotation matrices (inline)
+    float cXW = cos(a_xw), sXW = sin(a_xw);
+    float cYZ = cos(a_yz), sYZ = sin(a_yz);
+    float cXY = cos(a_xy), sXY = sin(a_xy);
+
+    // Generate all 16 4D vertices of unit hypercube [-1..1]^4
+    // Then project to 2D screen coordinates
+    vec2 pts[16];
+    for (int vi = 0; vi < 16; vi++) {
+        // Decode binary: bit0=X, bit1=Y, bit2=Z, bit3=W
+        vec4 v = vec4(
+            float((vi     ) & 1) * 2.0 - 1.0,
+            float((vi >> 1) & 1) * 2.0 - 1.0,
+            float((vi >> 2) & 1) * 2.0 - 1.0,
+            float((vi >> 3) & 1) * 2.0 - 1.0
+        );
+
+        // Rotate in XW plane
+        float nx = v.x * cXW - v.w * sXW;
+        float nw = v.x * sXW + v.w * cXW;
+        v.x = nx; v.w = nw;
+
+        // Rotate in YZ plane
+        float ny = v.y * cYZ - v.z * sYZ;
+        float nz = v.y * sYZ + v.z * cYZ;
+        v.y = ny; v.z = nz;
+
+        // Rotate in XY plane (adds rolling twist)
+        nx = v.x * cXY - v.y * sXY;
+        ny = v.x * sXY + v.y * cXY;
+        v.x = nx; v.y = ny;
+
+        // 4D→3D perspective (W axis)
+        vec3 p3 = proj4d(v, 2.5);
+
+        // 3D→2D camera perspective (simple orthographic + mild Z-shrink)
+        float scale = 0.30 / (1.5 + p3.z * 0.3);
+        pts[vi] = p3.xy * scale;
+    }
+
+    // Traverse all 32 edges: connect vertices that differ in exactly one bit
+    float acc = 0.0;
+    for (int i = 0; i < 16; i++) {
+        for (int j = i + 1; j < 16; j++) {
+            int diff = i ^ j;
+            // Edge exists iff exactly one bit differs (diff is power of 2)
+            if (diff == 1 || diff == 2 || diff == 4 || diff == 8) {
+                float d = sdEdge(uv, pts[i], pts[j]);
+                float w = 0.0012;
+                acc += w / (d + w);
+            }
+        }
+    }
+    return clamp(acc, 0.0, 3.0);
+}
+
 // ─── reversed particle stream ─────────────────────────────────────────────────
 
 float reversed_stream(vec2 uv) {
@@ -225,6 +313,13 @@ void main() {
     float cracks = space_cracks(uv, beat_shatter);
     col += cracks * vec3(0.12, 0.45, 1.00) * (0.7 + beat_shatter * 1.2);
     col += cracks * beat_shatter * vec3(0.80, 0.90, 1.00) * 0.5;  // white-hot on beat
+
+    // 4D Tesseract — a ghostly impossible structure rotating in hyperspace.
+    // Fades in as the scene progresses, pulses electric-blue on kicks.
+    float tes = tesseract(uv, u_beat);
+    float tes_gate = smoothstep(0.05, 0.35, u_scene_norm);
+    vec3 tes_col = mix(vec3(0.15, 0.45, 1.0), vec3(0.8, 0.9, 1.0), smoothstep(0.06, 0.0, u_beat));
+    col += tes * tes_col * tes_gate * (0.55 + smoothstep(0.05, 0.0, u_beat) * 0.7);
 
     // Scanlines subtle
     col *= 0.9 + 0.1 * sin(gl_FragCoord.y * 2.0);

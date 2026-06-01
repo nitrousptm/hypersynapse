@@ -178,7 +178,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 flower geometry | 7-petal symmetry (was 5): fuller and more organic; rounded box petals (sdBox - 0.018); dual-axis curl (primary X-wave + secondary Z-twist per petal); stamen ring at r=0.10; temple 4th octahedron level adds filigree fractal detail (1 June) |
 | Scene 5 heat shimmer | Post FX UV warp (4-term sinusoidal turbulence, coprime freq 11.7–33.7): reality visually warps as fractals bloom; beat_amp surges on kicks; applied pre-sampling so CA+bloom+grading all inherit the warp (1 June) |
 
-## Implementation Status (1 June 2026 — afternoon)
+## Implementation Status (1 June 2026 — evening)
 
 ### Completed Systems
 
@@ -232,13 +232,10 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 heat shimmer | ✅ Added | Pre-sampling UV warp in post.frag (scene_idx==4): 4-term sinusoidal turbulence; beat_amp surge; smoothstep 0.05→0.45 onset — CA + bloom + grading all warped together (1 June) |
 | Scene 6 smin+fbm3 fix | ✅ Fixed | Runtime-only GL shader compile bug: smin() + fbm3() used but never defined in 06_impossible_space.frag. Added both inline before sdf_room() (1 June PM) |
 | Scene 4 time echo | ✅ Added | post.frag (scene_idx==3): 2 ghost copies at ±(0.008, 0.005) UV offsets — blue-tinted future + red-tinted past; strength 0.18+scene_norm*0.22; inserted pre-bloom so ghosts glow (1 June PM) |
-| Scene 7 cosmic beat ripple | ✅ Added | post.frag (scene_idx==6): ring expanding at rr=u_beat*1.8, fade=exp(-u_beat*2.2)*scene_norm — clean "universe heartbeat" on every 133 BPM kick in Act IV finale (1 June PM) |
+| Scene 7 cosmic beat ripple | ✅ Added | post.frag (scene_idx==6): ring expanding at rr=u_beat*1.8, fade=exp(-u_beat*2.2)*scene_norm — "universe heartbeat" on every 133 BPM kick in Act IV finale (1 June PM) |
 | Scene 1 boot progress ring | ✅ Added | Clockwise arc (r=0.45, aspect-uncorrected UV) sweeping from top as scene_norm→1; bright leading-edge tip; 0.25+0.75*scene_norm brightness ramp — demoscene countdown before 0:18 kick (1 June PM) |
-| Scene 6 shader bugfix | ✅ Fixed | smin() + fbm3() were used but never defined in 06_impossible_space.frag — only caught at GL runtime, not CMake build. Both functions now defined inline in the shader (1 June PM) |
-| Scene 4 time echo | ✅ Added | Post FX (scene_idx==3): two translucent ghost copies at offset UVs — blue-shifted "future" + red-shifted "past" — Doppler-like parallel-timelines read; feeds into bloom for glow (1 June PM) |
-| Scene 7 cosmic beat ripple | ✅ Added | Post FX (scene_idx==6): expanding ring of light from center on each kick; rr=u_beat*1.8, fades with exp(-u_beat*2.2) — "universe heartbeat" pacing the finale (1 June PM) |
-| Scene 1 boot progress ring | ✅ Added | Clockwise arc sweeps from top as scene_norm 0→1; bright leading-edge tip glow; fades in with scene_norm — classic demoscene boot countdown before 0:18 first kick (1 June PM) |
 | Scene 5 flower petals | 9-petal (not 7) | Code upgraded to 9-fold symmetry (vs 7 in DESIGN.md) during scenes expansion commit — more organic and visually richer (75d66d8) |
+| Scene 4 tesseract | ✅ Added | Beat-reactive 4D rotating hypercube (16 verts, 32 edges) projected to screen via 4D→3D→2D pipeline; two independent plane rotations (XW + YZ) + XY roll; edge glow fades in from scene_norm 0.05→0.35; electric-blue, white-hot on kick — demoscene "impossible 4D object" in Time Fracture (1 June eve) |
 
 ### Outstanding for Submission
 
