@@ -20,8 +20,8 @@ if ($Clean) {
 
 # Configure CMake
 if (-not (Test-Path build)) {
-    Write-Host "Configuring CMake for Visual Studio 2022..." -ForegroundColor Yellow
-    cmake -S . -B build -G "Visual Studio 17 2022" -DCMAKE_BUILD_TYPE=Release
+    Write-Host "Configuring CMake for Visual Studio 2025..." -ForegroundColor Yellow
+    cmake -S . -B build -G "Visual Studio 18 2025" -DCMAKE_BUILD_TYPE=Release
     if ($LASTEXITCODE -ne 0) {
         Write-Host "CMake configuration failed!" -ForegroundColor Red
         exit 1
