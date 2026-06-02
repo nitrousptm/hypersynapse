@@ -343,13 +343,43 @@ void main() {
 
     // Zoom-out overlay: show outer cosmic universe
     float outer_fade = smoothstep(0.75, 0.95, u_scene_norm);
-    vec3 outer = cosmic_particles(uv * 0.5 + 0.5 + vec2(u_time * 0.01));
-    outer += vec3(0.0, 0.02, 0.05); // deep space background
-    col = mix(col, outer, outer_fade);
 
     // ── Universe-as-particle: the shrunken view becomes a glowing spiral orb ───
     // Position tracks apply_zoom_out offset: universe "lands" at (0.3, 0.2)
     vec2 particle_pos = vec2(0.3, 0.2);
+
+    // ── Gravitational Lensing around the universe-particle ───────────────────
+    // The shrunken universe acts as a massive gravitating body. Background
+    // starlight bends around it creating Einstein ring arcs. Chromatic
+    // dispersion (R/G/B deflect slightly differently) gives a prismatic halo.
+    // Only full 3-sample lensing once zoom is significant (last ~8s of scene).
+    const float rs = 0.028;
+    vec3 outer;
+    {
+        vec2 base_uv = uv * 0.5 + 0.5 + vec2(u_time * 0.01);
+        if (zoom < 0.05) {
+            // Pre-zoom: single sample, no lens math
+            outer = cosmic_particles(base_uv);
+        } else {
+            vec2 lens_d  = uv - particle_pos;
+            float lens_r = length(lens_d);
+            float safe_r = max(lens_r, rs * 0.4);
+            float deflect = zoom * rs * rs / (safe_r * safe_r);
+            vec2 dv = -normalize(lens_d + vec2(1e-5)) * deflect;
+            // Chromatic dispersion: R/G/B deflect at slightly different strengths
+            float r = cosmic_particles(base_uv + dv * 0.88).r;
+            float g = cosmic_particles(base_uv + dv * 1.00).g;
+            float b = cosmic_particles(base_uv + dv * 1.14).b;
+            outer = vec3(r, g, b);
+            // Einstein ring: bright halo where deflected rays converge at r ≈ rs·1.6
+            float ring_r   = rs * 1.6;
+            float einstein  = smoothstep(ring_r * 0.45, 0.0, abs(lens_r - ring_r));
+            outer += einstein * zoom * vec3(0.55, 0.70, 1.0) * 1.2;
+        }
+        outer += vec3(0.0, 0.02, 0.05);
+    }
+    col = mix(col, outer, outer_fade);
+
     vec2 dp = uv - particle_pos;
     float dp_r = length(dp);
 

@@ -178,7 +178,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 flower geometry | 7-petal symmetry (was 5): fuller and more organic; rounded box petals (sdBox - 0.018); dual-axis curl (primary X-wave + secondary Z-twist per petal); stamen ring at r=0.10; temple 4th octahedron level adds filigree fractal detail (1 June) |
 | Scene 5 heat shimmer | Post FX UV warp (4-term sinusoidal turbulence, coprime freq 11.7–33.7): reality visually warps as fractals bloom; beat_amp surges on kicks; applied pre-sampling so CA+bloom+grading all inherit the warp (1 June) |
 
-## Implementation Status (1 June 2026 — night)
+## Implementation Status (2 June 2026 — early AM)
 
 ### Completed Systems
 
@@ -238,6 +238,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 1 boot progress ring | ✅ Added | Clockwise arc (r=0.45, aspect-uncorrected UV) sweeping from top as scene_norm→1; bright leading-edge tip; 0.25+0.75*scene_norm brightness ramp — demoscene countdown before 0:18 kick (1 June PM) |
 | Scene 5 flower petals | 9-petal (not 7) | Code upgraded to 9-fold symmetry (vs 7 in DESIGN.md) during scenes expansion commit — more organic and visually richer (75d66d8) |
 | Scene 4 tesseract | ✅ Added | Beat-reactive 4D rotating hypercube (16 verts, 32 edges) projected to screen via 4D→3D→2D pipeline; two independent plane rotations (XW + YZ) + XY roll; edge glow fades in from scene_norm 0.05→0.35; electric-blue, white-hot on kick — demoscene "impossible 4D object" in Time Fracture (1 June eve) |
+| Scene 6 gravitational lensing | ✅ Added | Universe-particle bends background starlight: 3-sample chromatic deflection (1/r² point mass law, rs=0.028 screen units); Einstein ring halo at r=rs·1.6; R/G/B deflect at 0.88/1.00/1.14× — prismatic arc makes the shrunken universe unmistakably massive; guard skips expensive path when zoom<0.05 (2 June) |
 
 ### Outstanding for Submission
 
