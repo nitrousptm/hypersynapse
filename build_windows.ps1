@@ -10,18 +10,29 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Use a separate build directory for MSVC to avoid conflicts with Linux Makefile builds
+$BuildDir = "build_win"
+
 Write-Host "=== HYPERSYNAPSE Windows Build ===" -ForegroundColor Cyan
 
 # Clean if requested
 if ($Clean) {
     Write-Host "Cleaning build directory..." -ForegroundColor Yellow
-    Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+    Remove-Item -Recurse -Force $BuildDir -ErrorAction SilentlyContinue
 }
 
-# Configure CMake
-if (-not (Test-Path build)) {
+# Configure CMake if not already configured with MSVC generator
+$needsConfigure = $true
+if (Test-Path "$BuildDir\CMakeCache.txt") {
+    $cacheContent = Get-Content "$BuildDir\CMakeCache.txt" -Raw
+    if ($cacheContent -match "Visual Studio") {
+        $needsConfigure = $false
+    }
+}
+
+if ($needsConfigure) {
     Write-Host "Configuring CMake for Visual Studio 2025..." -ForegroundColor Yellow
-    cmake -S . -B build -G "Visual Studio 18 2025" -DCMAKE_BUILD_TYPE=Release
+    cmake -S . -B $BuildDir -G "Visual Studio 18 2025" -DCMAKE_BUILD_TYPE=Release
     if ($LASTEXITCODE -ne 0) {
         Write-Host "CMake configuration failed!" -ForegroundColor Red
         exit 1
@@ -31,7 +42,7 @@ if (-not (Test-Path build)) {
 # Build
 if ($Build) {
     Write-Host "Building Release configuration..." -ForegroundColor Yellow
-    cmake --build build --config Release -j
+    cmake --build $BuildDir --config Release -j
     if ($LASTEXITCODE -ne 0) {
         Write-Host "Build failed!" -ForegroundColor Red
         exit 1
@@ -41,7 +52,7 @@ if ($Build) {
 
 # Run
 if ($Run) {
-    $exe = ".\build\Release\hypersynapse.exe"
+    $exe = ".\$BuildDir\Release\hypersynapse.exe"
     if (-not (Test-Path $exe)) {
         Write-Host "Executable not found at $exe" -ForegroundColor Red
         exit 1
