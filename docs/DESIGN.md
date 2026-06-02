@@ -182,7 +182,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 monolith fracture post FX | Vertical crack glow (cx-based 1/r falloff, electric blue-white) in post.frag (scene_idx==1) from scene_norm 0.82→1.0; R/B chromatic bleed outward from crack; sells "monolith opens impossibly" at Act I→II cut (2 June) |
 | Scene 6 spacetime-fold entry ripple | post.frag (scene_idx==5): radial UV ripple emanating from screen centre on entry (scene_norm 0→0.12, ~3.6s). Expanding wavefront → 1-ring decaying oscillation bends texture outward then back; beat-kicks nudge wavefront radius. Paired with blue-white prismatic burst (exp decay 1s). Sells "crossing into impossible space" at 2:30 cut. (2 June) |
 | Scene 7 big-bang entry burst | post.frag (scene_idx==6): UV radially expands outward (inverted zoom) over first 1.3s (scene_norm 0→0.055) + blue-white brightness spike (exp decay). Narrative counterpoint to scene 6 inward zoom-out: the universe-particle *explodes* into Act IV. (2 June) |
-| Scene 5 geometry crystallisation entry | post.frag (scene_idx==4): UV implodes inward over 3.6s (scene_norm 0→0.08, exp falloff) + magenta/violet burst (exp decay ~2s) + expanding cyan ring. Sells "fractal reality erupting from nothingness" at 1:45 emotional Act III peak — previously the only key scene transition without a dedicated entry effect. (2 June) |
+| Scene 5 geometry crystallisation entry | post.frag (scene_idx==4): UV implodes inward over 3.6s (scene_norm 0→0.08, exp falloff) + magenta/violet burst (exp decay ~2s) + expanding cyan ring. Sells "fractal reality erupting from nothingness" at 1:45 emotional Act III peak. (2 June) |
+| Scene 3 city materialisation entry | post.frag (scene_idx==2): UV explodes outward from centre (city crystallising from point, scene_norm 0→0.10, ~2.4s) + electric-blue/cyan burst + expanding ring. Sells 0:45 bass drop as Act II ignites. (2 June) |
+| Scene 4 temporal rupture entry | post.frag (scene_idx==3): row-based horizontal UV tear (8-px blocks, random offsets, 0→0.09, ~2.1s) + cold blue-white freeze flash. Tape-pull row-tear reads as time physically breaking at 1:15. (2 June) |
 
 ## Implementation Status (2 June 2026 — evening)
 
@@ -250,7 +252,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 monolith fracture | ✅ Added | Post FX crack light (scene_idx==1): vertical 1/r blue-white glow + R/B chromatic tear at scene_norm 0.82→1.0 — monolith split moment now has a visible light-bleed before the Act I→II cut (2 June AM) |
 | Scene 6 entry spacetime ripple | ✅ Added | Pre-sampling UV warp + prismatic burst in post.frag at 2:30 cut; radial wavefront bends texture for 3.6s then decays (2 June) |
 | Scene 7 big-bang entry burst | ✅ Added | Inverted radial UV expansion + blue-white brightness spike at Act IV entry; narrative counterpoint to scene 6 inward zoom (2 June) |
-| Scene 5 geometry crystallisation entry | ✅ Added | UV implosion + magenta/violet burst + expanding cyan ring at Act III peak (1:45); was the only key scene transition lacking a dedicated entry effect (2 June) |
+| Scene 5 geometry crystallisation entry | ✅ Added | UV implosion + magenta/violet burst + expanding cyan ring at Act III peak (1:45) (2 June) |
+| Scene 3 city materialisation entry | ✅ Added | UV outward burst + electric-blue/cyan flash + ring at 0:45 bass drop; Act II onset (2 June) |
+| Scene 4 temporal rupture entry | ✅ Added | Row-tear UV displacement + cold blue-white freeze flash at 1:15 time fracture onset (2 June) |
 
 ### Outstanding for Submission
 

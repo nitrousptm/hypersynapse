@@ -225,6 +225,36 @@ void main() {
         }
     }
 
+    // 0a-entry. Scene 3 entry — City Corruption onset at 0:45 bass drop.
+    // Act II begins: the AI starts rewriting the city. UV explodes outward (city
+    // geometry crystallising from a singularity point at screen centre), then snaps
+    // back as the corruption takes hold. Duration ~2.4s (scene_norm 0→0.10).
+    // Paired with an electric-blue flash in section 8e.
+    if (u_scene_idx == 2) {
+        float city_t = 1.0 - smoothstep(0.0, 0.10, u_scene_norm);
+        if (city_t > 0.001) {
+            vec2  d      = uv - 0.5;
+            float r      = length(d);
+            // Push pixels outward: city grid materialises from a collapsed point
+            float push   = city_t * 0.055 * exp(-r * 2.0);
+            uv = clamp(uv + normalize(d + vec2(1e-5)) * push, 0.001, 0.999);
+        }
+    }
+
+    // 0a2-entry. Scene 4 entry — Time Fracture at 1:15.
+    // Time shatters: rows of pixels are displaced horizontally by different amounts,
+    // as if the frame is being torn apart by the temporal rupture. Duration ~2.1s
+    // (scene_norm 0→0.09). Paired with a cold blue-white flash in section 8f.
+    if (u_scene_idx == 3) {
+        float frac_t = 1.0 - smoothstep(0.0, 0.09, u_scene_norm);
+        if (frac_t > 0.001) {
+            // Each row gets a different random horizontal offset — "tape-pull" tear
+            float row    = floor(uv.y * u_res.y / 8.0);   // 8-pixel row blocks
+            float rshift = (hash21(vec2(row, 7.3)) - 0.5) * frac_t * 0.045;
+            uv.x = clamp(uv.x + rshift, 0.001, 0.999);
+        }
+    }
+
     // 0b-entry. Scene 5 entry — geometry crystallisation implosion.
     // At the emotional Act III onset (t=1:45, 133 BPM peak), fractals erupt from nothingness.
     // UV is pulled inward (geometry rushing toward camera) over the first 3.6s (scene_norm 0→0.08),
@@ -435,6 +465,26 @@ void main() {
     if (u_scene_idx == 5) {
         float entry_burst = exp(-u_scene_norm * 60.0);   // ~1s burst
         col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
+    }
+
+    // 8e. Scene 3 entry — city materialisation flash at 0:45 bass drop.
+    // Electric-blue/cyan burst as Act II begins and the megacity snaps into existence.
+    // Peaks at frame 0, half-life ~0.7s, gone by ~2s.
+    if (u_scene_idx == 2) {
+        float city_flash = exp(-u_scene_norm * 90.0);
+        col += city_flash * vec3(0.15, 0.65, 1.0) * 2.2;
+        // Concentric ring: city grid radiating outward
+        float r_city = length(ctr * 2.0);
+        float ring_city = exp(-u_scene_norm * 60.0) * smoothstep(0.05, 0.0, abs(r_city - u_scene_norm * 2.0));
+        col += ring_city * vec3(0.10, 0.90, 1.0) * 1.8;
+    }
+
+    // 8f. Scene 4 entry — temporal rupture flash at 1:15.
+    // Cold blue-white "freeze" burst as time shatters at the Act II midpoint.
+    // Colder than scene 3 (more ice-blue), half-life ~0.8s.
+    if (u_scene_idx == 3) {
+        float frac_flash = exp(-u_scene_norm * 80.0);
+        col += frac_flash * vec3(0.50, 0.78, 1.0) * 2.8;
     }
 
     // 8d. Scene 5 entry — geometry bloom burst: magenta/violet flash at Act III emotional peak.
