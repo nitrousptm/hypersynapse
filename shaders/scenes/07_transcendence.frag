@@ -181,21 +181,32 @@ const int FONT_DATA[91] = int[91](
 // SINGULARITY GARDEN
 const int TITLE_STR[18] = int[18](0,1,2,3,4,5,6,7,1,8,9,12,3,6,7,10,11,2);
 
-float render_title_text(vec2 uv, float appear) {
-    if (appear < 0.001) return 0.0;
-    const float CW   = 0.060;    // cell width  (5 cols)
-    const float CH   = 0.084;    // cell height (7 rows)
-    const float GAP  = 0.015;    // inter-char gap
+// Per-character stagger: each char fades in 0.0015 scene_norm after the previous.
+// Total stagger across 18 chars = 0.027 (1.62s at 60s/scene). Each char fades
+// over 0.016 (0.96s). First char at scene_norm 0.920; last fully visible ~0.962.
+// Birth flash: when a char first appears it briefly bleeds white, then settles.
+float render_title_text(vec2 uv, float scene_norm) {
+    const float BASE    = 0.920;  // scene_norm when first char starts appearing
+    const float CHAR_DUR= 0.016;  // fade-in duration per char
+    const float STAGGER = 0.0015; // scene_norm delay between chars
+    if (scene_norm < BASE - 0.001) return 0.0;
+
+    const float CW   = 0.060;
+    const float CH   = 0.084;
+    const float GAP  = 0.015;
     const float STEP = CW + GAP;
     float x0 = -(18.0 * STEP - GAP) * 0.5;
-    const float TY   = -0.22;    // vertical center (below SG logo)
+    const float TY   = -0.22;
 
     float acc = 0.0;
     for (int ci = 0; ci < 18; ci++) {
+        float char_t = BASE + float(ci) * STAGGER;
+        float appear = smoothstep(char_t, char_t + CHAR_DUR, scene_norm);
+        if (appear < 0.001) continue;
+
         int ch_idx = TITLE_STR[ci];
         float cx   = x0 + float(ci) * STEP;
         vec2 local = uv - vec2(cx, TY + CH * 0.5);
-        // flip y so row 0 = top
         float gx = local.x * (5.0 / CW);
         float gy = -local.y * (7.0 / CH);
         int col  = int(floor(gx));
@@ -206,7 +217,9 @@ float render_title_text(vec2 uv, float appear) {
                 float dx = gx - float(col) - 0.5;
                 float dy = gy - float(row) - 0.5;
                 float d  = length(vec2(dx, dy));
-                acc += (1.0 - smoothstep(0.26, 0.52, d)) * appear;
+                // Birth flash: white-hot burst when char first materialises
+                float birth = exp(-max(scene_norm - char_t, 0.0) * 45.0);
+                acc += (1.0 - smoothstep(0.26, 0.52, d)) * (appear + birth * 1.8);
             }
         }
     }
@@ -349,10 +362,11 @@ void main() {
     float logo_breath = logo_appear * (0.85 + 0.15 * sin(u_time * 3.14));
     col *= mix(1.0, logo_breath, logo_appear * 0.3);
 
-    // Full title: "SINGULARITY GARDEN" in 5×7 pixel font (fades in just after SG logo)
-    float title_appear = smoothstep(0.920, 0.945, u_scene_norm);
-    float title_px = render_title_text(uv, title_appear);
-    vec3 title_col = mix(vec3(0.55, 0.78, 1.0), vec3(0.85, 0.92, 1.0), title_appear);
+    // Full title: "SINGULARITY GARDEN" — per-character stagger reveal
+    // First char appears at scene_norm 0.920; last fully visible at ~0.962.
+    float title_norm = smoothstep(0.920, 0.962, u_scene_norm);
+    float title_px   = render_title_text(uv, u_scene_norm);
+    vec3 title_col   = mix(vec3(0.55, 0.78, 1.0), vec3(0.85, 0.92, 1.0), title_norm);
     col += title_px * title_col * 2.0;
 
     // Decorative separator line below logo (scene_norm > 0.94)

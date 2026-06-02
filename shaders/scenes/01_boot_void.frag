@@ -472,8 +472,6 @@ void main() {
     // ── Overall Brightness and Tone ──
     col *= 0.2 + 0.8 * smoothstep(0.0, 0.4, u_scene_norm);
 
-    // Tone mapping
-    col = col / (col + vec3(1.0)) * 1.2;
-
+    // HDR output — post.frag handles ACES tonemapping (no pre-tonemap here)
     frag_color = vec4(col, 1.0);
 }

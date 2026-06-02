@@ -186,7 +186,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 city materialisation entry | post.frag (scene_idx==2): UV explodes outward from centre (city crystallising from point, scene_norm 0→0.10, ~2.4s) + electric-blue/cyan burst + expanding ring. Sells 0:45 bass drop as Act II ignites. (2 June) |
 | Scene 4 temporal rupture entry | post.frag (scene_idx==3): row-based horizontal UV tear (8-px blocks, random offsets, 0→0.09, ~2.1s) + cold blue-white freeze flash. Tape-pull row-tear reads as time physically breaking at 1:15. (2 June) |
 
-## Implementation Status (2 June 2026 — evening)
+## Implementation Status (2 June 2026 — night)
 
 ### Completed Systems
 
@@ -255,6 +255,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 geometry crystallisation entry | ✅ Added | UV implosion + magenta/violet burst + expanding cyan ring at Act III peak (1:45) (2 June) |
 | Scene 3 city materialisation entry | ✅ Added | UV outward burst + electric-blue/cyan flash + ring at 0:45 bass drop; Act II onset (2 June) |
 | Scene 4 temporal rupture entry | ✅ Added | Row-tear UV displacement + cold blue-white freeze flash at 1:15 time fracture onset (2 June) |
+| Scene 1 double-tonemap fix | ✅ Fixed | Removed Reinhard pre-tonemap from 01_boot_void.frag — was double-tonemapping with post.frag ACES, crushing highlights and muddying Act I cold palette (2 June night) |
+| Scene 7 title stagger reveal | ✅ Added | Per-character appearance: each of the 18 chars in "SINGULARITY GARDEN" fades in 0.0015 scene_norm after the previous (stagger 0→0.027); each char has a white-hot birth flash (exp decay) then settles to blue-white — proper demoscene typewriter feel (2 June night) |
 
 ### Outstanding for Submission
 
