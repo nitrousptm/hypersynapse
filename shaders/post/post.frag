@@ -225,6 +225,22 @@ void main() {
         }
     }
 
+    // 0b-entry. Scene 5 entry — geometry crystallisation implosion.
+    // At the emotional Act III onset (t=1:45, 133 BPM peak), fractals erupt from nothingness.
+    // UV is pulled inward (geometry rushing toward camera) over the first 3.6s (scene_norm 0→0.08),
+    // creating an "implosion-bloom" before the heat shimmer takes over.
+    // Paired with a magenta burst in section 8d.
+    if (u_scene_idx == 4) {
+        float crystal_t = 1.0 - smoothstep(0.0, 0.08, u_scene_norm);
+        if (crystal_t > 0.001) {
+            vec2  d      = uv - 0.5;
+            float r      = length(d);
+            // Inward pull — strongest at centre-edge boundary (exp(-r*2.5))
+            float implode = crystal_t * 0.060 * exp(-r * 2.5);
+            uv = clamp(uv - normalize(d + vec2(1e-5)) * implode, 0.001, 0.999);
+        }
+    }
+
     // 0b. Scene 5 — organic heat shimmer: reality warping as fractal geometry blooms.
     // Applied before any sampling so CA, bloom, and grading all inherit the warp.
     // Layered sinusoidal displacement: 4 terms at coprime frequencies → turbulent feel.
@@ -419,6 +435,19 @@ void main() {
     if (u_scene_idx == 5) {
         float entry_burst = exp(-u_scene_norm * 60.0);   // ~1s burst
         col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
+    }
+
+    // 8d. Scene 5 entry — geometry bloom burst: magenta/violet flash at Act III emotional peak.
+    // The 1:45 mark is the demo's emotional apex; this burst sells the "reality flowers open"
+    // moment as fractal geometry crystallises from the ruins of Scene 4's time fracture.
+    // Peaks at scene_norm≈0 (frame 0 of scene 5), half-life ~0.5s, gone by ~2s.
+    if (u_scene_idx == 4) {
+        float bloom_burst = exp(-u_scene_norm * 75.0);
+        col += bloom_burst * vec3(0.62, 0.18, 1.0) * 3.0;
+        // Secondary cyan ring — geometry emerging outward from centre
+        float r_burst = length(ctr * 2.0);
+        float ring_burst = exp(-u_scene_norm * 50.0) * smoothstep(0.06, 0.0, abs(r_burst - u_scene_norm * 2.5));
+        col += ring_burst * vec3(0.10, 0.80, 1.0) * 2.5;
     }
 
     // 9. ACES tonemapping
