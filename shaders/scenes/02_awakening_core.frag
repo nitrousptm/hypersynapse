@@ -21,6 +21,10 @@ vec3  hash31(float p) {
     vec3 v = fract(vec3(p*0.1031, p*0.1030, p*0.0973));
     v += dot(v, v.yzx + 33.33); return fract((v.xxy+v.yzz)*v.zyx);
 }
+vec3  hash31(vec3 p) {
+    p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+    p += dot(p, p.yzx + 33.33); return fract((p.xxy+p.yzz)*p.zyx);
+}
 
 float vnoise3(vec3 p) {
     vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
