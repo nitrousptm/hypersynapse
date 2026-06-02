@@ -177,8 +177,11 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 kaleidoscope sky | 6-fold azimuthal mirror applied to sky_background rd (blends in from scene_norm 0.38→0.60): aurora curtains + nebula fold into symmetric mandala backdrop — proper kaleidoscopic spaces as per design intent (31 May morning) |
 | Scene 5 flower geometry | 7-petal symmetry (was 5): fuller and more organic; rounded box petals (sdBox - 0.018); dual-axis curl (primary X-wave + secondary Z-twist per petal); stamen ring at r=0.10; temple 4th octahedron level adds filigree fractal detail (1 June) |
 | Scene 5 heat shimmer | Post FX UV warp (4-term sinusoidal turbulence, coprime freq 11.7–33.7): reality visually warps as fractals bloom; beat_amp surges on kicks; applied pre-sampling so CA+bloom+grading all inherit the warp (1 June) |
+| Scene 7 camera zoom-out | Camera recedes from galaxy via FOV compression (uv/zoom, zoom 1→3.5) + slow 0.022 rad/s lateral drift — stars contract toward horizon selling "pullback to infinite distance"; galaxy brightness ramps 2.0→4.5 as cosmic depth reveals (2 June) |
+| Scene 7 data stream convergence | Data stream phase changed -u_time→+u_time so bright bands travel inward toward logo — now reads as "data converging as typography" matching design intent; was flowing outward (2 June) |
+| Scene 2 monolith fracture post FX | Vertical crack glow (cx-based 1/r falloff, electric blue-white) in post.frag (scene_idx==1) from scene_norm 0.82→1.0; R/B chromatic bleed outward from crack; sells "monolith opens impossibly" at Act I→II cut (2 June) |
 
-## Implementation Status (2 June 2026 — early AM)
+## Implementation Status (2 June 2026 — morning)
 
 ### Completed Systems
 
@@ -239,6 +242,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 flower petals | 9-petal (not 7) | Code upgraded to 9-fold symmetry (vs 7 in DESIGN.md) during scenes expansion commit — more organic and visually richer (75d66d8) |
 | Scene 4 tesseract | ✅ Added | Beat-reactive 4D rotating hypercube (16 verts, 32 edges) projected to screen via 4D→3D→2D pipeline; two independent plane rotations (XW + YZ) + XY roll; edge glow fades in from scene_norm 0.05→0.35; electric-blue, white-hot on kick — demoscene "impossible 4D object" in Time Fracture (1 June eve) |
 | Scene 6 gravitational lensing | ✅ Added | Universe-particle bends background starlight: 3-sample chromatic deflection (1/r² point mass law, rs=0.028 screen units); Einstein ring halo at r=rs·1.6; R/G/B deflect at 0.88/1.00/1.14× — prismatic arc makes the shrunken universe unmistakably massive; guard skips expensive path when zoom<0.05 (2 June) |
+| Scene 7 zoom-out camera | ✅ Added | FOV compression via uv/zoom (zoom 1→3.5 over scene): stars contract toward horizon as camera recedes; slow 0.022 rad/s lateral drift; galaxy brightness 2.0→4.5 — sells design-doc "slow pullback to infinite distance" (2 June AM) |
+| Scene 7 stream convergence | ✅ Fixed | Data streams now flow inward toward logo (phase +u_time instead of -u_time) — reads as "data converging as typography" per design intent (2 June AM) |
+| Scene 2 monolith fracture | ✅ Added | Post FX crack light (scene_idx==1): vertical 1/r blue-white glow + R/B chromatic tear at scene_norm 0.82→1.0 — monolith split moment now has a visible light-bleed before the Act I→II cut (2 June AM) |
 
 ### Outstanding for Submission
 

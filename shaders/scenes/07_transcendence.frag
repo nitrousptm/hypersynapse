@@ -266,12 +266,20 @@ void main() {
     uv.x *= u_res.x / u_res.y;
     vec2 uv01 = gl_FragCoord.xy / u_res;
 
-    // Camera pulling back to infinite distance
+    // Camera pulling back to infinite distance — grows quadratically over the minute
     float pullback = u_scene_norm * u_scene_norm;
 
-    // Space background (galaxy + nebulae)
-    vec3 rd = normalize(vec3(uv, 2.0));  // simple sky direction
-    vec3 col = galaxy(rd) * 2.0;
+    // Zoom-out: dividing uv by zoom narrows each pixel's ray angle, compressing
+    // the galaxy toward the horizon exactly as a receding camera would see it.
+    float zoom = 1.0 + pullback * 2.5;
+    // Slow lateral drift as the universe recedes (parallax across cosmic structures)
+    float cam_drift = u_time * 0.022;
+    float cd_c = cos(cam_drift), cd_s = sin(cam_drift);
+    vec2 uv_drift = vec2(uv.x * cd_c - uv.y * cd_s * 0.15,
+                         uv.x * cd_s * 0.15 + uv.y);
+    vec3 rd = normalize(vec3(uv_drift / zoom, 2.0));
+    // Cosmos brightens as cosmic scale is revealed during the pullback
+    vec3 col = galaxy(rd) * mix(2.0, 4.5, pullback);
     col += vec3(0.005, 0.003, 0.015);
 
     // Geometric star connections (like a cosmic graph)
@@ -328,7 +336,7 @@ void main() {
         float w = 0.003 + hash(fi * 2.3) * 0.002;  // slight width variation
         streams += smoothstep(w, 0.0, across) *
                    step(0.0, along) *
-                   fract(along * 6.0 - u_time * 3.0 + fi * 0.4) * logo_appear;
+                   fract(along * 6.0 + u_time * 3.0 + fi * 0.4) * logo_appear;
     }
 
     // Two-layer logo glow: inner tight edge + outer atmospheric halo

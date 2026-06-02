@@ -248,6 +248,23 @@ void main() {
         col += past   * vec3(1.00, 0.18, 0.08) * echo_str * 0.60;
     }
 
+    // 1c. Monolith fracture — Scene 2 (Awakening Core): vertical crack of white-blue
+    // light tears the frame as the monolith "opens impossibly" before the Act I→II cut.
+    if (u_scene_idx == 1) {
+        float split_t = smoothstep(0.82, 1.0, u_scene_norm);
+        if (split_t > 0.001) {
+            float cx = abs(uv.x - 0.5);
+            float crack = split_t * 0.0035 / (cx + split_t * 0.0035);
+            col += crack * vec3(0.45, 0.75, 1.0) * split_t * 2.2;
+            // Chromatic bleed: R drifts right, B left — prismatic tear effect
+            float fr = texture(u_scene, clamp(uv + vec2(split_t * 0.020, 0.0), 0.001, 0.999)).r;
+            float fb = texture(u_scene, clamp(uv - vec2(split_t * 0.015, 0.0), 0.001, 0.999)).b;
+            float bleed = crack * split_t * 0.5;
+            col.r = mix(col.r, col.r * 0.35 + fr * 0.65, bleed);
+            col.b = mix(col.b, col.b * 0.35 + fb * 0.65, bleed);
+        }
+    }
+
     // 2. Dual-layer bloom (richer in Acts III/IV)
     float bloom_thresh   = mix(0.82, 0.50, demo_norm);
     float bloom_radius   = mix(5.0, 14.0, demo_norm) + kick * 6.0;
