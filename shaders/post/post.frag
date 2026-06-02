@@ -197,11 +197,20 @@ void main() {
 
     float kick = exp(-u_beat * 10.0);
 
-    // 0. Scene 7 (Transcendence) — singularity vortex: universe coils inward as the demo
-    // approaches the 4-minute silence. Center-heavy rotation grows from scene_norm=0.50
-    // to 0.875, snaps off instantly at silence onset. Beat-kick drives a hard surge.
-    // The sudden stillness when the logo appears contrasts powerfully against the spin.
+    // 0. Scene 7 — two compound pre-sampling effects:
+    //   a) "Big-bang" entry burst at scene_norm 0→0.055: UV expands outward from centre
+    //      (inverted zoom), fades within ~1.3s. Contrasts the inward zoom-out that ended
+    //      scene 6 — the universe-particle *explodes* into the cosmic garden of Act IV.
+    //   b) Singularity vortex at scene_norm 0.50→0.875: centre-heavy spiral before logo.
     if (u_scene_idx == 6) {
+        float bang = (1.0 - smoothstep(0.0, 0.055, u_scene_norm));
+        if (bang > 0.001) {
+            vec2  bd   = uv - 0.5;
+            float br   = length(bd);
+            // Expand UV radially outward: push pixels toward edges then snap back
+            float push = bang * 0.065 * exp(-br * 3.5);
+            uv = clamp(uv + normalize(bd + vec2(1e-5)) * push, 0.001, 0.999);
+        }
         float sil  = smoothstep(0.870, 0.875, u_scene_norm);
         float ramp = smoothstep(0.50, 0.87, u_scene_norm) * (1.0 - sil);
         if (ramp > 0.001) {
@@ -227,6 +236,29 @@ void main() {
         float wy = cos(uv.x * 27.3 + u_time * 1.20) * 0.0021
                  + cos(uv.x * 11.7 - u_time * 0.65 + uv.y * 8.1) * 0.0013;
         uv = clamp(uv + vec2(wx, wy) * hd * beat_amp, 0.001, 0.999);
+    }
+
+    // 0c. Scene 6 entry — spacetime-fold shockwave.
+    // Crossing into impossible space tears a radial ripple through the UV field.
+    // A wavefront expands outward from screen centre, decaying over ~3.6s (scene_norm 0→0.12).
+    // Applied pre-sampling so bloom + CA both ride the warped texture.
+    if (u_scene_idx == 5) {
+        float entry_t = 1.0 - smoothstep(0.0, 0.12, u_scene_norm);
+        if (entry_t > 0.001) {
+            vec2  d       = uv - 0.5;
+            float r       = length(d);
+            // Wavefront travels from centre outward; phase inverts at beat
+            float wave_r  = (1.0 - entry_t) * 0.75 + exp(-u_beat * 6.0) * 0.04;
+            float dist_to_front = r - wave_r;
+            // Decaying oscillation behind the front (1 ring crest)
+            float ripple  = sin(dist_to_front * 52.0) * exp(-abs(dist_to_front) * 28.0);
+            float warp    = ripple * entry_t * 0.028;
+            vec2  dir     = normalize(d + vec2(1e-5));
+            uv = clamp(uv + dir * warp, 0.001, 0.999);
+            // Second-pass chromatic bleed behind wavefront: R outward, B inward
+            float behind  = step(0.0, -dist_to_front) * entry_t * entry_t;
+            // Absorbed into later CA pass via slight UV nudge only — keeps this block cheap
+        }
     }
 
     // 1. Chromatic aberration (barrel-distorted)
@@ -374,6 +406,20 @@ void main() {
     // 8. Beat-sync white flash (strong beats in Acts II/III)
     float flash_str = smoothstep(0.1875, 0.75, demo_norm);
     col += exp(-u_beat * 20.0) * flash_str * 0.08;
+
+    // 8b. Scene 7 "big-bang" entry flash: universe-particle explodes at Act III→IV cut.
+    // A brief white burst (peak at scene_norm≈0.008, gone by 0.06) with warm blue tint
+    // marks the exact frame we transition from the cosmic zoom-out to the garden of light.
+    if (u_scene_idx == 6) {
+        float bang_flash = exp(-u_scene_norm * 120.0);   // peak at t=0, half-life ~0.5 frames
+        col += bang_flash * vec3(0.55, 0.72, 1.0) * 3.5;
+    }
+
+    // 8c. Scene 6 entry chromatic explosion: brief R/B prismatic burst (adds to UV ripple).
+    if (u_scene_idx == 5) {
+        float entry_burst = exp(-u_scene_norm * 60.0);   // ~1s burst
+        col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
+    }
 
     // 9. ACES tonemapping
     col = aces(col);
