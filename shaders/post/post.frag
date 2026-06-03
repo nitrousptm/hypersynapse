@@ -255,6 +255,19 @@ void main() {
         }
     }
 
+    // 0a2-exit. Scene 4 exit — temporal collapse: spacetime twists as time pressure builds.
+    // Quadratic UV rotation from centre (scene_norm 0.82→0.97, ~4.5s) creates a growing
+    // tension that snaps off cleanly at the Act III crossfade entry burst.
+    if (u_scene_idx == 3) {
+        float exit_t = smoothstep(0.82, 0.97, u_scene_norm);
+        if (exit_t > 0.001) {
+            vec2 d3  = uv - 0.5;
+            float tw = exit_t * exit_t * 0.065;   // quadratic ramp → ~3.7° at peak
+            float c3 = cos(tw), s3 = sin(tw);
+            uv = clamp(0.5 + vec2(d3.x*c3 - d3.y*s3, d3.x*s3 + d3.y*c3), 0.001, 0.999);
+        }
+    }
+
     // 0b-entry. Scene 5 entry — geometry crystallisation implosion.
     // At the emotional Act III onset (t=1:45, 133 BPM peak), fractals erupt from nothingness.
     // UV is pulled inward (geometry rushing toward camera) over the first 3.6s (scene_norm 0→0.08),

@@ -164,6 +164,11 @@ float sdf_temple(vec3 p) {
 }
 
 float sdf_world(vec3 p) {
+    // Beat-reactive geometry surge: on each kick the SDF space contracts slightly,
+    // making all geometry appear to bloom outward toward the camera.
+    float beat_surge = smoothstep(0.08, 0.0, u_beat) * u_scene_norm * 0.028;
+    p *= 1.0 - beat_surge;
+
     // Multiple flowers at different positions + temple in center
     float t = u_time * 0.15;
 

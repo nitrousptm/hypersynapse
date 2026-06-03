@@ -317,7 +317,7 @@ void main() {
     // 4D Tesseract — a ghostly impossible structure rotating in hyperspace.
     // Fades in as the scene progresses, pulses electric-blue on kicks.
     float tes = tesseract(uv, u_beat);
-    float tes_gate = smoothstep(0.05, 0.35, u_scene_norm);
+    float tes_gate = smoothstep(0.05, 0.35, u_scene_norm) * (1.0 - smoothstep(0.82, 0.97, u_scene_norm));
     vec3 tes_col = mix(vec3(0.15, 0.45, 1.0), vec3(0.8, 0.9, 1.0), smoothstep(0.06, 0.0, u_beat));
     col += tes * tes_col * tes_gate * (0.55 + smoothstep(0.05, 0.0, u_beat) * 0.7);
 

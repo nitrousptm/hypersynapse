@@ -329,10 +329,14 @@ void main() {
     float silence_fade = smoothstep(0.875, 0.895, u_scene_norm);
     col *= 1.0 - silence_fade;
 
-    // Single light pulse (scene_norm ~0.895)
-    float pulse = smoothstep(0.0, 1.0, fract((u_scene_norm - 0.895) * 10.0)) *
-                  step(0.895, u_scene_norm) * step(u_scene_norm, 0.905);
-    col += pulse * 2.0;
+    // Single light pulse (scene_norm ~0.895): instant peak, exponential decay + expanding ring.
+    // The pulse is the "Big Bang" moment before the logo materialises — cinematic camera-flash.
+    float pulse_t = max(u_scene_norm - 0.895, 0.0);
+    float pulse   = exp(-pulse_t * 65.0) * step(0.895, u_scene_norm) * 4.5;
+    float p_ring_r = pulse_t * 5.5;
+    float p_ring   = smoothstep(0.04, 0.0, abs(length(uv) - p_ring_r));
+    pulse += p_ring * exp(-pulse_t * 28.0) * 2.5;
+    col += vec3(0.78, 0.90, 1.0) * pulse;
 
     // Logo appears (12 data streams converging from all angles)
     float logo_appear = smoothstep(0.905, 0.93, u_scene_norm);

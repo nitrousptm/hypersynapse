@@ -186,7 +186,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 city materialisation entry | post.frag (scene_idx==2): UV explodes outward from centre (city crystallising from point, scene_norm 0→0.10, ~2.4s) + electric-blue/cyan burst + expanding ring. Sells 0:45 bass drop as Act II ignites. (2 June) |
 | Scene 4 temporal rupture entry | post.frag (scene_idx==3): row-based horizontal UV tear (8-px blocks, random offsets, 0→0.09, ~2.1s) + cold blue-white freeze flash. Tape-pull row-tear reads as time physically breaking at 1:15. (2 June) |
 
-## Implementation Status (2 June 2026 — night)
+## Implementation Status (3 June 2026 — early AM)
 
 ### Completed Systems
 
@@ -257,6 +257,10 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 4 temporal rupture entry | ✅ Added | Row-tear UV displacement + cold blue-white freeze flash at 1:15 time fracture onset (2 June) |
 | Scene 1 double-tonemap fix | ✅ Fixed | Removed Reinhard pre-tonemap from 01_boot_void.frag — was double-tonemapping with post.frag ACES, crushing highlights and muddying Act I cold palette (2 June night) |
 | Scene 7 title stagger reveal | ✅ Added | Per-character appearance: each of the 18 chars in "SINGULARITY GARDEN" fades in 0.0015 scene_norm after the previous (stagger 0→0.027); each char has a white-hot birth flash (exp decay) then settles to blue-white — proper demoscene typewriter feel (2 June night) |
+| Scene 4 tesseract fade-out | ✅ Added | tes_gate now multiplied by (1-smoothstep(0.82, 0.97)): tesseract dissolves gracefully in last ~4.5s of scene — no more hard cut at crossfade boundary (3 June) |
+| Scene 4 temporal exit twist | ✅ Added | post.frag (scene_idx==3, scene_norm 0.82→0.97): quadratic UV rotation from centre reaching ~3.7° — spacetime "winds up" before the Act III implosion burst snaps it clean (3 June) |
+| Scene 5 beat-reactive geometry | ✅ Added | sdf_world() shrinks p by smoothstep(0.08,0,beat)*scene_norm*0.028 on each kick: all flowers/temple surge outward toward camera on every 133 BPM kick at the emotional peak (3 June) |
+| Scene 7 light pulse | ✅ Improved | Replaced sawtooth smoothstep with: exp(-pulse_t*65)*4.5 instant flash + expanding ring (sdist exp-decay) — cinematic camera-flash feel for the Big Bang moment before logo reveal (3 June) |
 
 ### Outstanding for Submission
 
