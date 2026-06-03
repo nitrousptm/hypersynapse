@@ -297,6 +297,25 @@ void main() {
         uv = clamp(uv + vec2(wx, wy) * hd * beat_amp, 0.001, 0.999);
     }
 
+    // 0e. Scene 5 exit — fractal ascension dissolution.
+    // As the fractal flowers reach maximum bloom (2:30 cut approaching), a gentle CW
+    // spiral winds the geometry field inward while UV slightly contracts — the scene
+    // "inhales" before impossible space tears it open. scene_norm 0.82→0.98 (~4.3s).
+    if (u_scene_idx == 4) {
+        float asc_t = smoothstep(0.82, 0.98, u_scene_norm);
+        if (asc_t > 0.001) {
+            vec2 d = uv - 0.5;
+            float r = length(d);
+            // CW rotation (opposite of scene 4's CCW exit twist); centre-heavy so edges
+            // stay readable while the core fractal spirals toward its singularity.
+            float angle = asc_t * asc_t * 0.050 * exp(-r * 1.8);
+            float sa = sin(angle), ca = cos(angle);
+            d = vec2(d.x * ca + d.y * sa, -d.x * sa + d.y * ca);
+            // Soft UV compression: portal inhaling the scene (~1.6% at full strength)
+            uv = clamp(d * (1.0 - asc_t * 0.016) + 0.5, 0.001, 0.999);
+        }
+    }
+
     // 0c. Scene 6 entry — spacetime-fold shockwave.
     // Crossing into impossible space tears a radial ripple through the UV field.
     // A wavefront expands outward from screen centre, decaying over ~3.6s (scene_norm 0→0.12).
@@ -543,6 +562,16 @@ void main() {
         float r_burst = length(ctr * 2.0);
         float ring_burst = exp(-u_scene_norm * 50.0) * smoothstep(0.06, 0.0, abs(r_burst - u_scene_norm * 2.5));
         col += ring_burst * vec3(0.10, 0.80, 1.0) * 2.5;
+
+        // Exit surge: fractal geometry transcends — violet brightening bell-curves around 90%.
+        // As the UV spiral tightens the field, chromatic edge dissolution signals portal tear.
+        float asc_t   = smoothstep(0.82, 0.98, u_scene_norm);
+        float asc_bell = asc_t * (1.0 - asc_t) * 4.0;   // bell curve peaks at ~scene_norm 0.90
+        col += asc_bell * vec3(0.42, 0.10, 0.95) * 2.0;
+        // Chromatic edge dissolution: screen periphery blooms cyan/violet as portal tears
+        float e_r   = length(ctr * 1.8);
+        float e_glow = asc_t * exp(-e_r * e_r * 2.0) * (1.0 - exp(-e_r * 3.2));
+        col += e_glow * vec3(0.22, 0.05, 0.80) * 2.8;
     }
 
     // 9. ACES tonemapping
