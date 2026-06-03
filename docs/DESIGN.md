@@ -186,7 +186,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 city materialisation entry | post.frag (scene_idx==2): UV explodes outward from centre (city crystallising from point, scene_norm 0→0.10, ~2.4s) + electric-blue/cyan burst + expanding ring. Sells 0:45 bass drop as Act II ignites. (2 June) |
 | Scene 4 temporal rupture entry | post.frag (scene_idx==3): row-based horizontal UV tear (8-px blocks, random offsets, 0→0.09, ~2.1s) + cold blue-white freeze flash. Tape-pull row-tear reads as time physically breaking at 1:15. (2 June) |
 
-## Implementation Status (3 June 2026 — early AM)
+## Implementation Status (3 June 2026 — session 2)
 
 ### Completed Systems
 
@@ -261,6 +261,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 4 temporal exit twist | ✅ Added | post.frag (scene_idx==3, scene_norm 0.82→0.97): quadratic UV rotation from centre reaching ~3.7° — spacetime "winds up" before the Act III implosion burst snaps it clean (3 June) |
 | Scene 5 beat-reactive geometry | ✅ Added | sdf_world() shrinks p by smoothstep(0.08,0,beat)*scene_norm*0.028 on each kick: all flowers/temple surge outward toward camera on every 133 BPM kick at the emotional peak (3 June) |
 | Scene 7 light pulse | ✅ Improved | Replaced sawtooth smoothstep with: exp(-pulse_t*65)*4.5 instant flash + expanding ring (sdist exp-decay) — cinematic camera-flash feel for the Big Bang moment before logo reveal (3 June) |
+| Scene 2 monolith exit shockwave | ✅ Added | post.frag (scene_idx==1, scene_norm 0.84→1.0): radial UV ripple expands outward from centre as the monolith opens — aspect-corrected ring, wave_r=0.9, single decaying oscillation crest, max 2.2% warp, fades as wave exits screen. Pairs with fracture crack-light (section 1c) for compound opening effect (3 June session 2) |
+| Scene 7 subtitle "BY AGENTIX" | ✅ Added | 07_transcendence.frag: 5×7 bitmap font subtitle appears at scene_norm 0.960–0.978, positioned between separator (−0.30) and credit dots (−0.40) at y=−0.35; B=13 and X=14 added to FONT_DATA[105]; uniform fade-in, dimmer blue-white (1.3× vs title 2.0×) — completes the demoscene "DEMO_NAME / GROUP_NAME" credit format (3 June session 2) |
 
 ### Outstanding for Submission
 

@@ -320,6 +320,24 @@ void main() {
         }
     }
 
+    // 0d. Scene 2 exit — monolith opening shockwave: reality tears as the
+    // monolith opens impossibly at 0:45. A radial UV ripple expands outward
+    // from screen centre (scene_norm 0.84→1.0), creating a lens-distortion ring
+    // that precedes the chromatic crack-light in section 1c. Strength fades as
+    // the wave moves off-screen so the Act I→II crossfade transition reads clean.
+    if (u_scene_idx == 1) {
+        float open_t = smoothstep(0.84, 1.0, u_scene_norm);
+        if (open_t > 0.001) {
+            vec2  d2    = uv - 0.5;
+            float r2    = length(d2 * vec2(u_res.x / u_res.y, 1.0));  // aspect-correct radius
+            float wave_r = open_t * 0.90;
+            float dtw   = r2 - wave_r;
+            // Decaying ring: one oscillation crest behind the advancing wave front
+            float ripple = sin(dtw * 38.0) * exp(-abs(dtw) * 18.0) * (1.0 - open_t) * 0.022;
+            uv = clamp(uv + normalize(d2 + vec2(1e-5)) * ripple, 0.001, 0.999);
+        }
+    }
+
     // 1. Chromatic aberration (barrel-distorted)
     float ca_base = 0.003 + demo_norm * 0.005;
     float ca_beat = kick * 0.008;
