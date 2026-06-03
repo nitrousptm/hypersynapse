@@ -241,6 +241,22 @@ void main() {
         }
     }
 
+    // 0a-exit. Scene 3 exit — city data death at 1:15 approach (scene_norm 0.80→0.98).
+    // The AI's rewrite hits 100%: city strips detach and drift as the data collapses.
+    // Row-based horizontal scatter + vertical chromatic drift. Paired with section 8h flash.
+    if (u_scene_idx == 2) {
+        float death_t = smoothstep(0.80, 0.98, u_scene_norm);
+        if (death_t > 0.001) {
+            float strip_h = 0.028;
+            float si      = floor(uv.y / strip_h);
+            float rshift  = (hash11(si * 3.71 + floor(u_time * 4.0)) - 0.5) * death_t * 0.042;
+            uv.x = clamp(uv.x + rshift, 0.001, 0.999);
+            // Vertical chroma drift: B channel "falls" as data stream crashes
+            float vy = death_t * death_t * 0.014 * sin(uv.x * 37.0 + u_time * 1.3);
+            uv.y = clamp(uv.y + vy, 0.001, 0.999);
+        }
+    }
+
     // 0a2-entry. Scene 4 entry — Time Fracture at 1:15.
     // Time shatters: rows of pixels are displaced horizontally by different amounts,
     // as if the frame is being torn apart by the temporal rupture. Duration ~2.1s
@@ -549,6 +565,13 @@ void main() {
     if (u_scene_idx == 3) {
         float frac_flash = exp(-u_scene_norm * 80.0);
         col += frac_flash * vec3(0.50, 0.78, 1.0) * 2.8;
+    }
+
+    // 8h. Scene 3 exit flash — electric-blue system-death overload at city data collapse.
+    // Grows quadratically toward 1:15 cut: city's light burns out in a pure electric surge.
+    if (u_scene_idx == 2) {
+        float death_f = smoothstep(0.82, 0.98, u_scene_norm);
+        col += death_f * death_f * vec3(0.12, 0.55, 1.0) * 1.8;
     }
 
     // 8d. Scene 5 entry — geometry bloom burst: magenta/violet flash at Act III emotional peak.

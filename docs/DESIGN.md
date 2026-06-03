@@ -189,8 +189,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 2 awakening entry burst | ✅ Added | post.frag (scene_idx==1, scene_norm 0→entry): cold-white monolith flash + outward ring at the first kick (0:18) — every scene now has an entry post FX. (3 June session 3) |
 | Scene 7 subtitle per-char stagger | ✅ Upgraded | render_subtitle() now mirrors title: 0.0012 stagger between chars + birth flash per char. "BY AGENTIX" types in left-to-right matching demo title choreography. (3 June session 3) |
 | Scene 5 exit — fractal ascension dissolution | ✅ Added | post.frag (scene_idx==4, scene_norm 0.82→0.98): (1) CW UV spiral rotation (centre-heavy exp falloff, max ~2.9°) + 1.6% UV compression — geometry field "inhales" into the portal; (2) violet brightness bell-curve peaking at ~scene_norm 0.90 + chromatic edge dissolution glow — every scene now has both entry AND exit post FX. (3 June session 4) |
+| Scene 3 exit — city data death | ✅ Added | post.frag (scene_idx==2, scene_norm 0.80→0.98): (1) row-based UV strip scatter (0.028 strip height, random horizontal offsets growing with death_t) + vertical chroma drift (B-channel "falls" as data crashes); (2) electric-blue brightness overload (quadratic ramp, vec3(0.12, 0.55, 1.0) × 1.8). Paired with existing digital-glitch (section 4c) which is also at peak intensity. Sells "AI overwrites last city geometry just before time shatters at 1:15". Now every scene has confirmed entry AND exit post FX. (3 June session 5) |
 
-## Implementation Status (3 June 2026 — session 4)
+## Implementation Status (3 June 2026 — session 5)
 
 ### Completed Systems
 
@@ -267,7 +268,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 7 light pulse | ✅ Improved | Replaced sawtooth smoothstep with: exp(-pulse_t*65)*4.5 instant flash + expanding ring (sdist exp-decay) — cinematic camera-flash feel for the Big Bang moment before logo reveal (3 June) |
 | Scene 2 monolith exit shockwave | ✅ Added | post.frag (scene_idx==1, scene_norm 0.84→1.0): radial UV ripple expands outward from centre as the monolith opens — aspect-corrected ring, wave_r=0.9, single decaying oscillation crest, max 2.2% warp, fades as wave exits screen. Pairs with fracture crack-light (section 1c) for compound opening effect (3 June session 2) |
 | Scene 7 subtitle "BY AGENTIX" | ✅ Added | 07_transcendence.frag: 5×7 bitmap font subtitle appears at scene_norm 0.960–0.978, positioned between separator (−0.30) and credit dots (−0.40) at y=−0.35; B=13 and X=14 added to FONT_DATA[105]; uniform fade-in, dimmer blue-white (1.3× vs title 2.0×) — completes the demoscene "DEMO_NAME / GROUP_NAME" credit format (3 June session 2) |
-| Scene 5 exit post FX | ✅ Added | post.frag (scene_idx==4, scene_norm 0.82→0.98): CW UV spiral (asc_t² × 0.050 × exp(-r×1.8) radians, ~2.9° max at centre) + 1.6% UV compression; violet bell-curve brightness surge (peaks at scene_norm≈0.90); chromatic edge dissolution glow ring. Completes the symmetry: every scene now has both entry AND exit post FX. (3 June session 4) |
+| Scene 5 exit post FX | ✅ Added | post.frag (scene_idx==4, scene_norm 0.82→0.98): CW UV spiral (asc_t² × 0.050 × exp(-r×1.8) radians, ~2.9° max at centre) + 1.6% UV compression; violet bell-curve brightness surge (peaks at scene_norm≈0.90); chromatic edge dissolution glow ring. (3 June session 4) |
+| Scene 3 exit post FX | ✅ Added | post.frag (scene_idx==2, scene_norm 0.80→0.98): strip-scatter UV tear + B-channel vertical chroma drift + electric-blue brightness overload (×1.8). Every scene now confirmed entry AND exit post FX. (3 June session 5) |
 
 ### Outstanding for Submission
 
