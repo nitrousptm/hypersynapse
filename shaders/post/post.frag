@@ -533,6 +533,28 @@ void main() {
         col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
     }
 
+    // 8i. Scene 1 exit — Boot sequence lock-on surge (scene_norm 0.84→1.0).
+    // The boot progress ring completes its sweep; right before the 0:18 first kick
+    // the system "acquires signal" — a sharp horizontal scan-sweep white-out and brief
+    // CRT vertical-sync pulse sell the machine achieving consciousness before Scene 2
+    // cuts in. Palette: pure white + faint cold-blue tint (Act I minimal).
+    if (u_scene_idx == 0) {
+        float lock_t = smoothstep(0.84, 1.0, u_scene_norm);
+        if (lock_t > 0.001) {
+            // Global brightness surge: CRT screen-flood as signal locks
+            col += lock_t * lock_t * vec3(0.88, 0.93, 1.0) * 2.4;
+            // Horizontal sync-sweep: a single bright scan line that drags from top to
+            // bottom during the lock window — classic CRT V-sync tearing read
+            float sweep_y = 1.0 - lock_t;                   // descends 1→0 (top to bottom)
+            float scan_dist = abs(uv.y - sweep_y);
+            float scan_line = exp(-scan_dist * 380.0) * lock_t;
+            col += scan_line * vec3(0.70, 0.85, 1.0) * 3.2;
+            // Trailing afterglow: brightens the band the scan line has already passed (above)
+            float trail = smoothstep(0.025, 0.0, sweep_y - uv.y) * lock_t * 0.5;
+            col += trail * vec3(0.60, 0.78, 1.0) * 0.9;
+        }
+    }
+
     // 8g. Scene 2 entry — Awakening Core first kick at 0:18.
     // The first beat of the whole demo. A cold-white monolith flash as the giant
     // structure sparks into existence from the black void. Colder than scene 3

@@ -190,14 +190,15 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 7 subtitle per-char stagger | ✅ Upgraded | render_subtitle() now mirrors title: 0.0012 stagger between chars + birth flash per char. "BY AGENTIX" types in left-to-right matching demo title choreography. (3 June session 3) |
 | Scene 5 exit — fractal ascension dissolution | ✅ Added | post.frag (scene_idx==4, scene_norm 0.82→0.98): (1) CW UV spiral rotation (centre-heavy exp falloff, max ~2.9°) + 1.6% UV compression — geometry field "inhales" into the portal; (2) violet brightness bell-curve peaking at ~scene_norm 0.90 + chromatic edge dissolution glow — every scene now has both entry AND exit post FX. (3 June session 4) |
 | Scene 3 exit — city data death | ✅ Added | post.frag (scene_idx==2, scene_norm 0.80→0.98): (1) row-based UV strip scatter (0.028 strip height, random horizontal offsets growing with death_t) + vertical chroma drift (B-channel "falls" as data crashes); (2) electric-blue brightness overload (quadratic ramp, vec3(0.12, 0.55, 1.0) × 1.8). Paired with existing digital-glitch (section 4c) which is also at peak intensity. Sells "AI overwrites last city geometry just before time shatters at 1:15". Now every scene has confirmed entry AND exit post FX. (3 June session 5) |
+| Scene 1 exit — Boot sequence lock-on surge | ✅ Added | post.frag (scene_idx==0, scene_norm 0.84→1.0): (1) global cold-blue/white brightness surge (lock_t²×2.4) as CRT "signal locks"; (2) single bright scan line sweeping top→bottom (exp(-dist×380)×3.2, white-blue); (3) trailing afterglow on already-scanned band. Pairs seamlessly with Scene 2 entry burst at the 0:18 cut — compound: lock surge + crossfade + entry flash. All 7 scenes now have explicit entry AND exit post FX in post.frag. (3 June session 6) |
 
-## Implementation Status (3 June 2026 — session 5)
+## Implementation Status (3 June 2026 — session 6)
 
 ### Completed Systems
 
 | System | Status | Notes |
 |--------|--------|-------|
-| Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + radial zoom blur + scanlines + grain + vignette |
+| Post FX chain | ✅ Complete | ACES + dual-layer bloom + lens flare + CA + radial zoom blur + scanlines + grain + vignette + Scene 1 exit CRT lock-on |
 | Scene shaders (all 7) | ✅ Complete | Boot Void → Transcendence fully implemented + bug fixes (29 May) |
 | Signature Scene 6 | ✅ Complete | Recursive portal FBOs, holy-shit zoom-out at 2:50; glow offset fixed + richer star field + radial zoom post FX |
 | SDF raymarching | ✅ Complete | sdf_lib.glsl shared library, used in scenes 2, 5, 6 |
