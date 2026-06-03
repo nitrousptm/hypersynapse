@@ -231,12 +231,13 @@ float render_title_text(vec2 uv, float scene_norm) {
 }
 
 // Subtitle: "BY AGENTIX" — group tag, smaller, below separator.
-// Uniform fade-in at scene_norm 0.960, no per-char stagger.
+// Per-char stagger (0.0012 scene_norm apart) + birth flash — mirrors the title's
+// typewriter feel so the credit sequence reads as a single unified choreography.
 float render_subtitle(vec2 uv, float scene_norm) {
-    const float BASE = 0.960;
-    const float DUR  = 0.018;
-    float appear = smoothstep(BASE, BASE + DUR, scene_norm);
-    if (appear < 0.001) return 0.0;
+    const float BASE    = 0.960;   // first char starts appearing
+    const float CHAR_DUR= 0.014;   // fade-in duration per char
+    const float STAGGER = 0.0012;  // scene_norm delay between chars
+    if (scene_norm < BASE - 0.001) return 0.0;
 
     const float CW   = 0.038;
     const float CH   = 0.053;
@@ -247,6 +248,10 @@ float render_subtitle(vec2 uv, float scene_norm) {
 
     float acc = 0.0;
     for (int ci = 0; ci < 10; ci++) {
+        float char_t = BASE + float(ci) * STAGGER;
+        float appear = smoothstep(char_t, char_t + CHAR_DUR, scene_norm);
+        if (appear < 0.001) continue;
+
         int ch_idx = SUB_STR[ci];
         float cx   = x0 + float(ci) * STEP;
         vec2 local = uv - vec2(cx, TY + CH * 0.5);
@@ -260,11 +265,13 @@ float render_subtitle(vec2 uv, float scene_norm) {
                 float dx = gx - float(col) - 0.5;
                 float dy = gy - float(row) - 0.5;
                 float d  = length(vec2(dx, dy));
-                acc += (1.0 - smoothstep(0.30, 0.55, d)) * appear;
+                // Brief birth flash — char materialises white-hot then settles to blue-white
+                float birth = exp(-max(scene_norm - char_t, 0.0) * 55.0);
+                acc += (1.0 - smoothstep(0.30, 0.55, d)) * (appear + birth * 1.2);
             }
         }
     }
-    return min(acc, 1.5);
+    return min(acc, 1.8);
 }
 
 // ─── logo formation (final 10 seconds) ───────────────────────────────────────
@@ -414,8 +421,8 @@ void main() {
     vec3 title_col   = mix(vec3(0.55, 0.78, 1.0), vec3(0.85, 0.92, 1.0), title_norm);
     col += title_px * title_col * 2.0;
 
-    // Subtitle: "BY AGENTIX" — fades in at scene_norm 0.960, below the separator
-    float sub_appear = smoothstep(0.960, 0.978, u_scene_norm);
+    // Subtitle: "BY AGENTIX" — per-char stagger from 0.960 (first) to ~0.975 (all fully up)
+    float sub_appear = smoothstep(0.960, 0.975, u_scene_norm);
     float sub_px     = render_subtitle(uv, u_scene_norm);
     vec3  sub_col    = mix(vec3(0.38, 0.52, 0.88), vec3(0.55, 0.70, 0.95), sub_appear);
     col += sub_px * sub_col * 1.3;

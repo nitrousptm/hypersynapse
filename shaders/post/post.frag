@@ -498,6 +498,20 @@ void main() {
         col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
     }
 
+    // 8g. Scene 2 entry — Awakening Core first kick at 0:18.
+    // The first beat of the whole demo. A cold-white monolith flash as the giant
+    // structure sparks into existence from the black void. Colder than scene 3
+    // (this is Act I — minimal palette), half-life ~0.6s. Paired with an outward
+    // ring echoing the scene 1 boot ring completing its sweep.
+    if (u_scene_idx == 1) {
+        float mono_flash = exp(-u_scene_norm * 100.0);
+        col += mono_flash * vec3(0.65, 0.80, 1.00) * 2.8;
+        // Expanding ring: monolith materialising outward from a point
+        float r_mono = length(ctr * 2.0);
+        float ring_mono = exp(-u_scene_norm * 70.0) * smoothstep(0.05, 0.0, abs(r_mono - u_scene_norm * 2.2));
+        col += ring_mono * vec3(0.40, 0.65, 1.00) * 2.0;
+    }
+
     // 8e. Scene 3 entry — city materialisation flash at 0:45 bass drop.
     // Electric-blue/cyan burst as Act II begins and the megacity snaps into existence.
     // Peaks at frame 0, half-life ~0.7s, gone by ~2s.

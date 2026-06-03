@@ -186,6 +186,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 city materialisation entry | post.frag (scene_idx==2): UV explodes outward from centre (city crystallising from point, scene_norm 0→0.10, ~2.4s) + electric-blue/cyan burst + expanding ring. Sells 0:45 bass drop as Act II ignites. (2 June) |
 | Scene 4 temporal rupture entry | post.frag (scene_idx==3): row-based horizontal UV tear (8-px blocks, random offsets, 0→0.09, ~2.1s) + cold blue-white freeze flash. Tape-pull row-tear reads as time physically breaking at 1:15. (2 June) |
 
+| Scene 2 awakening entry burst | ✅ Added | post.frag (scene_idx==1, scene_norm 0→entry): cold-white monolith flash + outward ring at the first kick (0:18) — every scene now has an entry post FX. (3 June session 3) |
+| Scene 7 subtitle per-char stagger | ✅ Upgraded | render_subtitle() now mirrors title: 0.0012 stagger between chars + birth flash per char. "BY AGENTIX" types in left-to-right matching demo title choreography. (3 June session 3) |
+
 ## Implementation Status (3 June 2026 — session 2)
 
 ### Completed Systems
