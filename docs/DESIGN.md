@@ -192,7 +192,9 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 3 exit — city data death | ✅ Added | post.frag (scene_idx==2, scene_norm 0.80→0.98): (1) row-based UV strip scatter (0.028 strip height, random horizontal offsets growing with death_t) + vertical chroma drift (B-channel "falls" as data crashes); (2) electric-blue brightness overload (quadratic ramp, vec3(0.12, 0.55, 1.0) × 1.8). Paired with existing digital-glitch (section 4c) which is also at peak intensity. Sells "AI overwrites last city geometry just before time shatters at 1:15". Now every scene has confirmed entry AND exit post FX. (3 June session 5) |
 | Scene 1 exit — Boot sequence lock-on surge | ✅ Added | post.frag (scene_idx==0, scene_norm 0.84→1.0): (1) global cold-blue/white brightness surge (lock_t²×2.4) as CRT "signal locks"; (2) single bright scan line sweeping top→bottom (exp(-dist×380)×3.2, white-blue); (3) trailing afterglow on already-scanned band. Pairs seamlessly with Scene 2 entry burst at the 0:18 cut — compound: lock surge + crossfade + entry flash. All 7 scenes now have explicit entry AND exit post FX in post.frag. (3 June session 6) |
 
-## Implementation Status (3 June 2026 — session 6)
+| Scene 6 exit — singularity implosion | ✅ Added | post.frag (scene_idx==5, scene_norm 0.875→1.0): (1) UV contracts inward toward centre (exp-falloff gravity pull, sing_pull² × 0.042 — picks up exactly where vortex gate ends at 0.875); (2) glowing core flare at screen centre (exp(-r²×5.5) × 5.5 × sing_t²) + screen-wide blue-white surge (×3.0 cubic ramp). Creates inhale→exhale transition: Scene 6 UV implodes → Scene 7 big-bang UV explodes outward. All 7 scenes now have confirmed entry AND exit post FX. (4 June) |
+
+## Implementation Status (4 June 2026)
 
 ### Completed Systems
 

@@ -223,6 +223,16 @@ void main() {
             vec2  dw   = vec2(d.x * c_r - d.y * s_r, d.x * s_r + d.y * c_r);
             uv = clamp(0.5 + dw, 0.001, 0.999);
         }
+        // Exit — singularity implosion (scene_norm 0.875→1.0): UV contracts toward centre
+        // as the universe-particle crosses its event horizon. Picks up exactly where the
+        // vortex ends (sil gate). Pairs with Scene 7 big-bang burst (UV expands outward)
+        // for an inhale→exhale transition at the Act III→IV cut.
+        float sing_pull = smoothstep(0.875, 1.0, u_scene_norm);
+        if (sing_pull > 0.001) {
+            vec2  spd  = uv - 0.5;
+            float pull = sing_pull * sing_pull * 0.042 * exp(-length(spd) * 2.2);
+            uv = clamp(uv - normalize(spd + vec2(1e-5)) * pull, 0.001, 0.999);
+        }
     }
 
     // 0a-entry. Scene 3 entry — City Corruption onset at 0:45 bass drop.
@@ -617,6 +627,20 @@ void main() {
         float e_r   = length(ctr * 1.8);
         float e_glow = asc_t * exp(-e_r * e_r * 2.0) * (1.0 - exp(-e_r * 3.2));
         col += e_glow * vec3(0.22, 0.05, 0.80) * 2.8;
+    }
+
+    // 8j. Scene 6 exit — singularity implosion glow: universe-particle crosses event horizon.
+    // Glowing core at screen centre grows as UV contracts (pre-sampling block above).
+    // White-blue surge at scene_norm 1.0 pairs with Scene 7 big-bang burst for the
+    // inhale→exhale transition: the universe collapses, then explodes into Act IV.
+    if (u_scene_idx == 5) {
+        float sing_t = smoothstep(0.875, 1.0, u_scene_norm);
+        if (sing_t > 0.001) {
+            float r_sing = length(ctr * 2.2);
+            float core   = sing_t * exp(-r_sing * r_sing * 5.5);
+            col += core * vec3(0.60, 0.78, 1.0) * 5.5 * sing_t;
+            col += sing_t * sing_t * sing_t * vec3(0.75, 0.88, 1.0) * 3.0;
+        }
     }
 
     // 9. ACES tonemapping
