@@ -45,8 +45,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    // Default music path when running interactively without explicit argument
-    if (!audio_path && !capture_mode)
+    // Default music path — used for audio playback (interactive) and ffmpeg mix-in (capture)
+    if (!audio_path)
         audio_path = "assets/music/Concrete-Syncope.wav";
 
     glfwSetErrorCallback(glfw_error);
@@ -96,13 +96,21 @@ int main(int argc, char** argv) {
     const double t0 = glfwGetTime();
     int frame_count = 0;
     double last_stats_print = 0.0;
+    double last_audio_t = 0.0;  // tracks last valid audio position for safe fallback
     constexpr double kCaptureHz = 60.0;
     while (!glfwWindowShouldClose(window)) {
-        // In capture mode, advance time deterministically at exactly 60fps so
-        // the output video has uniform frame spacing regardless of render speed.
-        const double t = capture_mode
-                       ? frame_count / kCaptureHz
-                       : glfwGetTime() - t0;
+        // In capture mode: deterministic 60fps clock.
+        // Interactive: use audio cursor as canonical clock so beat-sync effects
+        // stay locked to actual playback (accounts for audio startup latency).
+        // Falls back to wall clock before audio starts or when audio is inactive.
+        double t;
+        if (capture_mode) {
+            t = frame_count / kCaptureHz;
+        } else {
+            double audio_t = audio.is_active() ? audio.position() : 0.0;
+            if (audio_t > 0.001) last_audio_t = audio_t;
+            t = (last_audio_t > 0.001) ? last_audio_t : glfwGetTime() - t0;
+        }
         if (t >= kDemoDurationSec) break;
 
         timeline.update(t);
@@ -136,11 +144,13 @@ int main(int argc, char** argv) {
                             t, static_cast<int>(timeline.act()),
                             static_cast<int>(timeline.scene()));
             } else {
-                std::printf("[%.1fs] FPS: %.1f | %.2f ms | Act: %d | Scene: %d | Beat: %d\n",
+                double wall_t = glfwGetTime() - t0;
+                std::printf("[%.1fs] FPS: %.1f | %.2f ms | Act: %d | Scene: %d | Beat: %d | drift: %+.0fms\n",
                             t, stats.fps(), stats.frame_time_ms(),
                             static_cast<int>(timeline.act()),
                             static_cast<int>(timeline.scene()),
-                            timeline.beat_count());
+                            timeline.beat_count(),
+                            (t - wall_t) * 1000.0);
             }
             last_stats_print = t;
         }

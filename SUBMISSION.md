@@ -45,15 +45,17 @@ cd hypersynapse
 
 **Console Output (every 5 seconds):**
 ```
-[5.0s]   FPS: 60.0 | Frame: 16.67 ms | Act: 0 | Scene: 1 | Beat: 11
-[10.0s]  FPS: 59.8 | Frame: 16.71 ms | Act: 0 | Scene: 1 | Beat: 22
-[45.0s]  FPS: 60.0 | Frame: 16.67 ms | Act: 1 | Scene: 3 | Beat: 99
-[240.0s] [demo] finished
+[5.0s]   FPS: 60.0 | 16.67 ms | Act: 0 | Scene: 1 | Beat: 11 | drift: +0ms
+[10.0s]  FPS: 59.8 | 16.71 ms | Act: 0 | Scene: 1 | Beat: 22 | drift: +0ms
+[45.0s]  FPS: 60.0 | 16.67 ms | Act: 1 | Scene: 3 | Beat: 99 | drift: +0ms
+[240.0s] [demo] finished — 240s complete
 ```
+`drift` = audio cursor − wall clock; should remain near 0 ms throughout.
 
 ### Phase 3: Capture & Encoding
 ```powershell
 # Generate frame sequence (~4 minutes wall-clock, bandwidth-limited)
+# No audio arg needed — defaults to assets\music\Concrete-Syncope.wav for ffmpeg mix-in
 .\build\Release\hypersynapse.exe --capture
 
 # Expected output:
@@ -232,9 +234,11 @@ Options:
 
 ### Audio/Video Sync
 **Q: Audio drifts before 4 minutes**  
-A: Check audio.cpp playback timing. This shouldn't happen if Concrete-Syncope.wav is exactly 240s.
-- Verify: `ffprobe assets/music/Concrete-Syncope.wav` → Duration must be 00:04:00.00 ± 0.01s
-- If drift detected, timeline.cpp time() may have rounding errors at 133 BPM beat tracking
+A: The timeline clock is locked to the audio cursor (miniaudio PCM position), so wall-clock drift
+is eliminated by design. The `drift:` field in console output shows audio-vs-wall-clock skew —
+a value within ±5 ms is normal (audio startup buffer latency).
+- If drift is large (> 50 ms), verify Concrete-Syncope.wav is exactly 240s:
+  `ffprobe assets/music/Concrete-Syncope.wav` → Duration must be 00:04:00.00 ± 0.01s
 
 ---
 
@@ -309,5 +313,5 @@ constexpr int kHeight = 900;    // instead of 1080
 
 ---
 
-*Last updated: 30 May 2026*  
-*Submission Guide v1.2 — SINGULARITY GARDEN / HYPERSYNAPSE Assembly 2026*
+*Last updated: 4 June 2026*  
+*Submission Guide v1.3 — SINGULARITY GARDEN / HYPERSYNAPSE Assembly 2026*
