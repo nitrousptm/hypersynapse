@@ -48,17 +48,30 @@ void FrameCapture::capture_frame(uint32_t frame_number) {
     }
 }
 
-std::string FrameCapture::ffmpeg_command(uint32_t fps) const {
-    // Generate ffmpeg command for WebM encoding
-    // Usage: run offline after all frames captured
-    char cmd[512];
-    std::snprintf(
-        cmd, sizeof(cmd),
-        "ffmpeg -framerate %u -i %s/frame_%%06d.ppm "
-        "-c:v libvpx-vp9 -b:v 10000k -pass 1 -f null /dev/null && "
-        "ffmpeg -framerate %u -i %s/frame_%%06d.ppm "
-        "-c:v libvpx-vp9 -b:v 10000k -pass 2 hypersynapse.webm",
-        fps, output_dir_.c_str(), fps, output_dir_.c_str());
+std::string FrameCapture::ffmpeg_command(uint32_t fps, const char* audio_path) const {
+    char cmd[1024];
+    // Include audio mix-in when audio_path is provided — WebM needs both streams
+    // Two-pass VP9: pass 1 is analysis-only (null output), pass 2 produces final file
+    if (audio_path && audio_path[0]) {
+        std::snprintf(
+            cmd, sizeof(cmd),
+            "ffmpeg -framerate %u -i %s/frame_%%06d.ppm -i %s "
+            "-c:v libvpx-vp9 -b:v 10000k -c:a libopus -b:a 192k -shortest "
+            "-pass 1 -f null /dev/null && "
+            "ffmpeg -framerate %u -i %s/frame_%%06d.ppm -i %s "
+            "-c:v libvpx-vp9 -b:v 10000k -c:a libopus -b:a 192k -shortest "
+            "-pass 2 SINGULARITY_GARDEN.webm",
+            fps, output_dir_.c_str(), audio_path,
+            fps, output_dir_.c_str(), audio_path);
+    } else {
+        std::snprintf(
+            cmd, sizeof(cmd),
+            "ffmpeg -framerate %u -i %s/frame_%%06d.ppm "
+            "-c:v libvpx-vp9 -b:v 10000k -pass 1 -f null /dev/null && "
+            "ffmpeg -framerate %u -i %s/frame_%%06d.ppm "
+            "-c:v libvpx-vp9 -b:v 10000k -pass 2 SINGULARITY_GARDEN.webm",
+            fps, output_dir_.c_str(), fps, output_dir_.c_str());
+    }
     return std::string(cmd);
 }
 

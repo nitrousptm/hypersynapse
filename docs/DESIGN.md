@@ -290,6 +290,11 @@ All geometry generated procedurally at runtime — no external asset files.
 | nfo file | ✅ Done | SINGULARITY_GARDEN.nfo created (28 May 2026) |
 | Assembly portal upload | 🟡 Required | Before 2026-07-28 deadline (user action) |
 
-### Completeness Summary (4 June 2026 — Session 2)
+| --fullscreen flag | ✅ Added | main.cpp: args parsed before window creation; `--fullscreen` passes primary monitor to glfwCreateWindow — Assembly shows demos fullscreen (4 June session 3) |
+| Auto music path | ✅ Added | main.cpp: defaults to `assets/music/Concrete-Syncope.wav` when no audio arg given (non-capture mode) — plain `./hypersynapse` now plays music (4 June session 3) |
+| [demo] finished message | ✅ Added | main.cpp: prints `[demo] finished — 240s complete` after loop exits — matches SUBMISSION.md expected console output (4 June session 3) |
+| WebM audio mix-in | ✅ Fixed | capture.cpp: ffmpeg_command() now includes `-i audio_path -c:a libopus -b:a 192k -shortest` — captured WebM will include synchronized music track (4 June session 3) |
 
-All 7 scenes have **entry post FX** (burst/flash/ring at every scene cut) and **exit post FX** (UV warp + color surge at every transition out). Credit sequence complete: "SINGULARITY GARDEN" → "BY AGENTIX" → "2026". Audio fade-out (228–235s) synchronised with visual silence. Scene 7 particles silenced before logo reveal. All demoscene submission requirements met on the shader/C++ side. Project is **submission-ready** pending Windows hardware validation.
+### Completeness Summary (4 June 2026 — Session 3)
+
+All 7 scenes have **entry post FX** (burst/flash/ring at every scene cut) and **exit post FX** (UV warp + color surge at every transition out). Credit sequence complete: "SINGULARITY GARDEN" → "BY AGENTIX" → "2026". Audio fade-out (228–235s) synchronised with visual silence. Scene 7 particles silenced before logo reveal. All demoscene submission requirements met on the shader/C++ side. `--fullscreen` flag added for Assembly presentation. WebM capture now mixes in audio track. Project is **submission-ready** pending Windows hardware validation.

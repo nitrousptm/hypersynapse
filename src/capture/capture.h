@@ -16,9 +16,10 @@ public:
     // Read current framebuffer and dump to PPM file
     void capture_frame(uint32_t frame_number);
 
-    // Generate ffmpeg command for WebM encoding
+    // Generate ffmpeg command for WebM encoding (with optional audio mix-in)
     // Run offline after all frames captured
-    std::string ffmpeg_command(uint32_t fps = 60) const;
+    std::string ffmpeg_command(uint32_t fps = 60,
+                               const char* audio_path = "assets/music/Concrete-Syncope.wav") const;
 
     ~FrameCapture();
 

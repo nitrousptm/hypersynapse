@@ -29,6 +29,26 @@ void GLAPIENTRY gl_debug(GLenum, GLenum type, GLuint, GLenum severity,
 }  // namespace
 
 int main(int argc, char** argv) {
+    // Parse args before creating window (--fullscreen needs monitor at window creation)
+    const char* audio_path = nullptr;
+    bool capture_mode = false;
+    bool fullscreen_mode = false;
+
+    for (int i = 1; i < argc; ++i) {
+        if (std::string_view(argv[i]) == "--capture") {
+            capture_mode = true;
+            std::printf("[hypersynapse] capture mode enabled\n");
+        } else if (std::string_view(argv[i]) == "--fullscreen") {
+            fullscreen_mode = true;
+        } else {
+            audio_path = argv[i];
+        }
+    }
+
+    // Default music path when running interactively without explicit argument
+    if (!audio_path && !capture_mode)
+        audio_path = "assets/music/Concrete-Syncope.wav";
+
     glfwSetErrorCallback(glfw_error);
     if (!glfwInit()) return EXIT_FAILURE;
 
@@ -39,7 +59,8 @@ int main(int argc, char** argv) {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_SAMPLES, 0);
 
-    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "SINGULARITY GARDEN — agentix", nullptr, nullptr);
+    GLFWmonitor* monitor = fullscreen_mode ? glfwGetPrimaryMonitor() : nullptr;
+    GLFWwindow* window = glfwCreateWindow(kWidth, kHeight, "SINGULARITY GARDEN — agentix", monitor, nullptr);
     if (!window) { glfwTerminate(); return EXIT_FAILURE; }
 
     glfwMakeContextCurrent(window);
@@ -64,20 +85,7 @@ int main(int argc, char** argv) {
     hyp::Audio audio;
     if (!audio.init()) return EXIT_FAILURE;
 
-    const char* audio_path = nullptr;
-    bool capture_mode = false;
-
-    if (argc > 1) {
-        for (int i = 1; i < argc; ++i) {
-            if (std::string_view(argv[i]) == "--capture") {
-                capture_mode = true;
-                std::printf("[hypersynapse] capture mode enabled\n");
-            } else {
-                audio_path = argv[i];
-            }
-        }
-        if (audio_path) audio.play(audio_path);
-    }
+    if (audio_path) audio.play(audio_path);
 
     // Optional: initialize frame capture for --capture mode
     std::unique_ptr<hyp::FrameCapture> capture;
@@ -141,6 +149,8 @@ int main(int argc, char** argv) {
             glfwSetWindowShouldClose(window, GLFW_TRUE);
     }
 
+    std::printf("[demo] finished — %.0fs complete\n", kDemoDurationSec);
+
     audio.shutdown();
     renderer.shutdown();
 
@@ -148,7 +158,7 @@ int main(int argc, char** argv) {
     if (capture_mode && capture) {
         std::printf("\n[capture] finished — %d frames written to ./captures/\n", frame_count);
         std::printf("[capture] to encode WebM, run:\n\n");
-        std::printf("%s\n\n", capture->ffmpeg_command(60).c_str());
+        std::printf("%s\n\n", capture->ffmpeg_command(60, audio_path).c_str());
     }
 
     glfwDestroyWindow(window);
