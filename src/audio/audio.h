@@ -12,6 +12,7 @@ public:
     void shutdown();
 
     double position();
+    void set_volume(float v);
     bool is_active() const { return active_; }
     bool is_valid() const { return valid_; }
 

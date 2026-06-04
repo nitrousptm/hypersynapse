@@ -57,6 +57,11 @@ double Audio::position() {
     return (double)frame / 48000.0;
 }
 
+void Audio::set_volume(float v) {
+    if (!valid_ || !sound_loaded_) return;
+    ma_sound_set_volume(&sound_, v < 0.0f ? 0.0f : (v > 1.0f ? 1.0f : v));
+}
+
 void Audio::shutdown() {
     active_ = false;
     if (!valid_) return;

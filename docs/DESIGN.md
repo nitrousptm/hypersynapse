@@ -196,7 +196,11 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Scene 7 year stamp "2026" | ✅ Added | 07_transcendence.frag: 3 new digit chars (2=15, 0=16, 6=17) added to FONT_DATA[126]; render_year() renders "2026" at scene_norm 0.976, centered at y=−0.455, below credit dots; tiny blue-white glow (0.9× dim vs subtitle). Completes demoscene credit sequence: SINGULARITY GARDEN → BY AGENTIX → 2026. (4 June) |
 
-## Implementation Status (4 June 2026)
+| Audio volume fade-out | ✅ Added | Audio::set_volume(float) via ma_sound_set_volume; main loop applies linear fade 228→235s (visual silence window: scene_norm 0.875→0.895 ≈ 232–234s). Pairs with shader silence_fade so audio and visual black-out are synchronised. (4 June) |
+
+| Scene 7 particle silence gate | ✅ Added | Transcendence burst emission stops at scene_norm > 0.82 (≈229s). 4s particle lifetime means the last batch is fully aged out by ~233s — particles cannot drift through the clean logo reveal at scene_norm 0.905. (4 June) |
+
+## Implementation Status (4 June 2026 — Session 2)
 
 ### Completed Systems
 
@@ -210,7 +214,7 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 7 Galaxy | ✅ Upgraded | 6-layer starfield + galactic plane (dust lanes + HII regions) + large emission nebula (29 May) |
 | Particle system | ✅ Complete | Compute shader physics, beat-sync, act-specific behaviors |
 | Particle render | ✅ Complete | Soft glow sprites, velocity-based brightness, act-aware color |
-| Audio integration | ✅ Complete | miniaudio, Concrete-Syncope.wav playback |
+| Audio integration | ✅ Complete | miniaudio, Concrete-Syncope.wav playback + smooth volume fade-out 228–235s |
 | Mesh pipeline | ✅ Complete | Procedural city (scene 3), buildings + instancing |
 | Timeline | ✅ Complete | 133 BPM beat tracking, 4 acts, 7 scenes, cue system |
 | Capture mode | ✅ Complete | PPM frame sequence + ffmpeg WebM encode |
@@ -286,6 +290,6 @@ All geometry generated procedurally at runtime — no external asset files.
 | nfo file | ✅ Done | SINGULARITY_GARDEN.nfo created (28 May 2026) |
 | Assembly portal upload | 🟡 Required | Before 2026-07-28 deadline (user action) |
 
-### Shader Completeness Summary (4 June 2026)
+### Completeness Summary (4 June 2026 — Session 2)
 
-All 7 scenes have **entry post FX** (burst/flash/ring at every scene cut) and **exit post FX** (UV warp + color surge at every transition out). Credit sequence complete: "SINGULARITY GARDEN" → "BY AGENTIX" → "2026". All demoscene submission requirements met on the shader/C++ side. Project is **submission-ready** pending Windows hardware validation.
+All 7 scenes have **entry post FX** (burst/flash/ring at every scene cut) and **exit post FX** (UV warp + color surge at every transition out). Credit sequence complete: "SINGULARITY GARDEN" → "BY AGENTIX" → "2026". Audio fade-out (228–235s) synchronised with visual silence. Scene 7 particles silenced before logo reveal. All demoscene submission requirements met on the shader/C++ side. Project is **submission-ready** pending Windows hardware validation.

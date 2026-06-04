@@ -100,6 +100,15 @@ int main(int argc, char** argv) {
         timeline.update(t);
         renderer.render(timeline);
 
+        // Audio fade-out: silence starts ~3:48 (228s), fully silent by ~3:55 (235s).
+        // Mirrors the visual black-out in 07_transcendence.frag (scene_norm 0.875→0.895).
+        constexpr double kFadeStart = 228.0;
+        constexpr double kFadeEnd   = 235.0;
+        if (t >= kFadeStart) {
+            float vol = static_cast<float>(1.0 - (t - kFadeStart) / (kFadeEnd - kFadeStart));
+            audio.set_volume(vol < 0.0f ? 0.0f : vol);
+        }
+
         if (capture_mode && capture) {
             // Read framebuffer and dump as PPM
             capture->capture_frame(frame_count);

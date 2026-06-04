@@ -534,7 +534,11 @@ void Renderer::emit_particles(const Timeline& tl) {
         break;
     }
     case Scene::Transcendence: {
-        // Cosmic star-like particles growing outward
+        // Cosmic star-like particles growing outward.
+        // Stop emitting before the silence window (scene_norm > 0.82) so existing
+        // particles age out (~4s lifetime) by the time the logo materialises at ~0.905.
+        float sn_t = static_cast<float>(tl.scene_norm());
+        if (sn_t > 0.82f) break;
         int burst = 200;
         for (int i = 0; i < burst; i++) {
             glm::vec3 pos = glm::ballRand(0.1f);
