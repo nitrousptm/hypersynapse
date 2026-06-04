@@ -211,6 +211,21 @@ vec3 normal_at(vec3 p) {
     );
 }
 
+// ─── SDF ambient occlusion ───────────────────────────────────────────────────
+// Marches 5 steps along the surface normal; measures how much nearby geometry
+// occludes the ambient sky. Gives true contact shadows in petal crevices and
+// fractal filigree — far more accurate than step-count AO.
+float sdf_ao(vec3 p, vec3 n) {
+    float occ = 0.0, sca = 1.0;
+    for (int i = 1; i <= 5; i++) {
+        float h = float(i) * 0.025;
+        float d = sdf_world(p + n * h);
+        occ += (h - d) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - occ * 3.5, 0.0, 1.0);
+}
+
 // ─── volumetric god rays ──────────────────────────────────────────────────────
 // Two light sources: overhead magenta + orbiting cyan — 32 dithered steps.
 // Dithering via interleaved gradient noise prevents banding at low cost.
@@ -312,7 +327,12 @@ void main() {
     if (kaleido_sky > 0.001) {
         float az  = atan(rd.z, rd.x);
         float el  = atan(rd.y, length(rd.xz));
-        const float SECTOR = 1.047197551;   // π/3 — 6-fold symmetry
+        // Fold count evolves 6→12 over scene (aurora mandala crystallises to higher
+        // symmetry as fractal geometry reaches peak bloom). Beat kicks add +2 folds
+        // momentarily — the mandala "snaps" to higher order on each 133 BPM hit.
+        float beat_snap = exp(-u_beat * 8.0) * 2.0;
+        float fold_k = mix(6.0, 12.0, u_scene_norm * u_scene_norm) + beat_snap;
+        float SECTOR = 6.28318530718 / fold_k;   // 2π/k
         az = mod(az + 3.14159265, 2.0 * SECTOR);
         if (az > SECTOR) az = 2.0 * SECTOR - az;
         az -= SECTOR * 0.5;
@@ -338,7 +358,13 @@ void main() {
         vec3 mat = mix(mix(col_a, col_b, mat_n), col_c, sin(p.y*3.0+u_time)*0.5+0.5);
         mat *= 0.6;
 
-        // Specular
+        // Animated diffuse lighting — same two sources as god_rays() for consistency
+        float lt = u_time * 0.25;
+        vec3 ldir1 = normalize(vec3(sin(lt) * 0.6,        2.0, cos(lt) * 0.6));   // overhead magenta
+        vec3 ldir2 = normalize(vec3(cos(lt * 0.7 + 1.3), -0.5, sin(lt * 0.7 + 1.3))); // low cyan
+        float diff  = max(dot(n, ldir1), 0.0) * 0.65 + max(dot(n, ldir2), 0.0) * 0.25;
+
+        // Specular (static key light for sharp highlights)
         vec3 light = normalize(vec3(1.0, 2.0, 0.5));
         float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 32.0);
         mat += spec * vec3(1.0, 0.9, 1.0) * 0.8;
@@ -351,9 +377,10 @@ void main() {
         float pulse = smoothstep(0.08, 0.0, u_beat) * u_scene_norm;
         mat += pulse * vec3(0.5, 0.2, 0.8) * 1.5;
 
-        // AO
-        float ao = 1.0 - float(steps)/float(MAX_STEPS) * 0.6;
-        col = mat * ao;
+        // SDF-based ambient occlusion + diffuse: proper contact shadows in
+        // petal crevices and fractal filigree (replaces inaccurate step-count AO).
+        float ao_val = sdf_ao(p, n);
+        col = mat * (0.15 + diff * ao_val);
 
         // Kaleidoscope overlay
         float kaleido = abs(sin(atan(p.x, p.z) * 6.0 + u_time)) * 0.2;

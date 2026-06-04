@@ -200,6 +200,9 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Scene 7 particle silence gate | ✅ Added | Transcendence burst emission stops at scene_norm > 0.82 (≈229s). 4s particle lifetime means the last batch is fully aged out by ~233s — particles cannot drift through the clean logo reveal at scene_norm 0.905. (4 June) |
 
+| Scene 5 SDF AO | ✅ Upgraded | `sdf_ao()` replaces inaccurate step-count AO: 5-step normal-march measures actual geometry occlusion → true contact shadows in petal crevices and fractal filigree. Lambert diffuse term added (animated lights matching god_rays): `col = mat * (0.15 + diff * ao_val)`. Before: flat step-count × mat; now: proper lit/shadowed 3D depth. (4 June session 5) |
+| Scene 5 kaleidoscope evolution | ✅ Upgraded | Aurora mandala fold-count evolves 6-fold → 12-fold over scene via `mix(6,12, scene_norm²)`. Beat kicks add +2 transient folds — mandala "snaps" to higher order on each 133 BPM hit then relaxes. Visually: sky crystallises progressively as geometry blooms. (4 June session 5) |
+
 ## Implementation Status (4 June 2026 — Session 2)
 
 ### Completed Systems
