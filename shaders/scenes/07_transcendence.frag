@@ -160,10 +160,10 @@ float tendril(vec2 uv, float seed, float t) {
     return acc * u_scene_norm;
 }
 
-// ─── 5×7 pixel font — title + subtitle ───────────────────────────────────────
-// Row bitmasks (bit4=leftmost). 15 unique chars: S=0 I=1 N=2 G=3 U=4 L=5 A=6
-// R=7 T=8 Y=9 D=10 E=11 SP=12 B=13 X=14
-const int FONT_DATA[105] = int[105](
+// ─── 5×7 pixel font — title + subtitle + year ────────────────────────────────
+// Row bitmasks (bit4=leftmost). 18 unique chars: S=0 I=1 N=2 G=3 U=4 L=5 A=6
+// R=7 T=8 Y=9 D=10 E=11 SP=12 B=13 X=14  |  digits: 2=15 0=16 6=17
+const int FONT_DATA[126] = int[126](
     14,17,16,14, 1,17,14,  // S=0
     31, 4, 4, 4, 4, 4,31,  // I=1
     17,25,21,19,17,17,17,  // N=2
@@ -178,12 +178,17 @@ const int FONT_DATA[105] = int[105](
     31,16,16,30,16,16,31,  // E=11
      0, 0, 0, 0, 0, 0, 0,  // SP=12
     30,17,17,30,17,17,30,  // B=13
-    17,17,10, 4,10,17,17   // X=14
+    17,17,10, 4,10,17,17,  // X=14
+    14,17, 1, 6, 8,16,31,  // 2=15
+    14,17,17,17,17,17,14,  // 0=16
+    14,16,16,30,17,17,14   // 6=17
 );
 // SINGULARITY GARDEN
 const int TITLE_STR[18] = int[18](0,1,2,3,4,5,6,7,1,8,9,12,3,6,7,10,11,2);
 // BY AGENTIX
 const int SUB_STR[10] = int[10](13,9,12,6,3,11,2,8,1,14);
+// 2026
+const int YEAR_STR[4] = int[4](15,16,15,17);
 
 // Per-character stagger: each char fades in 0.0015 scene_norm after the previous.
 // Total stagger across 18 chars = 0.027 (1.62s at 60s/scene). Each char fades
@@ -272,6 +277,48 @@ float render_subtitle(vec2 uv, float scene_norm) {
         }
     }
     return min(acc, 1.8);
+}
+
+// Year "2026" — demoscene standard production year stamp.
+// Appears just after the subtitle, small and centred, gentle white glow.
+float render_year(vec2 uv, float scene_norm) {
+    const float BASE    = 0.976;
+    const float CHAR_DUR= 0.010;
+    const float STAGGER = 0.0015;
+    if (scene_norm < BASE - 0.001) return 0.0;
+
+    const float CW   = 0.030;
+    const float CH   = 0.042;
+    const float GAP  = 0.007;
+    const float STEP = CW + GAP;
+    float x0 = -(4.0 * STEP - GAP) * 0.5;
+    const float TY   = -0.455;
+
+    float acc = 0.0;
+    for (int ci = 0; ci < 4; ci++) {
+        float char_t = BASE + float(ci) * STAGGER;
+        float appear = smoothstep(char_t, char_t + CHAR_DUR, scene_norm);
+        if (appear < 0.001) continue;
+
+        int ch_idx = YEAR_STR[ci];
+        float cx   = x0 + float(ci) * STEP;
+        vec2 local = uv - vec2(cx, TY + CH * 0.5);
+        float gx = local.x * (5.0 / CW);
+        float gy = -local.y * (7.0 / CH);
+        int col  = int(floor(gx));
+        int row  = int(floor(gy));
+        if (col >= 0 && col < 5 && row >= 0 && row < 7) {
+            int mask = FONT_DATA[ch_idx * 7 + row];
+            if (((mask >> (4 - col)) & 1) != 0) {
+                float dx = gx - float(col) - 0.5;
+                float dy = gy - float(row) - 0.5;
+                float d  = length(vec2(dx, dy));
+                float birth = exp(-max(scene_norm - char_t, 0.0) * 70.0);
+                acc += (1.0 - smoothstep(0.32, 0.58, d)) * (appear + birth * 0.9);
+            }
+        }
+    }
+    return min(acc, 1.2);
 }
 
 // ─── logo formation (final 10 seconds) ───────────────────────────────────────
@@ -426,6 +473,12 @@ void main() {
     float sub_px     = render_subtitle(uv, u_scene_norm);
     vec3  sub_col    = mix(vec3(0.38, 0.52, 0.88), vec3(0.55, 0.70, 0.95), sub_appear);
     col += sub_px * sub_col * 1.3;
+
+    // Year "2026" — production year stamp below credit dots, demoscene standard.
+    // Tiny, soft, blue-white — appears last, sealing the credits sequence.
+    float year_appear = smoothstep(0.976, 0.992, u_scene_norm);
+    float year_px     = render_year(uv, u_scene_norm);
+    col += year_px * vec3(0.28, 0.42, 0.78) * year_appear * 0.9;
 
     // Decorative separator line below logo (scene_norm > 0.94)
     float sep_appear = smoothstep(0.950, 0.968, u_scene_norm);

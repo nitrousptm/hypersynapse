@@ -194,6 +194,8 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Scene 6 exit — singularity implosion | ✅ Added | post.frag (scene_idx==5, scene_norm 0.875→1.0): (1) UV contracts inward toward centre (exp-falloff gravity pull, sing_pull² × 0.042 — picks up exactly where vortex gate ends at 0.875); (2) glowing core flare at screen centre (exp(-r²×5.5) × 5.5 × sing_t²) + screen-wide blue-white surge (×3.0 cubic ramp). Creates inhale→exhale transition: Scene 6 UV implodes → Scene 7 big-bang UV explodes outward. All 7 scenes now have confirmed entry AND exit post FX. (4 June) |
 
+| Scene 7 year stamp "2026" | ✅ Added | 07_transcendence.frag: 3 new digit chars (2=15, 0=16, 6=17) added to FONT_DATA[126]; render_year() renders "2026" at scene_norm 0.976, centered at y=−0.455, below credit dots; tiny blue-white glow (0.9× dim vs subtitle). Completes demoscene credit sequence: SINGULARITY GARDEN → BY AGENTIX → 2026. (4 June) |
+
 ## Implementation Status (4 June 2026)
 
 ### Completed Systems
@@ -278,8 +280,12 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Task | Priority | Notes |
 |------|----------|-------|
-| Windows RTX compile test | 🔴 Critical | Needs MSVC + RTX 3090/5090 machine |
-| 4-minute runtime validation | 🔴 Critical | Audio sync + full run-through |
-| WebM capture test | 🔴 Critical | 14,400 frames @ 60fps (240s × 60) |
+| Windows RTX compile test | 🔴 Critical | Needs MSVC + RTX 3090/5090 machine (user action) |
+| 4-minute runtime validation | 🔴 Critical | Audio sync + full run-through (user action) |
+| WebM capture test | 🔴 Critical | 14,400 frames @ 60fps (240s × 60) (user action) |
 | nfo file | ✅ Done | SINGULARITY_GARDEN.nfo created (28 May 2026) |
-| Assembly portal upload | 🟡 Required | Before Assembly submission deadline |
+| Assembly portal upload | 🟡 Required | Before 2026-07-28 deadline (user action) |
+
+### Shader Completeness Summary (4 June 2026)
+
+All 7 scenes have **entry post FX** (burst/flash/ring at every scene cut) and **exit post FX** (UV warp + color surge at every transition out). Credit sequence complete: "SINGULARITY GARDEN" → "BY AGENTIX" → "2026". All demoscene submission requirements met on the shader/C++ side. Project is **submission-ready** pending Windows hardware validation.
