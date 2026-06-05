@@ -203,7 +203,12 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 SDF AO | ✅ Upgraded | `sdf_ao()` replaces inaccurate step-count AO: 5-step normal-march measures actual geometry occlusion → true contact shadows in petal crevices and fractal filigree. Lambert diffuse term added (animated lights matching god_rays): `col = mat * (0.15 + diff * ao_val)`. Before: flat step-count × mat; now: proper lit/shadowed 3D depth. (4 June session 5) |
 | Scene 5 kaleidoscope evolution | ✅ Upgraded | Aurora mandala fold-count evolves 6-fold → 12-fold over scene via `mix(6,12, scene_norm²)`. Beat kicks add +2 transient folds — mandala "snaps" to higher order on each 133 BPM hit then relaxes. Visually: sky crystallises progressively as geometry blooms. (4 June session 5) |
 
-## Implementation Status (4 June 2026 — Session 2)
+| Scene 4 frozen crystal shard field | ✅ Added | 04_time_fracture.frag: Replaced flat 2D `debris()` point-lights with a full 3D raymarched frozen-shard field — 10 thin SDFRoundBox crystals at fixed positions, each with precomputed Y+X rotation (constants in `SC[]` array, no live trig in march loop). 80-step raymarch, MAX_DIST=6. Camera orbits slowly (0.11 rad/s) spiraling inward over scene. Three time-copy materials: cold blue (past) / hot orange (present) / acid cyan (future). Beat-reactive flare on kicks. Temporal feedback decay 0.70→0.60 to balance 3D+echo brightness. All existing 2D overlays retained: reversed streams, portal rings+interiors, warp sample, crack lines, tesseract. Delivers DESIGN.md "camera flies through frozen time fragments" intent; Scene 4 now has same 3D depth as Scenes 5 and 6. (5 June) |
+
+| Scene 6 SDF AO + diffuse | ✅ Upgraded | `sdf_ao()` (same 5-step normal-march as Scene 5) added — fold_space creates deep crevices between recursive boxes; proper AO gives rich contact shadows absent from the previous step-count approximation. Lambert diffuse added with two animated portal-colored lights (cyan key + violet fill, orbiting at 0.22 rad/s). Specular highlight on key light (cos^48). Beat-reactive self-emission on walls (walls glow briefly on each 133 BPM kick). `col = mat * (0.12 + diff * ao_val)` — Scene 6 room geometry now has same lighting depth as Scene 5. (5 June) |
+| Scene 6 beat-reactive inner geometry | ✅ Added | `beat_expand = smoothstep(0.08, 0.0, u_beat) * 0.018` applied to all three recursive box half-extents in `sdf_room()` — primary (1.0×), secondary (0.6×), tertiary (0.3×). Inner geometry surges outward on each kick, connecting impossible-space architecture to the 133 BPM pulse. (5 June) |
+
+## Implementation Status (5 June 2026)
 
 ### Completed Systems
 

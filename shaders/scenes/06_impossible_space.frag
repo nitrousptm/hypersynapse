@@ -87,21 +87,22 @@ float sdBox(vec3 p, vec3 b) {
 float sdSphere(vec3 p, float r) { return length(p)-r; }
 
 float sdf_room(vec3 p) {
-    // Multi-wall chamber with recursive geometry
+    // Beat-reactive: inner geometry expands on each 133 BPM kick
+    float beat_expand = smoothstep(0.08, 0.0, u_beat) * 0.018;
     float room = -sdBox(p, vec3(2.0, 1.5, 2.0));
 
     // Primary recursive box
     vec3 pp = rotate4d(fold_space(p * 0.4) * 0.5, u_time * 0.3);
-    float inner = sdBox(pp, vec3(0.3, 0.5, 0.3));
+    float inner = sdBox(pp, vec3(0.3, 0.5, 0.3) + beat_expand);
 
     // Secondary nested structure (smaller, faster rotation)
     vec3 pp2 = rotate4d(fold_space(p * 0.7) * 0.3, u_time * 0.6);
-    float inner2 = sdBox(pp2 - vec3(0.5, 0.2, 0.3), vec3(0.15, 0.25, 0.15));
+    float inner2 = sdBox(pp2 - vec3(0.5, 0.2, 0.3), vec3(0.15, 0.25, 0.15) + beat_expand * 0.6);
     inner = smin(inner, inner2, 0.08);
 
     // Tertiary micro-structure (even smaller)
     vec3 pp3 = rotate4d(p * 1.2, u_time * 0.9);
-    float inner3 = sdBox(pp3 + vec3(0.2, -0.3, 0.0), vec3(0.08, 0.12, 0.1));
+    float inner3 = sdBox(pp3 + vec3(0.2, -0.3, 0.0), vec3(0.08, 0.12, 0.1) + beat_expand * 0.3);
     inner = smin(inner, inner3, 0.04);
 
     // Fractal detail on walls
@@ -178,6 +179,20 @@ vec3 normal_at(vec3 p) {
         k.yxy * sdf_scene(p + k.yxy * e) +
         k.xxx * sdf_scene(p + k.xxx * e)
     );
+}
+
+// ─── SDF ambient occlusion ────────────────────────────────────────────────────
+// 5-step normal-march: measures actual geometry occlusion — contact shadows
+// in fold_space crevices and recursive box intersections.
+float sdf_ao(vec3 p, vec3 n) {
+    float occ = 0.0, sca = 1.0;
+    for (int i = 1; i <= 5; i++) {
+        float h = float(i) * 0.025;
+        float d = sdf_scene(p + n * h);
+        occ += (h - d) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - occ * 3.5, 0.0, 1.0);
 }
 
 // ─── holy-shit zoom-out ───────────────────────────────────────────────────────
@@ -325,15 +340,26 @@ void main() {
             float engrave = abs(sin(p.x * 8.0 + u_time * 0.1)) * abs(sin(p.y * 8.0));
             mat += engrave * 0.03 * vec3(0.2, 0.5, 1.0);
 
-            // Ambient occlusion from step count
-            float noise_glow = vnoise(p * 3.0 + u_time * 0.2) * 0.1;
-            mat += noise_glow * vec3(0.0, 0.2, 0.8);
+            // Animated diffuse: two portal-colored lights orbiting the impossible room
+            float lt = u_time * 0.22;
+            vec3 ldir1 = normalize(vec3(sin(lt) * 1.5, 1.2, cos(lt) * 1.5));
+            vec3 ldir2 = normalize(vec3(cos(lt * 0.6 + 2.1), -0.8, sin(lt * 0.6 + 2.1)));
+            float diff = max(dot(n, ldir1), 0.0) * 0.55 + max(dot(n, ldir2), 0.0) * 0.20;
 
-            // Edge highlighting
-            float fresnel = pow(1.0-abs(dot(n,-rd)), 5.0);
+            // Specular highlight (cyan key light)
+            float spec = pow(max(dot(reflect(-ldir1, n), -rd), 0.0), 48.0);
+            mat += spec * vec3(0.3, 0.7, 1.0) * 0.6;
+
+            // Fresnel edge glow
+            float fresnel = pow(1.0 - abs(dot(n, -rd)), 5.0);
             mat += fresnel * vec3(0.1, 0.3, 1.0) * 0.8;
 
-            col = mat;
+            // Beat-reactive self-emission on kick
+            mat += smoothstep(0.08, 0.0, u_beat) * vec3(0.05, 0.12, 0.4) * 0.8;
+
+            // SDF ambient occlusion + diffuse: proper contact shadows in fold_space crevices
+            float ao_val = sdf_ao(p, n);
+            col = mat * (0.12 + diff * ao_val);
         }
     }
 
