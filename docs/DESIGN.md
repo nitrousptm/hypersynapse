@@ -210,6 +210,12 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Scene 4 SDF AO + crystal prism optics | ✅ Upgraded | `sdf_ao_shards()` (5-step normal-march) added: contact shadows in crevices where crystal clusters overlap — same technique as Scenes 5 & 6, now all three SDF scenes have proper AO. Chromatic prismatic specular: two extra ldir_r/ldir_b lobes offset ±3° from key light (cos^38) simulate wavelength-dependent refraction through frozen crystal — R and B highlights split apart creating rainbow spectral dispersion at grazing angles. Second fill light (cold blue-violet, 0.09 rad/s orbit) gives each shard varying secondary illumination as the camera circles — "time still flowing around the frozen moment." All three lighting techniques now consistent across SDF scenes 4, 5, 6. (5 June) |
 
+| Scene 2 SDF AO + animated diffuse | ✅ Upgraded | `sdf_ao()` (5-step normal-march) added to 02_awakening_core.frag — ribs and crevices in the monolith now have true contact shadows. Two animated lights (key orbiting 0.18 rad/s + fill counter-orbit 0.12 rad/s): `col = mat * (0.10 + (diff_key + diff_fill) * ao_val)`. Specular highlight tracks animated key light. Same technique as Scenes 4/5/6 — all four SDF-raymarched scenes now have consistent AO+diffuse lighting. (5 June session 2) |
+
+| Scene 7 beat-reactive cosmic flares | ✅ Added | 4 semi-random screen-space star positions pulse on each 133 BPM kick: bright core (exp(-r*10) decay) + expanding ring matching u_beat ramp. Positions shift slowly between bars (u_bar_cnt hash). Flares scale with u_scene_norm so they fade in early then become prominent during the 60s Act IV run. Makes the galaxy feel musically alive during scene_norm 0→0.5 where the background was previously passive. (5 June session 2) |
+
+| Scene 3 two-light system + window specular | ✅ Upgraded | Replaced single hardcoded sun light with two-light model: warm sun (fades with v_corruption) + cold blue AI corruption light (grows with v_corruption) — building surfaces shift from warm concrete to electric blue as the AI takes over. Window specular (cos^28 Blinn-Phong) catches sun reflections on glass and fades as corruption dissolves the material. Matches lighting quality of other scenes. (5 June session 2) |
+
 ## Implementation Status (5 June 2026)
 
 ### Completed Systems

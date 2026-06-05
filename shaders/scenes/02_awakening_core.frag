@@ -231,6 +231,19 @@ vec3 calc_normal(vec3 p, float reveal) {
     );
 }
 
+// ─── Ambient Occlusion ────────────────────────────────────────────────────────
+// 5-step normal-march: measures geometry occlusion in rib/crevice cracks
+float sdf_ao(vec3 p, vec3 n, float reveal) {
+    float occ = 0.0, s = 1.0;
+    for(int i=1; i<=5; i++) {
+        float h = float(i) * 0.055;
+        float d = sdf_scene(p + n * h, reveal);
+        occ += (h - d) * s;
+        s *= 0.65;
+    }
+    return clamp(1.0 - occ * 2.5, 0.0, 1.0);
+}
+
 // ─── Volumetric Fog / Atmosphere ──────────────────────────────────────────────
 float atmosphere_density(vec3 p) {
     float h = max(0.0, 2.0 - (p.y + 2.0) * 1.5);
@@ -256,8 +269,13 @@ vec3 volumetric_fog(vec3 ro, vec3 rd, float t_max) {
 
 // ─── Lighting ─────────────────────────────────────────────────────────────────
 vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
-    // Base: obsidian black with slight cold tint
-    vec3 mat = vec3(0.018, 0.020, 0.028);
+    // AO + diffuse: orbiting key light gives ribs true contact shadows
+    float ao_val   = sdf_ao(p, n, reveal);
+    vec3 key_light  = normalize(vec3(sin(u_time * 0.18) * 1.5, 1.8, cos(u_time * 0.18) * 1.5));
+    vec3 fill_light = normalize(vec3(-cos(u_time * 0.12), 0.5, sin(u_time * 0.12)));
+    float diff_key  = max(dot(n, key_light),  0.0);
+    float diff_fill = max(dot(n, fill_light), 0.0) * 0.28;
+    vec3 mat = vec3(0.018, 0.020, 0.028) * (0.10 + (diff_key + diff_fill) * ao_val);
 
     // Sacred geometry engravings glow when reveal > 0.4
     // Use local frame (risen) position so UV tracks the monolith surface
@@ -267,9 +285,8 @@ vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     float eng_glow = eng * smoothstep(0.4, 0.8, reveal);
     mat += eng_glow * vec3(0.1, 0.5, 1.0) * 3.0;
 
-    // Specular: mirror-like
-    vec3 light = normalize(vec3(1.0, 3.0, 2.0));
-    float spec = pow(max(dot(reflect(-light, n), -rd), 0.0), 64.0);
+    // Specular: mirror-like, tracks animated key light
+    float spec = pow(max(dot(reflect(-key_light, n), -rd), 0.0), 64.0);
     mat += spec * vec3(0.3, 0.5, 1.0) * 0.5;
 
     // Fresnel glow (electric edge)

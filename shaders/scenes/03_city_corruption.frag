@@ -74,15 +74,25 @@ void main() {
     float concrete_var = hash2(v_uv * vec2(100.0, 200.0)) * 0.08;
     col += concrete_var;
 
-    // Diffuse lighting from above + street level point lights
-    vec3 light_dir = normalize(vec3(0.3, 1.0, 0.5));
-    float diff = max(dot(normalize(v_normal), light_dir), 0.0);
-    col *= 0.4 + 0.6 * diff;
+    // Two-light diffuse: warm remnant daylight + cold blue AI corruption light.
+    // As v_corruption grows the AI light dominates — buildings turn blue-electric.
+    vec3 n = normalize(v_normal);
+    vec3 sun_dir = normalize(vec3(0.3, 1.0, 0.5));
+    vec3 ai_dir  = normalize(vec3(-0.5, 0.4, -0.8));
+    float diff_sun = max(dot(n, sun_dir), 0.0) * mix(0.55, 0.10, v_corruption);
+    float diff_ai  = max(dot(n, ai_dir),  0.0) * v_corruption * 1.8;
+    col *= 0.28 + diff_sun + diff_ai;
 
     // Window lights
     float wins = window_grid(v_uv, v_instance_id);
     vec3 win_col = mix(vec3(1.0, 0.7, 0.4), vec3(0.2, 0.8, 1.0), v_corruption);
     col += wins * win_col * (0.5 + 0.5 * u_scene_norm);
+
+    // Window specular — glass surfaces catch the sun while un-corrupted
+    vec3 view_dir = normalize(-v_world_pos);
+    vec3 h_spec   = normalize(sun_dir + view_dir);
+    float spec = pow(max(dot(n, h_spec), 0.0), 28.0) * (1.0 - v_corruption);
+    col += wins * spec * vec3(0.9, 0.85, 0.7) * 0.35;
 
     // Light arteries spreading across surface
     float art = artery(v_uv + vec2(u_time * 0.02, 0.0));

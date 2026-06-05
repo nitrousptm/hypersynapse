@@ -417,6 +417,24 @@ void main() {
     float beat_pulse = smoothstep(0.04, 0.0, u_beat) * u_scene_norm * 0.5;
     col += beat_pulse * vec3(0.3, 0.5, 1.0);
 
+    // Beat-reactive cosmic flares: 4 semi-random positions pulse on each 133 BPM kick.
+    // Positions shift slowly between bars so the galaxy reads as musically alive.
+    {
+        float beat_kick = exp(-u_beat * 7.0);
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            float ns = floor(float(u_bar_cnt) * 0.5 + fi * 2.718);
+            vec2 fp = vec2(hash(ns + 0.1) * 2.0 - 1.0,
+                           hash(ns + 0.3) * 2.0 - 1.0) * 0.75;
+            fp.x *= u_res.x / u_res.y;
+            float r = length(uv - fp);
+            float flare = beat_kick * exp(-r * 10.0) * 0.28;
+            float ring  = exp(-abs(r - u_beat * 1.6) * 35.0) *
+                          (1.0 - smoothstep(0.0, 0.30, u_beat)) * 0.18;
+            col += (flare + ring) * vec3(0.72, 0.88, 1.0) * u_scene_norm;
+        }
+    }
+
     // ─── Silence + Logo (final ~10s, scene_norm > 0.875) ─────────────────────
     float logo_t = smoothstep(0.875, 0.92, u_scene_norm);
 
