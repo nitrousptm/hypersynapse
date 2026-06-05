@@ -363,9 +363,15 @@ void main() {
         }
     }
 
-    // Beat pulse: space briefly flashes
-    float pulse = smoothstep(0.04, 0.0, u_beat) * 0.3;
-    col += pulse * vec3(0.1, 0.2, 0.5);
+    // Beat pulse: energy wave through non-euclidean space
+    float pulse_kick = smoothstep(0.04, 0.0, u_beat);
+    // Ambient flash (softer now that the ring carries the visual weight)
+    col += pulse_kick * vec3(0.06, 0.12, 0.30) * 0.25;
+    // Expanding ring: the fold_space geometry resonates as energy passes through
+    float pulse_r = u_beat * 1.8;
+    float pulse_d = abs(length(uv) - pulse_r);
+    float pulse   = exp(-u_beat * 4.0) * smoothstep(0.020, 0.0, pulse_d);
+    col += pulse * vec3(0.15, 0.38, 0.90) * 1.2;
 
     // Zoom-out overlay: show outer cosmic universe
     float outer_fade = smoothstep(0.75, 0.95, u_scene_norm);

@@ -478,14 +478,23 @@ void Renderer::emit_particles(const Timeline& tl) {
         break;
     }
     case Scene::CityCorruption: {
-        // Light artery sparks
-        int burst = 60;
+        // Particle count scales with corruption: more chaos as AI takes over
+        float sn_c = static_cast<float>(tl.scene_norm());
+        float chaos = sn_c * sn_c;
+        int burst = 40 + static_cast<int>(80.0f * sn_c);
         for (int i = 0; i < burst; i++) {
             float px = (glm::linearRand(0.0f, 1.0f) - 0.5f) * 60.0f;
             float pz = (glm::linearRand(0.0f, 1.0f) - 0.5f) * 60.0f;
-            glm::vec3 pos = glm::vec3(px, glm::linearRand(0.0f, 8.0f), pz);
-            glm::vec3 vel = glm::vec3(0, glm::linearRand(0.1f, 0.4f), 0);
-            particles_->emit(pos, vel, 0, 1.5f, glm::vec3(0.0f, 0.6f, 1.0f));
+            glm::vec3 pos = glm::vec3(px, glm::linearRand(0.0f, 12.0f), pz);
+            // Purely upward at start → chaotic spray as corruption peaks
+            glm::vec3 vel = glm::vec3(
+                glm::linearRand(-1.0f, 1.0f) * chaos * 0.8f,
+                glm::linearRand(0.1f, 0.6f + chaos * 0.4f),
+                glm::linearRand(-1.0f, 1.0f) * chaos * 0.8f);
+            // Electric blue → hot blue-white as corruption crescendos
+            glm::vec3 col = glm::mix(glm::vec3(0.0f, 0.6f, 1.0f),
+                                      glm::vec3(0.8f, 0.9f, 1.0f), chaos * 0.5f);
+            particles_->emit(pos, vel, 0, 1.5f, col);
         }
         break;
     }

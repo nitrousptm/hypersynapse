@@ -400,9 +400,20 @@ void main() {
     vec2 warp_uv  = uv01 + vec2(warp, -warp * 0.5);
     col += texture(u_prev_frame, clamp(warp_uv, 0.001, 0.999)).rgb * 0.18;
 
-    // ── Beat shatter flash ────────────────────────────────────────────────────
+    // ── Beat shatter shockwave rings ──────────────────────────────────────────
+    // Flat peak flash at the exact moment of impact (very brief)
     float beat_shatter = smoothstep(0.03, 0.0, u_beat);
-    col += beat_shatter * vec3(0.2, 0.5, 1.0) * 0.35;
+    col += beat_shatter * vec3(0.2, 0.5, 1.0) * 0.12;
+    // Primary expanding shockwave: time-pressure ring radiating through frozen space
+    float shock_r = u_beat * 2.4;
+    float shock_d = abs(length(uv) - shock_r);
+    float shock   = exp(-u_beat * 3.2) * smoothstep(0.022, 0.0, shock_d);
+    col += shock * vec3(0.30, 0.60, 1.00) * 1.6;
+    // Echo ring: secondary reflection at shorter radius (temporal rebound)
+    float echo_r = u_beat * 1.25;
+    float echo_d = abs(length(uv) - echo_r);
+    float echo   = exp(-u_beat * 5.0) * smoothstep(0.014, 0.0, echo_d);
+    col += echo * vec3(0.50, 0.78, 1.00) * 0.70;
 
     // ── Spacetime crack lines ─────────────────────────────────────────────────
     float cracks = space_cracks(uv, beat_shatter);

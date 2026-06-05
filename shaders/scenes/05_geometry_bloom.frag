@@ -66,16 +66,17 @@ vec3 sky_background(vec3 rd) {
         float beat_flare = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.9 * u_scene_norm;
         float t_a = u_time * 0.055;
         float az_base = atan(rd.z, rd.x);
-        for (int ci = 0; ci < 2; ci++) {
-            float coff = float(ci) * 2.094;  // 120° apart
+        for (int ci = 0; ci < 3; ci++) {
+            float coff = float(ci) * 2.094;  // 120° apart (2π/3): three curtains = full circle coverage
             float az   = az_base + coff;
             float wave = vnoise(vec3(az * 1.6,  rd.y * 3.0, t_a + float(ci) * 5.7)) * 0.50
                        + vnoise(vec3(az * 3.2,  rd.y * 6.0, t_a * 1.8 + float(ci) * 3.1)) * 0.25;
             float sway = sin(t_a * 0.35 + float(ci) * 2.1) * 0.75;
             float curtain = smoothstep(0.32, 0.0, abs(az - sway)) * wave;
-            vec3 aurora_col = (ci == 0)
-                ? mix(vec3(0.30, 0.0, 0.90), vec3(0.90, 0.12, 0.70), wave)
-                : mix(vec3(0.05, 0.45, 0.90), vec3(0.50, 0.0, 0.80), wave);
+            vec3 aurora_col;
+            if      (ci == 0) aurora_col = mix(vec3(0.30, 0.0, 0.90), vec3(0.90, 0.12, 0.70), wave); // violet→magenta
+            else if (ci == 1) aurora_col = mix(vec3(0.05, 0.45, 0.90), vec3(0.50, 0.0, 0.80), wave); // cyan→violet
+            else               aurora_col = mix(vec3(0.80, 0.38, 0.05), vec3(0.95, 0.65, 0.0),  wave); // amber→gold
             sky += aurora_col * curtain * aurora_gate * 0.22 * beat_flare * u_scene_norm;
         }
     }

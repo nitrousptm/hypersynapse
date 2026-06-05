@@ -484,6 +484,12 @@ void main() {
     float silence_fade = smoothstep(0.875, 0.895, u_scene_norm);
     col *= 1.0 - silence_fade;
 
+    // Faint star field re-emerges behind the logo: universe returns from void.
+    // Blends in gently from scene_norm 0.905→0.930 so it never competes with the
+    // logo — just gives the logo a cosmic backdrop rather than pure black.
+    float star_return = smoothstep(0.905, 0.930, u_scene_norm) * 0.12;
+    if (star_return > 0.001) col += galaxy(rd) * star_return;
+
     // Single light pulse (scene_norm ~0.895): instant peak, exponential decay + expanding ring.
     // The pulse is the "Big Bang" moment before the logo materialises — cinematic camera-flash.
     float pulse_t = max(u_scene_norm - 0.895, 0.0);
