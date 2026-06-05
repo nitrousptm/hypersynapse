@@ -425,6 +425,19 @@ void main() {
     float bloom_strength = mix(0.35, 1.10, demo_norm);
     col += bloom(uv, bloom_thresh, bloom_radius, bloom_strength);
 
+    // 2c. Zodiacal scatter — Scene 7 (Transcendence): soft luminous starfield haze.
+    // Captures dim galaxy regions below the standard bloom threshold and scatters
+    // them into a deep blue-violet atmospheric glow — like a real telescope image.
+    // Gated out before logo reveal (scene_norm > 0.875) to keep the silence window clean.
+    if (u_scene_idx == 6) {
+        float zod = smoothstep(0.0, 0.25, u_scene_norm)
+                  * (1.0 - smoothstep(0.875, 0.905, u_scene_norm));
+        if (zod > 0.01) {
+            vec3 scatter = bloom_layer(uv, 0.20, 28.0) * vec3(0.18, 0.22, 0.40);
+            col += scatter * 0.45 * zod;
+        }
+    }
+
     // 2b. Radial zoom blur — Scene 6 holy-shit zoom-out (scene_norm 0.80→1.0)
     if (u_scene_idx == 5) {
         float zoom_t = smoothstep(0.78, 0.98, u_scene_norm);

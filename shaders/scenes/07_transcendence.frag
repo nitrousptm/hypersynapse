@@ -136,27 +136,69 @@ float sdSeg2D(vec2 q, vec2 a, vec2 b) {
     return length(pa - ba * clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0));
 }
 
+// Beat-reactive leaf-tip glow: tips flare on each 133 BPM kick.
+// Returns softcircle brightness centred at bp.
+float tip_glow(vec2 uv, vec2 bp) {
+    float beat_boost = 1.0 + smoothstep(0.08, 0.0, u_beat) * 2.0;
+    return exp(-dot(uv - bp, uv - bp) * 220.0) * 0.055 * beat_boost;
+}
+
 float tendril(vec2 uv, float seed, float t) {
     float acc = 0.0;
-    vec2 p = vec2(0.0);  // grow from origin; uv-relative so tendrils radiate outward
-    vec2 dir = normalize(vec2(cos(seed * 6.28), sin(seed * 6.28)));
-    float w = 0.003;
 
-    for (int i = 0; i < 8; i++) {
-        // Rotate direction before stepping (branching / curling)
-        float angle = sin(float(i) * 1.3 + seed + t * 0.5) * 0.4;
+    // ── Trunk: 4 segments radiating outward from centre ──────────────────────
+    vec2 p   = vec2(0.0);
+    vec2 dir = normalize(vec2(cos(seed * 6.28318), sin(seed * 6.28318)));
+    float w  = 0.0038;
+
+    for (int i = 0; i < 4; i++) {
+        float angle = sin(float(i) * 1.3 + seed + t * 0.5) * 0.40;
         float c = cos(angle), s = sin(angle);
-        dir = normalize(vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c));
-
-        vec2 next = p + dir * 0.08;
-
-        // Proper line-segment SDF — gives each tendril segment its correct thickness
-        float d = sdSeg2D(uv, p, next);
-        acc += w / (d + w);
-
-        w *= 0.72;
+        dir = vec2(dir.x * c - dir.y * s, dir.x * s + dir.y * c);
+        vec2 next = p + dir * 0.078;
+        acc += w / (sdSeg2D(uv, p, next) + w);
+        w *= 0.78;
         p = next;
     }
+
+    // ── Left branch: fork at trunk tip with a positive rotation ──────────────
+    {
+        float ba = 0.42 + hash(seed + 1.7) * 0.28;
+        float bc = cos(ba), bs = sin(ba);
+        vec2 bp  = p;
+        vec2 bd  = vec2(dir.x * bc - dir.y * bs, dir.x * bs + dir.y * bc);
+        float bw = w;
+        for (int i = 0; i < 4; i++) {
+            float angle = sin(float(i) * 1.6 + seed * 2.1 + t * 0.6) * 0.35;
+            float c = cos(angle), s = sin(angle);
+            bd = vec2(bd.x * c - bd.y * s, bd.x * s + bd.y * c);
+            vec2 next = bp + bd * 0.058;
+            acc += bw / (sdSeg2D(uv, bp, next) + bw);
+            bw *= 0.72;
+            bp = next;
+        }
+        acc += tip_glow(uv, bp);
+    }
+
+    // ── Right branch: fork at trunk tip with a negative rotation ─────────────
+    {
+        float ba = -(0.42 + hash(seed + 2.3) * 0.28);
+        float bc = cos(ba), bs = sin(ba);
+        vec2 bp  = p;
+        vec2 bd  = vec2(dir.x * bc - dir.y * bs, dir.x * bs + dir.y * bc);
+        float bw = w;
+        for (int i = 0; i < 4; i++) {
+            float angle = sin(float(i) * 1.8 + seed * 1.7 + t * 0.45) * 0.35;
+            float c = cos(angle), s = sin(angle);
+            bd = vec2(bd.x * c - bd.y * s, bd.x * s + bd.y * c);
+            vec2 next = bp + bd * 0.058;
+            acc += bw / (sdSeg2D(uv, bp, next) + bw);
+            bw *= 0.72;
+            bp = next;
+        }
+        acc += tip_glow(uv, bp);
+    }
+
     return acc * u_scene_norm;
 }
 

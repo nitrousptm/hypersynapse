@@ -373,6 +373,23 @@ void main() {
         float fresnel = pow(1.0-max(dot(n,-rd),0.0), 4.0);
         mat += fresnel * mix(col_a, col_b, u_scene_norm) * 1.2;
 
+        // Iridescent prismatic rim: hue rotates with view angle using RGB cosine wheels.
+        // At grazing angles the petals shimmer through cyan→magenta→gold — like beetle wings.
+        float irid   = 0.5 + 0.5 * dot(n, -rd);
+        float irid_h = irid * 3.14159;
+        vec3 irid_col = vec3(
+            0.5 + 0.5 * cos(irid_h + 0.0),
+            0.5 + 0.5 * cos(irid_h + 2.094),
+            0.5 + 0.5 * cos(irid_h + 4.189)
+        );
+        mat += irid_col * fresnel * 0.50 * u_scene_norm;
+
+        // Subsurface scattering approximation: thin petal surfaces transmit light.
+        // Back-lit petals (n faces away from both camera and key light) get a warm
+        // magenta translucency glow — organic depth absent from opaque geometry.
+        float sss = max(0.0, dot(-n, -rd)) * max(0.0, dot(ldir1, -rd));
+        mat += sss * col_a * 0.28 * u_scene_norm;
+
         // Self-glow pulse on beat
         float pulse = smoothstep(0.08, 0.0, u_beat) * u_scene_norm;
         mat += pulse * vec3(0.5, 0.2, 0.8) * 1.5;

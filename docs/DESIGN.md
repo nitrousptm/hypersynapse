@@ -216,6 +216,10 @@ All geometry generated procedurally at runtime — no external asset files.
 
 | Scene 3 two-light system + window specular | ✅ Upgraded | Replaced single hardcoded sun light with two-light model: warm sun (fades with v_corruption) + cold blue AI corruption light (grows with v_corruption) — building surfaces shift from warm concrete to electric blue as the AI takes over. Window specular (cos^28 Blinn-Phong) catches sun reflections on glass and fades as corruption dissolves the material. Matches lighting quality of other scenes. (5 June session 2) |
 
+| Scene 7 tendril bifurcation | ✅ Upgraded | `tendril()` now grows a 4-segment trunk then forks into two 4-segment branches (positive + negative rotation at split point), each with a `tip_glow()` leaf terminal that flares on each 133 BPM kick (beat_boost × 3.0). Replaces old 8-segment linear list — now literally reads as "light growing like a plant" per design intent. (5 June session 6) |
+| Post FX zodiacal scatter | ✅ Added | post.frag (scene_idx==6): ultra-wide bloom_layer (threshold=0.20, radius=28) tinted deep blue-violet (0.18,0.22,0.40) × 0.45, gated 0→scene_norm 0.875. Scatters dim galaxy regions into a soft astronomical haze — matches how real telescope images render galaxy backgrounds. Fades before silence window to keep logo reveal clean. (5 June session 6) |
+| Scene 5 iridescent + SSS | ✅ Added | 05_geometry_bloom.frag: (1) Cosine-wheel RGB iridescent rim — hue rotates with view angle via 3-channel cos (2π/3 phase offsets), strength × fresnel × 0.50 × scene_norm — petals shimmer cyan→magenta→gold at grazing angles like beetle wings / soap bubbles; (2) SSS approximation — backlit petal surfaces (dot(-n,-rd) × dot(ldir1,-rd)) glow warm magenta (col_a × 0.28 × scene_norm) — organic translucency absent from opaque geometry. (5 June session 6) |
+
 ## Implementation Status (5 June 2026)
 
 ### Completed Systems
