@@ -124,6 +124,20 @@ vec3 shard_normal(vec3 p) {
     );
 }
 
+// SDF ambient occlusion: 5-step normal-march measures how much nearby geometry
+// occludes the ambient sky. Contact shadows in crevices where shards cluster.
+float sdf_ao_shards(vec3 p, vec3 n) {
+    float occ = 0.0, sca = 1.0;
+    for (int i = 1; i <= 5; i++) {
+        float h = float(i) * 0.025;
+        float dc;
+        float d = sdf_shards(p + n * h, dc);
+        occ += (h - d) * sca;
+        sca *= 0.5;
+    }
+    return clamp(1.0 - occ * 3.5, 0.0, 1.0);
+}
+
 const int   SHARD_STEPS = 80;
 const float SHARD_SURF  = 0.002;
 const float SHARD_FAR   = 6.0;
@@ -170,13 +184,33 @@ vec3 render_shards(vec2 uv) {
         else if (cat < 1.5) mat = vec3(1.00, 0.45, 0.15);  // hot orange (present)
         else                mat = vec3(0.15, 0.90, 0.80);  // acid cyan  (future)
 
-        // Key light + ambient
+        // SDF ambient occlusion: contact shadows between crystal clusters
+        float ao_val = sdf_ao_shards(p, n);
+
+        // Key light + diffuse
         vec3 ldir = normalize(vec3(0.5, 1.5, 0.4));
         float diff    = max(dot(n, ldir), 0.0);
         float spec    = pow(max(dot(reflect(-ldir, n), -rd), 0.0), 52.0);
         float fresnel = pow(1.0 - max(dot(n, -rd), 0.0), 3.5);
 
-        col = mat * (0.08 + diff * 0.70) + spec * 0.9 + fresnel * mat * 1.8;
+        // Chromatic prismatic specular: two extra lobes offset ±3° from the key
+        // light simulate wavelength-dependent refraction through frozen crystal —
+        // R and B highlights split apart, creating rainbow spectral dispersion.
+        vec3 ldir_r = normalize(ldir + vec3( 0.055,  0.0,  0.040));
+        vec3 ldir_b = normalize(ldir + vec3(-0.055,  0.0, -0.040));
+        float spec_r = pow(max(dot(reflect(-ldir_r, n), -rd), 0.0), 38.0);
+        float spec_b = pow(max(dot(reflect(-ldir_b, n), -rd), 0.0), 38.0);
+        vec3 prism_spec = vec3(spec_r * 0.8, spec * 0.4, spec_b * 0.8);
+
+        // Second fill light: slow-orbiting cold blue (0.09 rad/s ≈ one loop per 70s).
+        // Gives each crystal cluster a changing angle of secondary illumination —
+        // "time still flowing around the frozen shards."
+        float lt2  = u_time * 0.09;
+        vec3 ldir2 = normalize(vec3(cos(lt2) * 0.8, 0.5, sin(lt2) * 0.8));
+        float diff2 = max(dot(n, ldir2), 0.0) * 0.22;
+
+        col = mat * (0.10 + diff * ao_val) + prism_spec + fresnel * mat * 1.8;
+        col += mat * diff2 * vec3(0.35, 0.55, 1.0) * 0.9;
 
         // Beat-reactive pulse: shards flare on each kick
         float kick = smoothstep(0.05, 0.0, u_beat) * u_scene_norm;
