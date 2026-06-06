@@ -78,12 +78,15 @@ vec3 galaxy(vec3 rd) {
             float b = size / (d*d + size*size) * 0.35;
             col += h * b * plane_dens * 2.0;
         }
+        // Beat-reactive nebula: cosmic clouds breathe with the 133 BPM music.
+        // Kicks cause a surge in emission intensity — the galaxy is alive to the beat.
+        float beat_surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.55 * u_scene_norm;
         // Galactic dust: warm orange-red emission nebula
         float dust = fbm(rd * 4.5 + vec3(u_time * 0.008, 0.0, u_time * 0.005));
-        col += dust * vec3(0.35, 0.10, 0.25) * plane_dens * 0.9;
+        col += dust * vec3(0.35, 0.10, 0.25) * plane_dens * 0.9 * beat_surge;
         // Blue HII emission regions
         float hii = fbm(rd * 7.0 + vec3(53.0, u_time * 0.012, 17.0));
-        col += max(hii - 0.45, 0.0) * vec3(0.1, 0.3, 0.7) * plane_dens * 1.2;
+        col += max(hii - 0.45, 0.0) * vec3(0.1, 0.3, 0.7) * plane_dens * 1.2 * beat_surge;
     }
 
     // Nebula background — deep color clouds

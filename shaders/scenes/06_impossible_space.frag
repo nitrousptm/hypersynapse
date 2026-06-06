@@ -335,10 +335,26 @@ void main() {
             // Room wall / floating box hit
             vec3 n = normal_at(p);
 
-            // Dark concrete-like material with mathematical engravings
+            // Dark base material — walls of the impossible room
             vec3 mat = vec3(0.03, 0.03, 0.06);
-            float engrave = abs(sin(p.x * 8.0 + u_time * 0.1)) * abs(sin(p.y * 8.0));
-            mat += engrave * 0.03 * vec3(0.2, 0.5, 1.0);
+
+            // Flowing data-matrix streams: columns of quantized symbols raining down.
+            // Column lane is XZ-quantized so streams stay fixed to wall surface panels.
+            // Portal point lights (below) will colour these streams cyan/violet/teal —
+            // "data flowing through beams" reinforces the impossible-space narrative.
+            {
+                vec2 grid_xz    = floor(vec2(p.x, p.z) * 3.5);
+                float col_h     = hash2(grid_xz);
+                float spd       = 1.2 + col_h * 2.8;
+                float phase     = col_h * 7.3;
+                float cell_y    = fract(p.y * 5.0 - u_time * spd + phase);
+                float cell_id   = floor(p.y * 5.0 - u_time * spd + phase);
+                float symbol    = step(0.38, hash2(vec2(cell_id * 0.137, col_h)));
+                float cell_glow = smoothstep(0.14, 0.0, abs(cell_y - 0.5)) * symbol;
+                float lead      = smoothstep(0.0, 0.10, cell_y) * step(0.88, symbol) * 1.8;
+                float stream_str = (cell_glow + lead) * 0.055 * (0.5 + u_scene_norm * 0.8);
+                mat += stream_str * vec3(0.05, 0.25, 0.80);
+            }
 
             // Animated diffuse: two portal-colored lights orbiting the impossible room
             float lt = u_time * 0.22;
