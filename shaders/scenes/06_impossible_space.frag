@@ -357,6 +357,27 @@ void main() {
             // Beat-reactive self-emission on kick
             mat += smoothstep(0.08, 0.0, u_beat) * vec3(0.05, 0.12, 0.4) * 0.8;
 
+            // Portal-coloured surface illumination: each portal disc acts as a coloured
+            // point light — walls that face a portal pick up its hue with distance falloff.
+            // Creates the "rooms within light beams" design intent: cyan/violet/teal streaks
+            // wash across the fold_space architecture from the portal positions.
+            float beat_pl = 1.0 + smoothstep(0.08, 0.0, u_beat) * 0.5;
+            {   // Portal 1: cyan-blue at (0, 0, -1.8)
+                vec3 lp = normalize(vec3(0.0, 0.0, -1.8) - p);
+                float dp = length(vec3(0.0, 0.0, -1.8) - p);
+                mat += max(dot(n, lp), 0.0) / (dp*dp*0.22 + 0.5) * vec3(0.0, 0.50, 1.0) * beat_pl * 0.50;
+            }
+            {   // Portal 2: violet at (-1.5, 0.2, 0)
+                vec3 lp = normalize(vec3(-1.5, 0.2, 0.0) - p);
+                float dp = length(vec3(-1.5, 0.2, 0.0) - p);
+                mat += max(dot(n, lp), 0.0) / (dp*dp*0.22 + 0.5) * vec3(0.40, 0.06, 0.95) * beat_pl * 0.42;
+            }
+            {   // Portal 3: teal-cyan at (1.5, -0.3, 0.5)
+                vec3 lp = normalize(vec3(1.5, -0.3, 0.5) - p);
+                float dp = length(vec3(1.5, -0.3, 0.5) - p);
+                mat += max(dot(n, lp), 0.0) / (dp*dp*0.22 + 0.5) * vec3(0.08, 0.65, 0.85) * beat_pl * 0.35;
+            }
+
             // SDF ambient occlusion + diffuse: proper contact shadows in fold_space crevices
             float ao_val = sdf_ao(p, n);
             col = mat * (0.12 + diff * ao_val);

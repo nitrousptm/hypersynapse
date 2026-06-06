@@ -227,6 +227,21 @@ float sdf_ao(vec3 p, vec3 n) {
     return clamp(1.0 - occ * 3.5, 0.0, 1.0);
 }
 
+// ─── kaleidoscope fold for sky ray directions ─────────────────────────────────
+// Applies the same evolving azimuthal fold used for sky_background() to a ray
+// direction. Used by crystal refraction to keep refracted sky and surface mandala
+// in sync — aurora curtains appear *through* petals at the correct fold phase.
+vec3 fold_sky_rd(vec3 rd, float fk) {
+    float az = atan(rd.z, rd.x);
+    float el = atan(rd.y, length(rd.xz));
+    float S  = 6.28318530718 / fk;
+    az = mod(az + 3.14159265359, 2.0 * S);
+    if (az > S) az = 2.0 * S - az;
+    az -= S * 0.5;
+    float ce = cos(el);
+    return normalize(vec3(ce * cos(az), sin(el), ce * sin(az)));
+}
+
 // ─── volumetric god rays ──────────────────────────────────────────────────────
 // Two light sources: overhead magenta + orbiting cyan — 32 dithered steps.
 // Dithering via interleaved gradient noise prevents banding at low cost.
@@ -410,23 +425,24 @@ void main() {
                              sin(u_time * 0.3) * 0.5 + 0.5);
         col += kaleido * kal_tint;
 
-        // Crystal glass refraction: petals are translucent — refracted rays bend into the
-        // kaleidoscopic sky, revealing aurora and nebulae *through* the petal geometry.
-        // Strength is Fresnel-weighted (grazing angles only) and grows with scene_norm.
+        // Chromatic dispersion through crystal glass: R/G/B refract at different IOR.
+        // Exaggerated Cauchy values (1.45/1.50/1.55) for visible spectral splitting —
+        // aurora curtains through the petals split into prismatic rainbow fringes at
+        // grazing angles, like sunlight through a lead-crystal prism.
         float ref_strength = fresnel * smoothstep(0.30, 0.70, u_scene_norm) * 0.18;
         if (ref_strength > 0.002) {
-            vec3 ref_rd = refract(rd, n, 0.667);          // air→crystal IOR ~1.5
-            if (length(ref_rd) < 0.001) ref_rd = reflect(rd, n);  // TIR fallback
-            // Mirror refracted direction through the same evolving sky kaleidoscope
-            float az_r = atan(ref_rd.z, ref_rd.x);
-            float el_r = atan(ref_rd.y, length(ref_rd.xz));
-            float S_r  = 6.28318530718 / fold_k_srf;
-            az_r = mod(az_r + 3.14159265359, 2.0 * S_r);
-            if (az_r > S_r) az_r = 2.0 * S_r - az_r;
-            az_r -= S_r * 0.5;
-            float cel_r = cos(el_r);
-            vec3  ref_rd_k = normalize(vec3(cel_r * cos(az_r), sin(el_r), cel_r * sin(az_r)));
-            col += sky_background(ref_rd_k) * ref_strength;
+            vec3 ref_r = refract(rd, n, 1.0/1.45);  // red: least bending (lowest IOR)
+            vec3 ref_g = refract(rd, n, 1.0/1.50);  // green: base IOR
+            vec3 ref_b = refract(rd, n, 1.0/1.55);  // blue: most bending (highest IOR)
+            if (length(ref_r) < 0.001) ref_r = reflect(rd, n);
+            if (length(ref_g) < 0.001) ref_g = reflect(rd, n);
+            if (length(ref_b) < 0.001) ref_b = reflect(rd, n);
+            // Each channel through the evolving kaleidoscope fold — R/G/B see the sky
+            // from slightly different angles, creating spectral colour fringes on edges.
+            float sr = sky_background(fold_sky_rd(ref_r, fold_k_srf)).r;
+            float sg = sky_background(fold_sky_rd(ref_g, fold_k_srf)).g;
+            float sb = sky_background(fold_sky_rd(ref_b, fold_k_srf)).b;
+            col += vec3(sr, sg, sb) * ref_strength;
         }
     }
 
