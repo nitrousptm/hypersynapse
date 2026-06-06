@@ -184,6 +184,33 @@ vec3 radial_zoom_blur(vec2 uv, float strength, vec2 center) {
     return acc / float(SAMPLES);
 }
 
+// ─── Fractal lightning bolt ───────────────────────────────────────────────────
+// Subdivides segment a→b into N jagged sub-segments using a random perpendicular
+// displacement (envelope = 0 at endpoints, peak at midpoint). Returns summed
+// per-pixel glow using exponential falloff — fast and GPU-friendly.
+float lightning_bolt(vec2 uv_asp, vec2 a, vec2 b, float seed) {
+    const int N = 10;
+    vec2 perp = normalize(vec2(-(b.y - a.y), b.x - a.x));
+    float seg_len = length(b - a);
+    float acc = 0.0;
+    vec2 prev = a;
+    for (int i = 1; i <= N; i++) {
+        float t    = float(i) / float(N);
+        vec2  base = mix(a, b, t);
+        float env  = t * (1.0 - t) * 4.0;   // bell: 0 at endpoints, 1 at midpoint
+        float rnd  = hash21(vec2(seed + t * 11.3, seed * 0.5 + float(i) * 0.31)) * 2.0 - 1.0;
+        vec2  pt   = base + perp * rnd * seg_len * 0.32 * env;
+        // Glow: exp falloff so thin bolts stay crisp without aliasing
+        vec2 pa = uv_asp - prev;
+        vec2 ba = pt    - prev;
+        float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        float d = length(pa - ba * h);
+        acc += exp(-d / 0.004) * (1.5 / float(N));
+        prev = pt;
+    }
+    return acc;
+}
+
 // ─── main ─────────────────────────────────────────────────────────────────────
 void main() {
     vec2 uv  = v_uv;
@@ -474,6 +501,39 @@ void main() {
                 float win = clamp(1.0 - abs(sy - 0.5) * 7.0, 0.0, 1.0);
                 float br  = 0.15 + hash21(vec2(fi * 2.13, 0.61)) * 0.25;
                 col      += glo * win * br * rain_str * vec3(0.18, 0.52, 1.00);
+            }
+        }
+    }
+
+    // 4b-ext. Electric lightning arcs — Scene 3 (City Corruption): AI overwhelms the
+    // power grid. Fractal bolts strike on ~45% of beats, fading in under 0.1s.
+    // Two simultaneous bolts from top-screen to random impact points in the lower half;
+    // positions reseed every 2 beats so each lightning strike looks distinct.
+    if (u_scene_idx == 2) {
+        float asp    = u_res.x / u_res.y;
+        vec2 uv_asp  = vec2(ctr.x * asp, ctr.y);
+        // beat_id: integer beat index (4 beats per bar)
+        float beat_id  = floor(u_bar * 4.0);
+        // Gate: ~45% of beats trigger; uses per-beat hash so each beat independently decides
+        float gate     = step(0.56, hash21(vec2(beat_id * 0.1337, 29.3)));
+        float l_str    = gate * kick * kick * u_scene_norm;
+        if (l_str > 0.004) {
+            // Bolt seed changes every 2 beats so bolt positions stay constant for ~0.9s
+            float bseed = floor(beat_id * 0.5) * 0.1333 + 37.77;
+            for (int bi = 0; bi < 2; bi++) {
+                float fi   = float(bi);
+                // Top: near y=+0.55 (top edge in ctr space), random x
+                float sx   = (hash21(vec2(bseed + fi * 0.71, 1.1)) * 2.0 - 1.0) * asp * 0.65;
+                // Bottom: somewhere in lower portion of screen with random x drift
+                float ex   = sx + (hash21(vec2(bseed + fi * 1.33, 2.2)) - 0.5) * asp * 0.50;
+                float ey   = -0.20 - hash21(vec2(bseed + fi * 2.07, 3.3)) * 0.35;
+                float bv   = lightning_bolt(uv_asp,
+                                 vec2(sx,  0.52),
+                                 vec2(ex,  ey),
+                                 bseed + fi * 7.13);
+                // White-hot bolt core; electric-blue halo (matches city color palette)
+                col += bv * l_str * vec3(0.88, 0.94, 1.00) * 3.2;
+                col += bv * l_str * kick * vec3(0.10, 0.52, 1.00) * 2.0;
             }
         }
     }
