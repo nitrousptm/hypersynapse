@@ -9,6 +9,7 @@ uniform sampler2D u_scene;
 uniform float     u_time;
 uniform vec2      u_res;
 uniform float     u_beat;
+uniform float     u_bar;
 uniform float     u_act_norm;
 uniform float     u_scene_norm;
 uniform int       u_bar_cnt;
@@ -185,28 +186,59 @@ vec3 radial_zoom_blur(vec2 uv, float strength, vec2 center) {
 }
 
 // ─── Fractal lightning bolt ───────────────────────────────────────────────────
-// Subdivides segment a→b into N jagged sub-segments using a random perpendicular
-// displacement (envelope = 0 at endpoints, peak at midpoint). Returns summed
-// per-pixel glow using exponential falloff — fast and GPU-friendly.
+// Subdivides segment a→b into N jagged sub-segments with random perpendicular
+// displacement (bell envelope). Returns per-pixel glow (exp falloff).
+// Also spawns 2 forked branches off the main trunk for realistic lightning.
+float lightning_segment(vec2 uv_asp, vec2 a, vec2 b, float width_inv) {
+    vec2 pa = uv_asp - a;
+    vec2 ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    float d = length(pa - ba * h);
+    return exp(-d * width_inv);
+}
+
 float lightning_bolt(vec2 uv_asp, vec2 a, vec2 b, float seed) {
     const int N = 10;
     vec2 perp = normalize(vec2(-(b.y - a.y), b.x - a.x));
     float seg_len = length(b - a);
     float acc = 0.0;
     vec2 prev = a;
+    // Precompute jagged points for trunk (needed by branches)
+    vec2 pts[11];
+    pts[0] = a;
     for (int i = 1; i <= N; i++) {
         float t    = float(i) / float(N);
         vec2  base = mix(a, b, t);
-        float env  = t * (1.0 - t) * 4.0;   // bell: 0 at endpoints, 1 at midpoint
+        float env  = t * (1.0 - t) * 4.0;
         float rnd  = hash21(vec2(seed + t * 11.3, seed * 0.5 + float(i) * 0.31)) * 2.0 - 1.0;
-        vec2  pt   = base + perp * rnd * seg_len * 0.32 * env;
-        // Glow: exp falloff so thin bolts stay crisp without aliasing
-        vec2 pa = uv_asp - prev;
-        vec2 ba = pt    - prev;
-        float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-        float d = length(pa - ba * h);
-        acc += exp(-d / 0.004) * (1.5 / float(N));
-        prev = pt;
+        pts[i] = base + perp * rnd * seg_len * 0.32 * env;
+    }
+    // Draw main trunk
+    for (int i = 1; i <= N; i++) {
+        acc += lightning_segment(uv_asp, pts[i-1], pts[i], 250.0) * (1.5 / float(N));
+    }
+    // Two forked branches — spawn from ~40% and ~65% along trunk, shorter+thinner
+    for (int fi = 0; fi < 2; fi++) {
+        float ft  = 0.38 + float(fi) * 0.27;
+        int   si  = int(ft * float(N));
+        vec2  fp  = pts[si];
+        float fang = hash21(vec2(seed + float(fi) * 3.7, seed * 2.1 + 0.5)) * 2.0 - 1.0;
+        vec2  fdir = normalize(b - a + perp * fang * 0.8);
+        vec2  fe   = fp + fdir * seg_len * 0.30;
+        // 5-segment branch, thinner (0.0026 vs 0.004 trunk)
+        const int BN = 5;
+        vec2 bprev = fp;
+        vec2 bperp = normalize(vec2(-fdir.y, fdir.x));
+        float blen = length(fe - fp);
+        for (int bi = 1; bi <= BN; bi++) {
+            float bt   = float(bi) / float(BN);
+            vec2  bbase = mix(fp, fe, bt);
+            float benv  = bt * (1.0 - bt) * 4.0;
+            float brnd  = hash21(vec2(seed + float(fi)*5.1 + bt*7.3, float(bi)*0.57)) * 2.0 - 1.0;
+            vec2  bpt   = bbase + bperp * brnd * blen * 0.40 * benv;
+            acc += lightning_segment(uv_asp, bprev, bpt, 380.0) * (0.5 / float(BN));
+            bprev = bpt;
+        }
     }
     return acc;
 }
