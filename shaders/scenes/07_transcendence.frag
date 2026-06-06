@@ -366,6 +366,50 @@ float render_year(vec2 uv, float scene_norm) {
     return min(acc, 1.2);
 }
 
+// ─── Act IV aurora ribbons — cosmic vertical light curtains ──────────────────
+// 5 tall sinusoidal ribbons sway between the galactic background and the
+// foreground tendrils during Act IV. Colors: teal-cyan at base → violet mid →
+// white-blue apex. Beat-surge on each 133 BPM kick (+45%). Gate fades out at
+// scene_norm 0.76→0.86 so the silence/logo window is completely clear.
+
+float aurora_ribbon(vec2 uv, float cx, float seed, float t) {
+    float xwave = sin(uv.y * 2.8 + t * 0.40 + seed * 6.28) * 0.10
+                + sin(uv.y * 5.3 - t * 0.22 + seed * 2.17) * 0.05;
+    float dx  = uv.x - (cx + xwave);
+    float w   = 0.018 + 0.010 * sin(seed * 4.1 + t * 0.12);
+    // Vertical mask: fade in from bottom, out toward top
+    float vm  = smoothstep(-0.95, -0.55, uv.y)
+              * (1.0 - smoothstep(0.55, 0.90, uv.y));
+    return exp(-dx * dx / (w * w)) * vm;
+}
+
+vec3 scene7_auroras(vec2 uv, float scene_norm) {
+    float gate = smoothstep(0.05, 0.22, scene_norm)
+               * (1.0 - smoothstep(0.76, 0.86, scene_norm));
+    if (gate < 0.002) return vec3(0.0);
+
+    float beat_surge = 1.0 + smoothstep(0.07, 0.0, u_beat) * 0.45 * scene_norm;
+
+    // 5 ribbons spread across the screen (aspect-corrected uv.x ≈ ±1.78 @ 16:9)
+    const float PX[5] = float[5](-1.20, -0.55, 0.05, 0.62, 1.25);
+    const float SD[5] = float[5](1.31,   2.74, 0.57, 3.88, 4.21);
+
+    vec3 col = vec3(0.0);
+    for (int i = 0; i < 5; i++) {
+        float g   = aurora_ribbon(uv, PX[i], SD[i], u_time);
+        // Color ramp: teal at base → violet mid → white-blue apex
+        float yf  = clamp(uv.y * 0.5 + 0.5, 0.0, 1.0);
+        vec3 rcol = mix(
+            vec3(0.06, 0.55, 0.75),
+            mix(vec3(0.52, 0.08, 0.88), vec3(0.60, 0.78, 1.00), yf),
+            yf * 0.85
+        );
+        float shim = 0.75 + 0.25 * sin(u_time * (0.5 + SD[i] * 0.3) + SD[i] * 4.0);
+        col += g * rcol * shim * 0.075;
+    }
+    return col * gate * beat_surge;
+}
+
 // ─── logo formation (final 10 seconds) ───────────────────────────────────────
 
 float sdSeg(vec2 p, vec2 a, vec2 b) {
@@ -457,6 +501,9 @@ void main() {
     // (handled by particle system in renderer — here we add screen-space haze)
     float haze = fbm(vec3(uv * 2.0, u_time * 0.05)) * 0.15;
     col += haze * vec3(0.05, 0.02, 0.1);
+
+    // Aurora ribbons: tall cosmic light curtains filling Act IV depth
+    col += scene7_auroras(uv, u_scene_norm);
 
     // Beat pulse: cosmic energy surge
     float beat_pulse = smoothstep(0.04, 0.0, u_beat) * u_scene_norm * 0.5;

@@ -226,6 +226,8 @@ All geometry generated procedurally at runtime — no external asset files.
 | Scene 5 aurora 3rd curtain | ✅ Added | 05_geometry_bloom.frag: Third aurora band at 240° (completing 3-fold rotational symmetry). Color: amber→gold (ci==2) vs violet→magenta (ci==0) and cyan→violet (ci==1). Kaleidoscope mandala is now fully saturated with tricolor coverage — the 6→12 fold evolution maps tri-symmetry into hexagonal/dodecagonal patterns. (5 June) |
 | Scene 7 logo star-field return | ✅ Added | 07_transcendence.frag: Faint galaxy re-emerges behind logo at scene_norm 0.905→0.930 (strength 0.12×). After the silence black-out the universe "returns from the void" to frame the logo on a cosmic backdrop rather than pure black. Never competes with logo — purely an atmospheric depth layer. (5 June) |
 
+| Scene 7 aurora ribbons | ✅ Added | 07_transcendence.frag: 5 tall sinusoidal vertical light curtains (`aurora_ribbon()` + `scene7_auroras()`) fill the depth between galaxy background and foreground tendrils during Act IV. Colors: teal-cyan at base → violet mid → white-blue apex. Each ribbon oscillates independently (two-frequency lateral wave); per-ribbon shimmer. Beat-surge: +45% on 133 BPM kicks. Gate: smoothstep 0.05→0.22 fade-in, 0.76→0.86 fade-out — fully clear before silence/logo window. (6 June) |
+
 ## Implementation Status (5 June 2026)
 
 ### Completed Systems
