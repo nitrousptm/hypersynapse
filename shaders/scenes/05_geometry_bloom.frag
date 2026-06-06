@@ -400,9 +400,34 @@ void main() {
         float ao_val = sdf_ao(p, n);
         col = mat * (0.15 + diff * ao_val);
 
-        // Kaleidoscope overlay
-        float kaleido = abs(sin(atan(p.x, p.z) * 6.0 + u_time)) * 0.2;
-        col += kaleido * vec3(0.3, 0.0, 0.5);
+        // Beat-reactive kaleidoscope sheen: fold count evolves 6→12 to match the sky
+        // mandala so surface patterns and aurora curtains crystallise in unison.
+        float beat_snap_k = exp(-u_beat * 8.0) * 2.0;
+        float fold_k_srf  = mix(6.0, 12.0, u_scene_norm * u_scene_norm) + beat_snap_k;
+        float az_srf  = atan(p.x, p.z) * fold_k_srf;
+        float kaleido = abs(sin(az_srf + u_time * 0.8)) * 0.22 * u_scene_norm;
+        vec3  kal_tint = mix(vec3(0.30, 0.0, 0.55), vec3(0.10, 0.50, 0.80),
+                             sin(u_time * 0.3) * 0.5 + 0.5);
+        col += kaleido * kal_tint;
+
+        // Crystal glass refraction: petals are translucent — refracted rays bend into the
+        // kaleidoscopic sky, revealing aurora and nebulae *through* the petal geometry.
+        // Strength is Fresnel-weighted (grazing angles only) and grows with scene_norm.
+        float ref_strength = fresnel * smoothstep(0.30, 0.70, u_scene_norm) * 0.18;
+        if (ref_strength > 0.002) {
+            vec3 ref_rd = refract(rd, n, 0.667);          // air→crystal IOR ~1.5
+            if (length(ref_rd) < 0.001) ref_rd = reflect(rd, n);  // TIR fallback
+            // Mirror refracted direction through the same evolving sky kaleidoscope
+            float az_r = atan(ref_rd.z, ref_rd.x);
+            float el_r = atan(ref_rd.y, length(ref_rd.xz));
+            float S_r  = 6.28318530718 / fold_k_srf;
+            az_r = mod(az_r + 3.14159265359, 2.0 * S_r);
+            if (az_r > S_r) az_r = 2.0 * S_r - az_r;
+            az_r -= S_r * 0.5;
+            float cel_r = cos(el_r);
+            vec3  ref_rd_k = normalize(vec3(cel_r * cos(az_r), sin(el_r), cel_r * sin(az_r)));
+            col += sky_background(ref_rd_k) * ref_strength;
+        }
     }
 
     // Volumetric light scattering — dual-source god rays
