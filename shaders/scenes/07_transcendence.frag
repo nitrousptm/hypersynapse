@@ -5,6 +5,7 @@ uniform float u_time;
 uniform vec2  u_res;
 uniform float u_beat;
 uniform float u_bar;
+uniform int   u_bar_cnt;
 uniform float u_act_norm;
 uniform float u_scene_norm;
 
@@ -366,6 +367,76 @@ float render_year(vec2 uv, float scene_norm) {
     return min(acc, 1.2);
 }
 
+// ─── Act IV shooting-star comets ─────────────────────────────────────────────
+// Bright streaks animate across the galaxy field on every other 133 BPM kick.
+// The head travels FROM one screen edge TO the opposite side over ~0.35s.
+// Tail fades behind the head.  Positions reseed per bar so each bar is unique.
+// Gated out before the silence window so the logo reveal stays clean.
+
+vec3 scene7_comets(vec2 uv, float scene_norm) {
+    float gate = smoothstep(0.04, 0.12, scene_norm)
+               * (1.0 - smoothstep(0.78, 0.84, scene_norm));
+    if (gate < 0.002) return vec3(0.0);
+
+    vec3 col = vec3(0.0);
+    float asp = u_res.x / u_res.y;
+
+    // u_beat: 0 = just fired, grows toward 1.  Use as travel position (0 = entry, 1 = exit).
+    // We only show the comet while beat < 0.55 (roughly 0.25s from beat impact).
+    float trav = smoothstep(0.0, 0.55, u_beat);
+    float fade = (1.0 - smoothstep(0.28, 0.55, u_beat));   // brightness envelope
+    if (fade < 0.003) return vec3(0.0);
+
+    // Fire on every other beat (beat 1 and 3 of each bar)
+    float beat_id = floor(u_bar * 4.0);
+    if (mod(beat_id, 2.0) < 0.5) return vec3(0.0);
+
+    // Seed changes per bar so positions differ each bar
+    float bar_seed = float(u_bar_cnt) * 7.31 + beat_id * 1.13;
+
+    // 3 simultaneous comets, each with its own trajectory
+    for (int ci = 0; ci < 3; ci++) {
+        float fi    = float(ci);
+        float s0    = bar_seed + fi * 4.71;
+
+        // Entry point: near one screen edge (aspect-corrected)
+        float eang  = hash2(vec2(s0 * 0.13, 1.0)) * 6.28318;
+        vec2  entry = vec2(cos(eang), sin(eang));
+        entry.x    *= asp;
+        entry      *= 1.5 + hash2(vec2(s0 * 0.27, 2.0)) * 0.4;  // just off-screen
+
+        // Exit point: opposite-ish side, across the center
+        vec2  exit_pt = -entry * (0.7 + hash2(vec2(s0 * 0.41, 3.0)) * 0.6);
+        exit_pt      += vec2((hash2(vec2(s0 * 0.55, 4.0)) - 0.5) * asp * 0.5,
+                             (hash2(vec2(s0 * 0.63, 5.0)) - 0.5) * 0.4);
+
+        // Animate head along the entry→exit path
+        vec2  head   = mix(entry, exit_pt, trav);
+        vec2  td     = normalize(exit_pt - entry);    // travel direction (forward)
+
+        // Trail: project uv relative to head onto the travel axis
+        vec2  pa     = uv - head;
+        float along  = dot(pa, td);                   // + ahead, - behind
+        float across = length(pa - td * along);
+
+        // Only render tail behind the head (along < 0)
+        float tail_len = 0.28 + hash2(vec2(s0 * 0.79, 6.0)) * 0.22;
+        float tc       = clamp(-along / tail_len, 0.0, 1.0);
+        float radius   = 0.007 + hash2(vec2(s0 * 0.91, 7.0)) * 0.009;
+        float width    = radius * (1.0 + tc * 2.2);   // tail widens rearward
+        float streak   = exp(-across * across / (width * width)) * (1.0 - tc * tc);
+
+        // Bright head point
+        float hr = length(pa);
+        streak  += exp(-hr * hr / (radius * radius * 0.22)) * 2.0;
+
+        // Color: warm-white head → cyan-blue tail
+        vec3  ccol = mix(vec3(0.70, 0.88, 1.0), vec3(0.40, 0.65, 1.0), tc);
+        col += streak * ccol * fade * (0.15 + scene_norm * 0.20) * 0.7;
+    }
+    return col * gate;
+}
+
 // ─── Act IV aurora ribbons — cosmic vertical light curtains ──────────────────
 // 5 tall sinusoidal ribbons sway between the galactic background and the
 // foreground tendrils during Act IV. Colors: teal-cyan at base → violet mid →
@@ -504,6 +575,9 @@ void main() {
 
     // Aurora ribbons: tall cosmic light curtains filling Act IV depth
     col += scene7_auroras(uv, u_scene_norm);
+
+    // Shooting-star comets: bright streaks zip across the galaxy on every other beat
+    col += scene7_comets(uv, u_scene_norm);
 
     // Beat pulse: cosmic energy surge
     float beat_pulse = smoothstep(0.04, 0.0, u_beat) * u_scene_norm * 0.5;
