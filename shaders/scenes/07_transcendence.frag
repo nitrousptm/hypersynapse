@@ -98,6 +98,49 @@ vec3 galaxy(vec3 rd) {
     float big_neb = fbm(rd * 1.2 + vec3(7.0, u_time * 0.005, 11.0));
     col += max(big_neb - 0.4, 0.0) * vec3(0.0, 0.08, 0.18) * 1.5;
 
+    // Three named emission nebula clusters — visual anchors matching the tendril color arc.
+    // Each sits at a distinct sky position so they spread across the framing as the camera drifts.
+    // Tight dot thresholds (0.90–0.96) keep each cluster to ~15–25 deg half-angle — visible
+    // patches rather than a color wash. FBM adds wispy internal structure.
+    // Colors: magenta (organic / Act IV early) · amber (energy / mid) · teal (cosmic / late).
+    {
+        // Nebula A — Magenta (Rosette-type HII region, upper-right)
+        vec3 na = normalize(vec3( 0.30,  0.12, 1.0));
+        float aa = dot(rd, na);
+        if (aa > 0.88) {
+            float cld_a = fbm(rd * 7.0 + vec3(3.1, 7.3, 0.5));
+            float den_a = smoothstep(0.88, 0.97, aa) * max(cld_a - 0.30, 0.0) * 3.5;
+            col += den_a * vec3(0.65, 0.08, 0.42) * 0.70;
+        }
+        // Nebula B — Amber (supernova remnant, left flank): ragged filamentary shell.
+        vec3 nb = normalize(vec3(-0.38, -0.05, 1.0));
+        float ab = dot(rd, nb);
+        if (ab > 0.86) {
+            float cld_b = fbm(rd * 5.5 + vec3(17.2, 0.8, 29.4));
+            float den_b = smoothstep(0.86, 0.97, ab) * max(cld_b - 0.28, 0.0) * 4.0;
+            col += den_b * vec3(0.85, 0.42, 0.06) * 0.75;
+        }
+        // Nebula C — Teal planetary shell (lower-right): thin ionised ring + central core.
+        vec3 nc = normalize(vec3( 0.10, -0.22, 1.0));
+        float ac = dot(rd, nc);
+        if (ac > 0.87) {
+            float cld_c = fbm(rd * 9.0 + vec3(41.7, 13.5, 6.2));
+            // Ring: bright at annular band (~0.90), dimmer core + faint fill
+            float shell = smoothstep(0.87, 0.93, ac) * (1.0 - smoothstep(0.93, 0.975, ac));
+            float fill  = smoothstep(0.93, 0.975, ac) * max(cld_c - 0.32, 0.0) * 3.0;
+            col += (shell * 0.50 + fill) * vec3(0.04, 0.65, 0.60) * 0.65;
+        }
+    }
+
+    // Interstellar dust absorption — dark molecular cloud lanes crossing the galactic plane.
+    // FBM texture where dense enough absorbs background starlight (Bok globules / dark nebulae).
+    // Gives the galactic band that distinctive dusty-arm look seen in real galaxy images.
+    if (plane_dens > 0.015) {
+        float dark_lane = fbm(rd * 4.2 + vec3(0.0, u_time * 0.002, 0.0));
+        float absorption = smoothstep(0.52, 0.64, dark_lane) * plane_dens * 0.70;
+        col *= 1.0 - absorption;
+    }
+
     return col;
 }
 
