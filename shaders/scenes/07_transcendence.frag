@@ -451,7 +451,11 @@ float aurora_ribbon(vec2 uv, float cx, float seed, float t) {
     // Vertical mask: fade in from bottom, out toward top
     float vm  = smoothstep(-0.95, -0.55, uv.y)
               * (1.0 - smoothstep(0.55, 0.90, uv.y));
-    return exp(-dx * dx / (w * w)) * vm;
+    // Upward-propagating shimmer bands: two coprime frequencies give non-repeating curtain pattern
+    float shim1 = 0.5 + 0.5 * sin(uv.y * 7.3  - t * (1.55 + seed * 0.45) + seed * 3.14);
+    float shim2 = 0.5 + 0.5 * sin(uv.y * 13.7 + t * (0.80 + seed * 0.33) + seed * 1.77);
+    float shimmer = mix(1.0, shim1 * shim2, 0.35);   // 35% depth — noticeable but not strobing
+    return exp(-dx * dx / (w * w)) * vm * shimmer;
 }
 
 vec3 scene7_auroras(vec2 uv, float scene_norm) {
@@ -476,7 +480,7 @@ vec3 scene7_auroras(vec2 uv, float scene_norm) {
             yf * 0.85
         );
         float shim = 0.75 + 0.25 * sin(u_time * (0.5 + SD[i] * 0.3) + SD[i] * 4.0);
-        col += g * rcol * shim * 0.075;
+        col += g * rcol * shim * 0.092;
     }
     return col * gate * beat_surge;
 }
@@ -565,7 +569,18 @@ void main() {
         float t_offset = hash(float(i) * 7.3) * 2.0;
         tendrils_total += tendril(uv_t, seed, u_time + t_offset);
     }
-    vec3 tendril_col = mix(vec3(0.1, 0.5, 1.0), vec3(0.8, 0.3, 1.0), sin(u_time * 0.5) * 0.5 + 0.5);
+    // Color arc: warm amber-gold (organic birth) → electric cyan-blue (cosmic energy) → violet-magenta (transcendence).
+    // Driven by scene_norm so the visual narrative evolves monotonically over the 60s finale.
+    // A small time-oscillation rides on top for shimmer — but the dominant arc is scene-progress.
+    float color_arc = clamp(u_scene_norm / 0.875, 0.0, 1.0);   // 0→1 over active scene window
+    vec3 warm_col   = vec3(0.95, 0.70, 0.18);   // amber-gold (life / organic energy)
+    vec3 mid_col    = vec3(0.08, 0.58, 1.00);   // electric cyan-blue (cosmic resonance)
+    vec3 late_col   = vec3(0.72, 0.12, 0.92);   // violet-magenta (approaching singularity)
+    vec3 tendril_col = mix(warm_col,
+                           mix(mid_col, late_col, smoothstep(0.42, 0.88, color_arc)),
+                           smoothstep(0.0, 0.42, color_arc));
+    // Gentle shimmer on top — 8% hue oscillation so petals never look static
+    tendril_col     = mix(tendril_col, tendril_col.bgr, sin(u_time * 0.28) * 0.04 + 0.04);
     col += tendrils_total * tendril_col * 1.5;
 
     // Massive particle fluid: instanced stars in motion
@@ -611,7 +626,7 @@ void main() {
     // Faint star field re-emerges behind the logo: universe returns from void.
     // Blends in gently from scene_norm 0.905→0.930 so it never competes with the
     // logo — just gives the logo a cosmic backdrop rather than pure black.
-    float star_return = smoothstep(0.905, 0.930, u_scene_norm) * 0.12;
+    float star_return = smoothstep(0.905, 0.930, u_scene_norm) * 0.17;
     if (star_return > 0.001) col += galaxy(rd) * star_return;
 
     // Single light pulse (scene_norm ~0.895): instant peak, exponential decay + expanding ring.
