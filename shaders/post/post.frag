@@ -446,6 +446,25 @@ void main() {
         }
     }
 
+    // 0c2. Scene 2 — monolith gravitational field: SDF mass bends spacetime.
+    // As the monolith materialises and builds power (scene_norm 0.12→0.80) its
+    // mass causes a subtle radial inward pull centred on the structure — same
+    // 1/r² physics as Scene 6's universe-particle lensing, deliberately echoing
+    // the "small seed of cosmic scale" theme. Beat-kicks surge the pull briefly.
+    // Gated off before the exit shockwave (0d) to avoid conflicting distortions.
+    if (u_scene_idx == 1) {
+        float grav_t = smoothstep(0.12, 0.45, u_scene_norm)
+                     * (1.0 - smoothstep(0.78, 0.90, u_scene_norm));
+        if (grav_t > 0.001) {
+            float beat_surge = 1.0 + exp(-u_beat * 8.0) * 0.55;
+            vec2  d    = uv - vec2(0.5, 0.55);   // monolith centre: slightly above screen midpoint
+            float r    = length(d);
+            // 1/r² point-mass lens pull, clamped to avoid singularity at centre
+            float pull = grav_t * beat_surge * 0.0042 / (r * r * 12.0 + 0.28);
+            uv = clamp(uv - normalize(d + vec2(1e-5)) * pull, 0.001, 0.999);
+        }
+    }
+
     // 0d. Scene 2 exit — monolith opening shockwave: reality tears as the
     // monolith opens impossibly at 0:45. A radial UV ripple expands outward
     // from screen centre (scene_norm 0.84→1.0), creating a lens-distortion ring
@@ -693,6 +712,34 @@ void main() {
                 decay_acc *= 0.93;
             }
             col += ill * shaft_str * 0.028 * vec3(0.40, 0.70, 1.00);
+        }
+    }
+
+    // 4g. Logo god rays — Scene 7 (Transcendence): sacred light from SG monogram.
+    // After the silence black-out (scene_norm 0.895+) the logo materialises and
+    // begins to glow; we march outward from the logo centre accumulating scattered
+    // luminance — the same screen-space crepuscular technique as Scene 2's monolith
+    // shafts, deliberately bookending Act I opening with Act IV finalé. The rays
+    // peak as the SG mark is fully lit, then hold through the credit sequence.
+    // 12 samples, decay=0.91 (slightly softer than scene 2's 0.93).
+    // Warm blue-white (0.45,0.68,1.0) matches logo colour palette.
+    // Gated off after scene_norm 0.980 so they don't compete with the year stamp.
+    if (u_scene_idx == 6) {
+        float logo_ray_t = smoothstep(0.895, 0.935, u_scene_norm)
+                         * (1.0 - smoothstep(0.970, 0.985, u_scene_norm));
+        if (logo_ray_t > 0.01) {
+            vec2 light_uv = vec2(0.5, 0.56);   // SG monogram centre (slight above screen midpoint)
+            vec2 delta    = (uv - light_uv) / 12.0 * 0.65;
+            vec2 cur      = uv;
+            float ill = 0.0, decay_acc = 1.0;
+            for (int s = 0; s < 12; s++) {
+                cur  -= delta;
+                vec3  sc   = texture(u_scene, clamp(cur, 0.001, 0.999)).rgb;
+                float lum  = dot(sc, vec3(0.2126, 0.7152, 0.0722));
+                ill  += lum * decay_acc;
+                decay_acc *= 0.91;
+            }
+            col += ill * logo_ray_t * 0.022 * vec3(0.45, 0.68, 1.00);
         }
     }
 
