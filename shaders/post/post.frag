@@ -87,6 +87,28 @@ vec3 bloom(vec2 uv, float threshold, float radius, float strength) {
     return (tight * 0.4 + wide * 0.6) * strength;
 }
 
+// ─── anamorphic lens streak ──────────────────────────────────────────────────
+// Horizontal cinema-lens streaks from bright light sources (Acts III/IV).
+// Samples horizontally left+right from each bright pixel, decaying with distance.
+// Blue-shifted tint (0.72,0.88,1.0) replicates real anamorphic lens coating color.
+// 24 samples per direction = 48 total per pixel when active.
+vec3 anamorphic_streak(vec2 uv, float strength, float threshold) {
+    if (strength < 0.001) return vec3(0.0);
+    vec2 texel = vec2(1.0 / u_res.x, 0.0);   // horizontal only
+    vec3 acc   = vec3(0.0);
+    float decay = 1.0;
+    for (int i = 1; i <= 24; i++) {
+        float fi   = float(i);
+        float step = fi * 2.5;
+        vec3 sr    = texture(u_scene, clamp(uv + texel * step, 0.001, 0.999)).rgb;
+        vec3 sl    = texture(u_scene, clamp(uv - texel * step, 0.001, 0.999)).rgb;
+        float lr   = max(dot(sr, vec3(0.2126, 0.7152, 0.0722)) - threshold, 0.0);
+        float ll   = max(dot(sl, vec3(0.2126, 0.7152, 0.0722)) - threshold, 0.0);
+        acc       += (lr + ll) * exp(-fi * 0.18);
+    }
+    return acc * strength * 0.012 * vec3(0.72, 0.88, 1.00);
+}
+
 // ─── lens flare ───────────────────────────────────────────────────────────────
 // Appears on strong beats (kick drum hits). Uses a 5-ghost streak pattern.
 float flare_streak(vec2 uv, vec2 src, float angle, float width, float len) {
@@ -505,6 +527,21 @@ void main() {
         col = mix(col, radial_zoom_blur(uv, zoom_t, zoom_center), zoom_t * 0.85);
     }
 
+    // 2d. Anamorphic lens streaks — Acts III/IV (Scenes 5,6,7): cinematic horizontal streaks
+    // from bright light sources. Ramps in at the emotional peak (1:45), peaks through Act IV.
+    // Gated out in Scene 6 zoom window (already has radial blur) and logo silence.
+    {
+        float streak_gate = smoothstep(0.4375, 0.55, demo_norm)
+                          * (1.0 - smoothstep(0.95, 1.0, demo_norm));
+        // Extra suppression in Scene 6 zoom-out and Scene 7 silence/logo
+        if (u_scene_idx == 5) streak_gate *= (1.0 - smoothstep(0.75, 0.90, u_scene_norm));
+        if (u_scene_idx == 6) streak_gate *= (1.0 - smoothstep(0.875, 0.93, u_scene_norm));
+        if (streak_gate > 0.01) {
+            float threshold = mix(0.70, 0.55, (demo_norm - 0.4375) / 0.3125);
+            col += anamorphic_streak(uv, streak_gate, threshold);
+        }
+    }
+
     // 3. Color grading (demo-wide palette — monotonic, must not reset at act boundaries)
     col = color_grade(col, demo_norm, u_scene_norm);
 
@@ -579,6 +616,26 @@ void main() {
         col += ring * fade * vec3(0.35, 0.55, 1.0) * 1.4;
     }
 
+    // 4e. Fractal bloom beat pulse — Scene 5 (Geometry Bloom): dual ring on each kick.
+    // Two concentric expanding rings — outer violet + inner cyan — on every 133 BPM beat.
+    // Gated off during entry burst (0→0.05) and exit ascension (0.82→1.0).
+    // Double-ring gives a "kaleidoscope heartbeat" matching the fold-snap in the scene shader:
+    // outer violet = organic petal resonance, inner cyan = crystal refraction pulse.
+    if (u_scene_idx == 4) {
+        float bloom_gate = smoothstep(0.05, 0.20, u_scene_norm)
+                         * (1.0 - smoothstep(0.82, 0.90, u_scene_norm));
+        if (bloom_gate > 0.01) {
+            float or_r  = u_beat * 1.65;
+            float or_d  = abs(length(ctr * 2.1) - or_r);
+            float outer = exp(-u_beat * 4.8) * smoothstep(0.022, 0.0, or_d);
+            col += outer * bloom_gate * vec3(0.60, 0.10, 0.98) * 1.5;
+            float ir_r  = u_beat * 1.00;
+            float ir_d  = abs(length(ctr * 2.1) - ir_r);
+            float inner = exp(-u_beat * 6.5) * smoothstep(0.015, 0.0, ir_d);
+            col += inner * bloom_gate * vec3(0.12, 0.70, 0.98) * 0.90;
+        }
+    }
+
     // 4c. Digital glitch — Scene 3 (City Corruption): AI rewriting the city data stream.
     // Row displacement + R/B channel-split fringe; grows with scene_norm² + kick beat-spike.
     // Strips narrow as corruption builds — visual read: city data collapsing into noise.
@@ -610,6 +667,32 @@ void main() {
                 float nx   = hash21(vec2(uv.x * u_res.x * 0.5, bst * 7.3));
                 col = mix(col, vec3(nx * 0.5, nx * 0.75, nx), band * gs * 0.75);
             }
+        }
+    }
+
+    // 4f. Screen-space god rays — Scene 2 (Awakening Core): light shafts from the monolith crack.
+    // As the monolith opens (scene_norm 0.60→1.0), luminous matter erupts from the vertical crack.
+    // We sample the rendered frame radially from the crack origin to accumulate scattered light —
+    // classic screen-space crepuscular rays that sell the "impossible opening" moment of Act I.
+    // 16 samples: balanced quality vs. cost; decay=0.93 for warm trailing shaft length.
+    if (u_scene_idx == 1) {
+        float shaft_t = smoothstep(0.60, 0.82, u_scene_norm);
+        float shaft_peak = smoothstep(0.82, 1.00, u_scene_norm);
+        float shaft_str = shaft_t + shaft_peak * 0.5;   // builds then holds strong at opening
+        if (shaft_str > 0.01) {
+            // Light source: top-centre of screen where the crack emerges (aspect-adjusted)
+            vec2 light_uv = vec2(0.5, 0.72);
+            vec2 delta    = (uv - light_uv) / 16.0 * 0.70;
+            vec2 cur      = uv;
+            float ill = 0.0, decay_acc = 1.0;
+            for (int s = 0; s < 16; s++) {
+                cur  -= delta;
+                vec3  sc   = texture(u_scene, clamp(cur, 0.001, 0.999)).rgb;
+                float lum  = dot(sc, vec3(0.2126, 0.7152, 0.0722));
+                ill  += lum * decay_acc;
+                decay_acc *= 0.93;
+            }
+            col += ill * shaft_str * 0.028 * vec3(0.40, 0.70, 1.00);
         }
     }
 
