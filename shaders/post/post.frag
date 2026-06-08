@@ -655,6 +655,30 @@ void main() {
         }
     }
 
+    // 4h. Monolith beat-pulse ring — Scene 2 (Awakening Core): energy radiates outward.
+    // As the monolith charges between entry (0:18) and opening (0:45), each 133 BPM kick
+    // fires an expanding ring from the monolith centre (UV 0.5, 0.55 — slightly above screen mid).
+    // Primary cold-blue ring + echo ring: "gravitational pulse from the awakening core".
+    // Paired with the gravitational lensing field (0c2) — lensing bends space, ring shows the beat.
+    // Gated clear of entry flash (0→0.08) and exit shockwave (0.82+) to avoid compounding.
+    if (u_scene_idx == 1) {
+        float ring_gate = smoothstep(0.08, 0.25, u_scene_norm)
+                        * (1.0 - smoothstep(0.75, 0.86, u_scene_norm));
+        if (ring_gate > 0.01) {
+            // Monolith sits slightly above screen centre — ring emanates from there
+            vec2 mono_ctr = ctr - vec2(0.0, 0.05);
+            float mr = length(mono_ctr * 2.0);
+            // Primary ring: expands at 1.2× u_beat radius (deliberate, ponderous mass)
+            float pr_d   = abs(mr - u_beat * 1.20);
+            float pring  = exp(-u_beat * 5.5) * smoothstep(0.020, 0.0, pr_d);
+            col += pring * ring_gate * vec3(0.22, 0.52, 1.00) * 1.10;
+            // Echo ring: trails behind, slightly narrower — lingering harmonic resonance
+            float er_d   = abs(mr - u_beat * 0.68);
+            float ering  = exp(-u_beat * 7.0) * smoothstep(0.014, 0.0, er_d);
+            col += ering * ring_gate * vec3(0.15, 0.40, 0.90) * 0.65;
+        }
+    }
+
     // 4c. Digital glitch — Scene 3 (City Corruption): AI rewriting the city data stream.
     // Row displacement + R/B channel-split fringe; grows with scene_norm² + kick beat-spike.
     // Strips narrow as corruption builds — visual read: city data collapsing into noise.
@@ -862,6 +886,21 @@ void main() {
         float e_r   = length(ctr * 1.8);
         float e_glow = asc_t * exp(-e_r * e_r * 2.0) * (1.0 - exp(-e_r * 3.2));
         col += e_glow * vec3(0.22, 0.05, 0.80) * 2.8;
+    }
+
+    // 8k. Scene 4 exit — temporal overload collapse: spacetime fails before Act III ignites.
+    // The UV twist (0a2-exit) peaks and snaps. A cold-white brightness surge sells the
+    // "last freeze" of time before the warm magenta of Scene 5 explodes outward.
+    // Quadratic ramp peaking at scene_norm 0.97 so it peaks just before the Act II→III cut.
+    if (u_scene_idx == 3) {
+        float collapse = smoothstep(0.88, 0.99, u_scene_norm);
+        if (collapse > 0.001) {
+            // Desaturated cold burst — Act II palette, not warm; Scene 5's magenta owns the warmth
+            col += collapse * collapse * vec3(0.62, 0.80, 1.00) * 1.6;
+            // Thin screen-edge corona: temporal pressure visible at frame boundary
+            float edge = 1.0 - smoothstep(0.30, 0.50, min(length(ctr * 2.0), 1.0));
+            col += edge * collapse * vec3(0.45, 0.65, 1.00) * 1.2;
+        }
     }
 
     // 8j. Scene 6 exit — singularity implosion glow: universe-particle crosses event horizon.
