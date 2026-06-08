@@ -519,6 +519,32 @@ void main() {
         }
     }
 
+    // 1d. Impossible-space chromatic fold — Scene 6 (Impossible Space, body: 0.08→0.78).
+    // On each 133 BPM kick, R samples a UV reflected around a per-bar axis through screen
+    // center (simulating a 4D fold plane opening briefly); B shifts radially outward from
+    // center (chromatic separation as non-euclidean geometry bends wavelengths differently).
+    // Axis rotates per bar (hash of u_bar_cnt): each bar has a unique fold direction so the
+    // effect never looks repetitive across the 30-second impossible-space run.
+    // Gate leaves entry burst (0→0.08) and zoom-out window (0.80+) clean.
+    if (u_scene_idx == 5) {
+        float fold_g = smoothstep(0.08, 0.22, u_scene_norm)
+                     * (1.0 - smoothstep(0.70, 0.80, u_scene_norm));
+        float fk = kick * fold_g;
+        if (fk > 0.008) {
+            // Per-bar fold axis: rotate unpredictably, consistently within a bar
+            float ang  = hash11(float(u_bar_cnt) * 0.233) * 6.2832;
+            vec2  ax   = vec2(cos(ang), sin(ang));
+            vec2  d    = ctr;
+            // Reflect UV d around axis: partial reflection = partial 4D fold
+            vec2  refl = d - 2.0 * dot(d, ax) * ax;
+            vec2  uv_r = clamp(0.5 + mix(d, refl, fk * 0.35), 0.001, 0.999);
+            col.r = mix(col.r, texture(u_scene, uv_r).r, fk * 0.65);
+            // B: radial outward — longer wavelength bends less in curved space
+            vec2  uv_b = clamp(uv + normalize(d + vec2(1e-5)) * fk * 0.022, 0.001, 0.999);
+            col.b = mix(col.b, texture(u_scene, uv_b).b, fk * 0.60);
+        }
+    }
+
     // 2. Dual-layer bloom (richer in Acts III/IV)
     float bloom_thresh   = mix(0.82, 0.50, demo_norm);
     float bloom_radius   = mix(5.0, 14.0, demo_norm) + kick * 6.0;
