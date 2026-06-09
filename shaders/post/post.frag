@@ -491,15 +491,30 @@ void main() {
     vec3 col = chroma(uv, ca_str);
 
     // 1b. Time echo — Scene 4 (Time Fracture): temporal ghost images.
-    // Two scene copies at offset UVs — blue-shifted (future) + red-shifted (past)
-    // Doppler-like read: parallel timelines visible as translucent afterimages.
+    // Past (red-shifted) spirals CCW at 0.98× scale; future (blue-shifted) spirals CW
+    // at 1.02× scale — the timelines appear to "peel apart" in opposite directions from
+    // the frozen present. Beat-reactive: rotation grows 30% on kick for a snap-pull feel.
+    // Gate clears entry row-tear (0→0.10) where UV is already distorted.
     if (u_scene_idx == 3) {
-        float echo_str = 0.18 + u_scene_norm * 0.22;
-        vec2 e = vec2(sin(u_time * 0.23) * 0.008, cos(u_time * 0.19) * 0.005);
-        vec3 past   = texture(u_scene, clamp(uv - e, 0.001, 0.999)).rgb;
-        vec3 future = texture(u_scene, clamp(uv + e, 0.001, 0.999)).rgb;
-        col += future * vec3(0.10, 0.25, 1.00) * echo_str;
-        col += past   * vec3(1.00, 0.18, 0.08) * echo_str * 0.60;
+        float echo_gate = smoothstep(0.10, 0.22, u_scene_norm);
+        float echo_str  = (0.18 + u_scene_norm * 0.22) * echo_gate;
+        // Rotation angle: subtle (max ~1.5° at full scene_norm) so geometry stays readable
+        float rot_base  = 0.026 * u_scene_norm;
+        float rot_kick  = rot_base + exp(-u_beat * 8.0) * 0.010 * u_scene_norm;
+        // Past: CCW rotation + slight shrink (time "contracting")
+        float cp = cos(-rot_kick), sp = sin(-rot_kick);
+        vec2  d_past = (uv - 0.5) * 0.978;
+        vec2  past_uv = 0.5 + vec2(d_past.x * cp - d_past.y * sp,
+                                    d_past.x * sp + d_past.y * cp);
+        // Future: CW rotation + slight expand (time "dilating")
+        float cf = cos( rot_kick), sf = sin( rot_kick);
+        vec2  d_fut = (uv - 0.5) * 1.022;
+        vec2  fut_uv = 0.5 + vec2(d_fut.x * cf - d_fut.y * sf,
+                                   d_fut.x * sf + d_fut.y * cf);
+        vec3 past   = texture(u_scene, clamp(past_uv, 0.001, 0.999)).rgb;
+        vec3 future = texture(u_scene, clamp(fut_uv,  0.001, 0.999)).rgb;
+        col += future * vec3(0.08, 0.22, 1.00) * echo_str;
+        col += past   * vec3(1.00, 0.16, 0.06) * echo_str * 0.62;
     }
 
     // 1c. Monolith fracture — Scene 2 (Awakening Core): vertical crack of white-blue
@@ -595,27 +610,75 @@ void main() {
                        (1.0 - smoothstep(0.80, 0.90, demo_norm));
     col += lens_flare(uv, kick * flare_gate);
 
-    // 4b. Rain streaks — Scene 3 (City Corruption): dystopian megacity atmosphere.
-    // Thin vertical dashes catching electric-blue city light; vanish as buildings dissolve.
+    // 4b. Rain system — Scene 3 (City Corruption): tile-based falling drops.
+    // 28 columns × 3 drop phases = 84 independent drops. Each drop: bright head +
+    // vertical tail shape (exp falloff above head, sharp cutoff below).
+    // Wind drift (AI-stirred atmosphere). Beat-reactive brightness surge.
+    // Replaced 12-streak version: proper falling motion + full-screen coverage.
     if (u_scene_idx == 2) {
         float rain_fade = 1.0 - u_scene_norm * u_scene_norm;
-        float rain_str  = rain_fade * (0.45 + kick * 0.65);
-        if (rain_str > 0.005) {
-            float asp = u_res.x / u_res.y;
-            for (int ri = 0; ri < 12; ri++) {
-                float fi  = float(ri);
-                float xp  = (hash21(vec2(fi * 7.31, 0.13)) - 0.5) * asp;
-                float xw  = 0.0006 + hash21(vec2(fi * 3.17, 0.27)) * 0.0010;
-                float spd = 1.0 + hash21(vec2(fi * 11.3, 0.41)) * 2.5;
-                float ph  = fract(hash21(vec2(fi * 5.43, 0.55)) + u_time * spd * 0.08);
-                float cx  = ctr.x * asp;
-                float dx  = abs(cx - xp);
-                float glo = xw / (dx + xw);
-                float sy  = fract(ctr.y * 0.4 + ph);
-                float win = clamp(1.0 - abs(sy - 0.5) * 7.0, 0.0, 1.0);
-                float br  = 0.15 + hash21(vec2(fi * 2.13, 0.61)) * 0.25;
-                col      += glo * win * br * rain_str * vec3(0.18, 0.52, 1.00);
+        float rain_beat = 1.0 + kick * 0.70;
+        float asp_r  = u_res.x / u_res.y;
+        // Slow sinusoidal wind: AI electromagnetic field disturbs the rainfall
+        float wind   = sin(u_time * 0.52) * 0.012 + sin(u_time * 0.31) * 0.006;
+        float cw     = asp_r / 28.0;  // column cell width in ctr-x space
+
+        for (int ri = 0; ri < 28; ri++) {
+            float fi    = float(ri);
+            // Column centre: evenly spaced across aspect-corrected X, drifting by wind
+            float col_x = ((fi + 0.5) / 28.0) * asp_r - asp_r * 0.5 + wind;
+            float px    = ctr.x * asp_r;
+            float dx    = abs(px - col_x);
+            if (dx > cw * 2.2) continue;            // fast-skip distant columns
+            float gx    = exp(-dx * dx / (cw * cw * 0.55));  // per-column Gaussian width
+
+            float spd   = 0.85 + hash21(vec2(fi * 7.31, 0.13)) * 2.40;
+
+            // 3 independent drops per column — staggered phases for natural density
+            for (int rj = 0; rj < 3; rj++) {
+                float fj    = float(rj);
+                float ph    = hash21(vec2(fi * 5.43, fj * 3.17 + 0.55));
+                // Head Y descends: 0.58 (top margin) → -0.72 (below screen) then wraps
+                float fall  = fract(ph + u_time * spd * 0.11);
+                float head_y = 0.58 - fall * 1.42;
+                float dy    = ctr.y - head_y;
+                // Tail above head (dy>0): gentle exp decay → long luminous streak
+                // Below head (dy<0): hard cutoff — the raindrop itself is a brief spark
+                // tail_len scales with scene_norm: heavier rain as corruption deepens
+                float tail_k = 14.0 + u_scene_norm * 10.0;
+                float streak = exp(-max( dy, 0.0) * tail_k)
+                             * exp(-max(-dy, 0.0) * 100.0);
+                float br    = (0.10 + hash21(vec2(fi * 2.13, fj * 0.61)) * 0.22)
+                            * rain_fade * rain_beat;
+                col += gx * streak * br * vec3(0.14, 0.52, 1.00);
             }
+        }
+
+        // Wet pavement glint — faint electric-blue sheen near screen bottom
+        // where falling rain collects on the megacity floor.
+        float puddle = smoothstep(-0.25, -0.48, ctr.y) * rain_fade;
+        if (puddle > 0.001) {
+            float pn = hash21(vec2(floor(ctr.x * 22.0 + wind * 40.0), floor(u_time * 4.0)));
+            col += puddle * pn * (0.035 + kick * 0.05) * vec3(0.08, 0.38, 0.90);
+        }
+
+        // Stormy sky atmosphere — only affects dark/sky areas between/above buildings.
+        // Luminance gate ensures lit building faces are untouched. Darkened storm-cloud
+        // gradient at screen top + beat-reactive cloud-lightning illumination flash.
+        float scene_lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+        float sky_mask  = smoothstep(0.12, 0.03, scene_lum);  // 1=dark sky, 0=lit buildings
+        if (sky_mask > 0.001) {
+            // Dark blue-violet storm gradient: stronger near zenith (uv.y high)
+            float sky_h   = smoothstep(0.35, 0.78, uv.y);  // upper portion of frame
+            float cloud_n = hash21(vec2(floor(ctr.x * 8.0 + u_time * 0.15),
+                                        floor(ctr.y * 6.0 + u_time * 0.08)));
+            float storm   = sky_h * (0.60 + cloud_n * 0.40);
+            col          += sky_mask * storm * (0.020 + u_scene_norm * 0.015)
+                          * vec3(0.04, 0.06, 0.18);
+            // Cloud-lightning illumination: beat-driven flash brightens the sky briefly.
+            // Simulates distant cloud-to-cloud lightning inside the storm layer.
+            float sky_flash = kick * kick * sky_h * sky_mask * u_scene_norm;
+            col += sky_flash * 0.28 * vec3(0.22, 0.36, 0.70);
         }
     }
 
