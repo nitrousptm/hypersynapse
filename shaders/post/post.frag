@@ -848,6 +848,50 @@ void main() {
         }
     }
 
+    // 4j. Impossible-space portal heartbeat ring — Scene 6 body (0.12→0.68).
+    // A violet/teal expanding ring fires from screen centre on each 133 BPM kick.
+    // Distinct from section 1d chromatic fold: that warps UV; this is a visible
+    // spatial ring in post-space — the portals exert tangible spacetime pressure.
+    // Dual-ring: outer violet (centre portal freq) + inner teal (wall portal resonance).
+    // Gate clears the entry-ripple window (0→0.12) and the zoom-out window (0.70+).
+    if (u_scene_idx == 5) {
+        float portal_gate = smoothstep(0.12, 0.26, u_scene_norm)
+                          * (1.0 - smoothstep(0.62, 0.70, u_scene_norm));
+        if (portal_gate > 0.01) {
+            float pr    = length(ctr * 2.0);
+            // Primary ring: ponderous expansion — impossible-space feels heavy
+            float p_d   = abs(pr - u_beat * 1.10);
+            float pring = exp(-u_beat * 4.2) * smoothstep(0.022, 0.0, p_d);
+            col += pring * portal_gate * vec3(0.55, 0.10, 0.95) * 1.20;
+            // Echo ring: teal — portal system resonance at shorter radius
+            float e_d   = abs(pr - u_beat * 0.65);
+            float ering = exp(-u_beat * 6.0) * smoothstep(0.015, 0.0, e_d);
+            col += ering * portal_gate * vec3(0.05, 0.75, 0.80) * 0.70;
+        }
+    }
+
+    // 4k. Time-fracture temporal pressure ring — Scene 4 body (0.10→0.82).
+    // Post-space ice-blue ring on each kick, layered above the scene-shader shockwave.
+    // The scene-3D ring lives in frozen-shard world-space; this one is a screen-space
+    // overlay — temporal pressure made visible on the display surface itself.
+    // Fast expansion + high decay: temporal shockwaves are kinetic, not ponderous.
+    // Gate clears entry row-tear (0→0.09) and exit UV-twist (0.82+).
+    if (u_scene_idx == 3) {
+        float time_gate = smoothstep(0.10, 0.22, u_scene_norm)
+                        * (1.0 - smoothstep(0.78, 0.86, u_scene_norm));
+        if (time_gate > 0.01) {
+            float tr    = length(ctr * 2.2);
+            // Primary ring: faster expansion than monolith — temporal kinetics
+            float p_d   = abs(tr - u_beat * 1.80);
+            float tring = exp(-u_beat * 5.5) * smoothstep(0.016, 0.0, p_d);
+            col += tring * time_gate * vec3(0.45, 0.78, 1.00) * 1.00;
+            // Echo: secondary freeze-rebound at shorter radius
+            float e_d   = abs(tr - u_beat * 0.90);
+            float ering = exp(-u_beat * 7.5) * smoothstep(0.011, 0.0, e_d);
+            col += ering * time_gate * vec3(0.28, 0.58, 0.90) * 0.55;
+        }
+    }
+
     // 8i. Scene 1 exit — Boot sequence lock-on surge (scene_norm 0.84→1.0).
     // The boot progress ring completes its sweep; right before the 0:18 first kick
     // the system "acquires signal" — a sharp horizontal scan-sweep white-out and brief
