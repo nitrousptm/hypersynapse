@@ -828,6 +828,26 @@ void main() {
         col += entry_burst * vec3(0.28, 0.45, 1.0) * 1.6;
     }
 
+    // 4i. Scene 1 beat-pulse ring — neural grid activation pulse.
+    // Faint cold-blue expanding ring on every 133 BPM kick during the boot body
+    // (scene_norm 0.05→0.80, clear of exit lock-on at 0.84).
+    // Reads as "data signal propagating through neural filament lattice" —
+    // minimal to match Act I reserved palette, but makes boot feel alive.
+    // Completes beat-ring coverage: all 7 scenes now have a dedicated body beat ring.
+    if (u_scene_idx == 0) {
+        float s1_body = smoothstep(0.05, 0.12, u_scene_norm) * smoothstep(0.80, 0.72, u_scene_norm);
+        if (s1_body > 0.001) {
+            float r_s1   = length(ctr * 2.0);
+            float kick_s1 = exp(-u_beat * 8.0);
+            // Primary ring: expands outward on kick
+            float ring_s1 = smoothstep(0.06, 0.0, abs(r_s1 - u_beat * 1.40)) * kick_s1;
+            col += ring_s1 * s1_body * vec3(0.35, 0.62, 1.00) * 0.80;
+            // Echo ring: tighter decay, shorter radius — trailing signal echo
+            float ring_s1b = smoothstep(0.08, 0.0, abs(r_s1 - u_beat * 0.85)) * exp(-u_beat * 12.0);
+            col += ring_s1b * s1_body * vec3(0.20, 0.45, 0.90) * 0.45;
+        }
+    }
+
     // 8i. Scene 1 exit — Boot sequence lock-on surge (scene_norm 0.84→1.0).
     // The boot progress ring completes its sweep; right before the 0:18 first kick
     // the system "acquires signal" — a sharp horizontal scan-sweep white-out and brief
