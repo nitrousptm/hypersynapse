@@ -449,6 +449,53 @@ void main() {
     // Volumetric light scattering — dual-source god rays
     col += god_rays(ro, rd, t);
 
+    // ── Synaptic web: thin neural threads connecting fractal geometry nodes ──
+    // Six nodes orbit the fractal garden matching the 6-fold kaleidoscope symmetry.
+    // Connecting segments glow blue-violet and beat-surge on 133 BPM kicks —
+    // "mathematical network forming between living structures" (design intent).
+    // Fades in at scene_norm 0.30→0.55 so it emerges as bloom reaches full intensity.
+    float syn_gate = smoothstep(0.30, 0.55, u_scene_norm);
+    if (syn_gate > 0.001) {
+        float syn_beat = 1.0 + smoothstep(0.07, 0.0, u_beat) * u_scene_norm * 0.90;
+        const int SYN_N = 6;
+        vec2 nodes[6];
+        float base_r = 0.38 + 0.12 * sin(u_time * 0.19);
+        for (int i = 0; i < SYN_N; i++) {
+            float fi  = float(i);
+            // Each node orbits with a slow independent phase so the web breathes
+            float phi = fi * 1.0471975 + u_time * (0.07 + fi * 0.008);
+            float ri  = base_r + 0.09 * sin(u_time * 0.31 + fi * 2.17);
+            nodes[i] = vec2(cos(phi) * ri, sin(phi) * ri);
+        }
+        float web = 0.0;
+        // Connect each node to its two neighbours (ring topology)
+        for (int i = 0; i < SYN_N; i++) {
+            int j = (i + 1) % SYN_N;
+            vec2 a  = nodes[i], b = nodes[j];
+            vec2 pa = uv - a, ba = b - a;
+            float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+            float d = length(pa - ba * h);
+            float w = 0.0012;
+            web += w / (d + w);
+            // Skip every other diagonal cross-connection (less visual clutter)
+            if (i % 2 == 0) {
+                int k = (i + 3) % SYN_N;  // opposite node
+                pa = uv - a; ba = nodes[k] - a;
+                h  = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+                d  = length(pa - ba * h);
+                web += (w * 0.5) / (d + w);
+            }
+        }
+        // Node glow dots
+        for (int i = 0; i < SYN_N; i++) {
+            float d = length(uv - nodes[i]);
+            web += exp(-d * d * 280.0) * 0.45;
+        }
+        vec3 syn_col = mix(vec3(0.20, 0.40, 1.0), vec3(0.65, 0.15, 0.90),
+                           sin(u_time * 0.24) * 0.5 + 0.5);
+        col += web * syn_col * syn_gate * syn_beat * 0.35;
+    }
+
     // Vignette
     float vig = 1.0 - dot(uv*0.4, uv*0.4);
     col *= vig;

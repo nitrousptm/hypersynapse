@@ -79,6 +79,44 @@ float sacred_geometry(vec2 uv_surface) {
     return pattern * 0.04;
 }
 
+// Per-element progressive reveal: Metatron's Cube circles materialise from centre
+// outward as the AI writes sacred geometry onto the monolith surface. Each ring
+// has its own reveal window so the pattern grows visibly over ~8 seconds.
+// Returns glow intensity (pre-multiplied), no additional smoothstep needed in caller.
+float sacred_geometry_glow(vec2 uv_surface, float reveal) {
+    float pattern = 0.0;
+    float r_big   = 0.22;
+    float beat_fl = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.45;  // kick flare
+
+    // 1. Center circle — first element to appear
+    float ctr_vis = smoothstep(0.38, 0.50, reveal);
+    pattern += smoothstep(0.008, 0.0, abs(length(uv_surface) - r_big)) * ctr_vis;
+
+    // 2. Inner star of David — second wave (6 small circles at r_big * 0.577)
+    float inn_vis = smoothstep(0.52, 0.64, reveal);
+    for (int i = 0; i < 6; i++) {
+        float a = float(i) * 1.0471975 + 0.5235988;
+        vec2  c = vec2(cos(a), sin(a)) * r_big * 0.577;
+        float d = length(uv_surface - c) - r_big * 0.577;
+        pattern += smoothstep(0.005, 0.0, abs(d)) * 0.5 * inn_vis;
+    }
+
+    // 3. Outer hexagon circles — third wave, each staggered by ~0.020 reveal units
+    // (~0.5s per circle at 27s scene length), so all 6 materialise over ~3 seconds.
+    for (int i = 0; i < 6; i++) {
+        float fi    = float(i);
+        float start = 0.64 + fi * 0.022;
+        float end   = 0.76 + fi * 0.018;
+        float hex_vis = smoothstep(start, end, reveal);
+        float a = fi * 1.0471975;
+        vec2  c = vec2(cos(a), sin(a)) * r_big;
+        float d = length(uv_surface - c) - r_big;
+        pattern += smoothstep(0.008, 0.0, abs(d)) * hex_vis;
+    }
+
+    return pattern * beat_fl;
+}
+
 // ─── Advanced Monolith SDF (Multi-detail) ─────────────────────────────────────
 // Ratio 1:5:0.5, with fractal detail, micro-patterns, recursive structure
 float sdf_monolith(vec3 p, float reveal) {
@@ -277,12 +315,12 @@ vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     float diff_fill = max(dot(n, fill_light), 0.0) * 0.28;
     vec3 mat = vec3(0.018, 0.020, 0.028) * (0.10 + (diff_key + diff_fill) * ao_val);
 
-    // Sacred geometry engravings glow when reveal > 0.4
-    // Use local frame (risen) position so UV tracks the monolith surface
+    // Sacred geometry: progressive per-element emergence from centre outward.
+    // Centre circle first (reveal ~0.38), inner star second (~0.52), outer
+    // hexagon circles one by one (~0.64–0.82) — AI writes Metatron's Cube live.
     vec3 pl_shade = p + vec3(0.0, 3.5 * (1.0 - reveal), 0.0);
     vec2 eng_uv = pl_shade.xy * vec2(1.0/0.35, 1.0/1.75) * 0.4;
-    float eng = sacred_geometry(eng_uv);
-    float eng_glow = eng * smoothstep(0.4, 0.8, reveal);
+    float eng_glow = sacred_geometry_glow(eng_uv, reveal);
     mat += eng_glow * vec3(0.1, 0.5, 1.0) * 3.0;
 
     // Specular: mirror-like, tracks animated key light
