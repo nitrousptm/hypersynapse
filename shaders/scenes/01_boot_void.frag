@@ -314,6 +314,100 @@ vec2 glitch_offset(vec2 uv) {
     return vec2(shift * in_band, 0.0);
 }
 
+// ─── Boot Terminal Text ───────────────────────────────────────────────────────
+// 5×7 pixel font, bit4=leftmost. 18 chars:
+// 0=SP 1=A 2=C 3=D 4=E 5=H 6=I 7=L 8=N 9=O 10=P 11=R 12=S 13=T 14=U 15=V 16=X 17=Y
+const int BOOT_FONT[126] = int[126](
+     0, 0, 0, 0, 0, 0, 0,  // SP=0
+    14,17,17,31,17,17,17,  // A=1
+    14,17,16,16,16,17,14,  // C=2
+    30,17,17,17,17,17,30,  // D=3
+    31,16,16,30,16,16,31,  // E=4
+    17,17,17,31,17,17,17,  // H=5
+    31, 4, 4, 4, 4, 4,31,  // I=6
+    16,16,16,16,16,16,31,  // L=7
+    17,25,21,19,17,17,17,  // N=8
+    14,17,17,17,17,17,14,  // O=9
+    30,17,17,30,16,16,16,  // P=10
+    30,17,17,30,20,18,17,  // R=11
+    14,17,16,14, 1,17,14,  // S=12
+    31, 4, 4, 4, 4, 4, 4,  // T=13
+    17,17,17,17,17,17,14,  // U=14
+    17,17,17,17,10,10, 4,  // V=15
+    17,17,10, 4,10,17,17,  // X=16
+    17,17,10, 4, 4, 4, 4   // Y=17
+);
+// "HYPERSYNAPSE"
+const int BOOT_L1[12] = int[12](5,17,10,4,11,12,17,8,1,10,12,4);
+// "NEURAL CORTEX ONLINE"
+const int BOOT_L2[20] = int[20](8,4,14,11,1,7,0,2,9,11,13,4,16,0,9,8,7,6,8,4);
+// "REALITY OVERRIDE ACTIVE"
+const int BOOT_L3[23] = int[23](11,4,1,7,6,13,17,0,9,15,4,11,11,6,3,4,0,1,2,13,6,15,4);
+
+float boot_char_px(vec2 uv, int ch, float cx, float cy) {
+    const float CW = 0.055;
+    const float CH = 0.077;
+    float gx = (uv.x - cx) * (5.0 / CW);
+    float gy = (cy + CH - uv.y) * (7.0 / CH);
+    int ci = int(floor(gx));
+    int ri = int(floor(gy));
+    if (ci < 0 || ci >= 5 || ri < 0 || ri >= 7) return 0.0;
+    int msk = BOOT_FONT[ch * 7 + ri];
+    if (((msk >> (4 - ci)) & 1) == 0) return 0.0;
+    float dx = gx - float(ci) - 0.5;
+    float dy = gy - float(ri) - 0.5;
+    return 1.0 - smoothstep(0.22, 0.50, length(vec2(dx, dy)));
+}
+
+// Renders 3-line boot terminal; uv_t is fixed screen-space (aspect-corrected, centered).
+// Returns vec3: x=line1 px, y=line2 px, z=line3 px (separate for per-line coloring).
+vec3 render_boot_terminal(vec2 uv_t, float sn) {
+    const float CW   = 0.055;
+    const float GAP  = 0.010;
+    const float STEP = CW + GAP;
+    const float LY1  =  0.69;  // bottom-edge y of line 1
+    const float LY2  =  0.49;  // line 2
+    const float LY3  =  0.29;  // line 3
+    const float X0   = -1.58;  // left edge
+
+    vec3 acc = vec3(0.0);
+
+    // Line 1: HYPERSYNAPSE — types 0.04 → 0.30
+    {
+        const float BASE = 0.04; const float STG = 0.022; const float DUR = 0.016;
+        for (int i = 0; i < 12; i++) {
+            float ct = BASE + float(i) * STG;
+            float ap = smoothstep(ct, ct + DUR, sn);
+            if (ap < 0.001) continue;
+            float bth = exp(-max(sn - ct, 0.0) * 38.0);
+            acc.x += boot_char_px(uv_t, BOOT_L1[i], X0 + float(i) * STEP, LY1) * (ap + bth * 2.2);
+        }
+    }
+    // Line 2: NEURAL CORTEX ONLINE — types 0.30 → 0.62
+    {
+        const float BASE = 0.30; const float STG = 0.016; const float DUR = 0.014;
+        for (int i = 0; i < 20; i++) {
+            float ct = BASE + float(i) * STG;
+            float ap = smoothstep(ct, ct + DUR, sn);
+            if (ap < 0.001) continue;
+            float bth = exp(-max(sn - ct, 0.0) * 38.0);
+            acc.y += boot_char_px(uv_t, BOOT_L2[i], X0 + float(i) * STEP, LY2) * (ap + bth * 2.2);
+        }
+    }
+    // Line 3: REALITY OVERRIDE ACTIVE — types 0.55 → 0.89
+    {
+        const float BASE = 0.55; const float STG = 0.015; const float DUR = 0.014;
+        for (int i = 0; i < 23; i++) {
+            float ct = BASE + float(i) * STG;
+            float ap = smoothstep(ct, ct + DUR, sn);
+            if (ap < 0.001) continue;
+            float bth = exp(-max(sn - ct, 0.0) * 38.0);
+            acc.z += boot_char_px(uv_t, BOOT_L3[i], X0 + float(i) * STEP, LY3) * (ap + bth * 2.2);
+        }
+    }
+    return min(acc, vec3(3.5));
+}
+
 // ─── Main Rendering Pipeline ──────────────────────────────────────────────────
 void main() {
     // ── Advanced Camera System ──
@@ -493,6 +587,43 @@ void main() {
     // Beat sync pulses
     float beat_pulse = smoothstep(0.04, 0.0, u_beat) * 0.2;
     col += beat_pulse * vec3(0.2, 0.4, 1.0);
+
+    // ── Boot Terminal Text ──
+    // Fixed screen-space UV (aspect-corrected, no camera drift) so text is stable.
+    vec2 uv_txt = (gl_FragCoord.xy / u_res * 2.0 - 1.0);
+    uv_txt.x *= u_res.x / u_res.y;
+    vec3 term_px = render_boot_terminal(uv_txt, u_scene_norm);
+    // Per-line colors: L1=electric-blue, L2=teal-green, L3=amber-violet (escalating AI alert)
+    col += term_px.x * vec3(0.35, 0.68, 1.00) * 2.5;
+    col += term_px.y * vec3(0.10, 0.85, 0.62) * 2.2;
+    col += term_px.z * vec3(0.82, 0.42, 1.00) * 2.2;
+    // Cursor blink: small bar at the typing frontier of the active line
+    {
+        float sn = u_scene_norm;
+        // Line 1 cursor: active 0.04→0.30
+        float l1end = 0.04 + 11.0 * 0.022;
+        float l1_typing = step(0.04, sn) * (1.0 - step(l1end + 0.03, sn));
+        float l1_curx = 0.04 + clamp(sn - 0.04, 0.0, l1end - 0.04) / 0.022 * 0.065;
+        float l1cx = -1.58 + clamp(floor((sn - 0.04) / 0.022) + 1.0, 0.0, 12.0) * 0.065;
+        float l1_cur = l1_typing * step(0.5, sin(u_time * 14.0)) *
+                       smoothstep(0.004, 0.0, abs(uv_txt.x - l1cx - 0.010)) *
+                       smoothstep(0.041, 0.0, abs(uv_txt.y - 0.728));
+        col += l1_cur * vec3(0.35, 0.68, 1.00) * 2.5;
+        // Line 2 cursor: active 0.30→0.62
+        float l2_typing = step(0.30, sn) * (1.0 - step(0.30 + 19.0 * 0.016 + 0.03, sn));
+        float l2cx = -1.58 + clamp(floor((sn - 0.30) / 0.016) + 1.0, 0.0, 20.0) * 0.065;
+        float l2_cur = l2_typing * step(0.5, sin(u_time * 14.0)) *
+                       smoothstep(0.004, 0.0, abs(uv_txt.x - l2cx - 0.010)) *
+                       smoothstep(0.041, 0.0, abs(uv_txt.y - 0.528));
+        col += l2_cur * vec3(0.10, 0.85, 0.62) * 2.2;
+        // Line 3 cursor: active 0.55→0.89
+        float l3_typing = step(0.55, sn) * (1.0 - step(0.55 + 22.0 * 0.015 + 0.03, sn));
+        float l3cx = -1.58 + clamp(floor((sn - 0.55) / 0.015) + 1.0, 0.0, 23.0) * 0.065;
+        float l3_cur = l3_typing * step(0.5, sin(u_time * 14.0)) *
+                       smoothstep(0.004, 0.0, abs(uv_txt.x - l3cx - 0.010)) *
+                       smoothstep(0.041, 0.0, abs(uv_txt.y - 0.328));
+        col += l3_cur * vec3(0.82, 0.42, 1.00) * 2.2;
+    }
 
     // ── Overall Brightness and Tone ──
     col *= 0.2 + 0.8 * smoothstep(0.0, 0.4, u_scene_norm);
