@@ -11,6 +11,7 @@ uniform float u_time;
 uniform vec2  u_res;
 uniform float u_beat;
 uniform float u_bar;
+uniform int   u_bar_cnt;
 uniform float u_act_norm;
 uniform float u_scene_norm;
 
@@ -380,6 +381,30 @@ void main() {
     // Solder joints (extended network)
     for (int i = 0; i < 14; i++) {
         col += solder_joint(uv, float(i) * 0.23) * vec3(0.2, 0.6, 1.0) * trace_density;
+    }
+
+    // ── Synaptic Neural Activation (HYPERSYNAPSE effect) ──
+    // On each 133 BPM kick, random circuit nodes "fire": brief bright burst + expanding ring.
+    // Node count grows 3→8 over the scene; positions reseed per bar.
+    // Directly embodies the HYPERSYNAPSE title: neurons activating in cascade.
+    {
+        float kick_gate = exp(-u_beat * 18.0);
+        if (kick_gate > 0.004) {
+            int node_count = 3 + int(u_scene_norm * 5.0);
+            for (int i = 0; i < 8; i++) {
+                if (i >= node_count) break;
+                float fi = float(i);
+                float seed = fi * 0.23 + float(u_bar_cnt) * 7.91;
+                vec2 npos = hash22(vec2(seed, seed * 0.57)) * 2.4 - 1.2;
+                npos.x *= u_res.x / u_res.y;
+                float r = length(uv - npos);
+                float flash = kick_gate * exp(-r * r * 55.0);
+                float ring_r = u_beat * 0.42;
+                float ring = kick_gate * exp(-abs(r - ring_r) * 30.0)
+                           * (1.0 - smoothstep(0.0, 0.55, u_beat));
+                col += (flash * 1.1 + ring * 0.45) * trace_density * vec3(0.28, 0.58, 1.00);
+            }
+        }
     }
 
     // ── Cascading Data Columns ──

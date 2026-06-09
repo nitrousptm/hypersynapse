@@ -131,6 +131,15 @@ void main() {
     // Window overload: bright cyan window burst riding the surge front
     col += wins * surge * v_corruption * vec3(0.10, 0.65, 1.00) * 2.2;
 
+    // Roofline glow: AI energy concentrates at building tops during corruption.
+    // The corona along the top edge is where mathematical structures first emerge,
+    // making each building look like it's burning with electric-blue AI light.
+    float roof_edge = smoothstep(0.04, 0.0, abs(v_uv.y - 1.0));
+    col += roof_edge * v_corruption * vec3(0.08, 0.50, 1.00) * 2.5;
+    // Vertical corner glow: building sides light up as architecture warps
+    float side_edge = min(smoothstep(0.06, 0.0, v_uv.x), smoothstep(0.06, 0.0, 1.0 - v_uv.x));
+    col += side_edge * v_corruption * vec3(0.04, 0.25, 0.80) * 1.4;
+
     // Corrupt buildings fade toward bright mathematical lines
     vec3 math_col = vec3(0.0, 0.8, 1.0) * (0.5 + 0.5 * sin(v_world_pos.y * 4.0 + u_time));
     col = mix(col, math_col, v_corruption * v_corruption * 0.7);

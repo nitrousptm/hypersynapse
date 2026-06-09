@@ -585,6 +585,20 @@ void main() {
         // Zoom center trails slightly off-axis to sell the "falling outward" feel
         vec2 zoom_center = vec2(0.5 + 0.04 * sin(u_time * 0.4), 0.5 + 0.03 * cos(u_time * 0.3));
         col = mix(col, radial_zoom_blur(uv, zoom_t, zoom_center), zoom_t * 0.85);
+
+        // 2b-void. Intergalactic void deepening during zoom-out: as the camera retreats
+        // into deep space the corners drain of colour — only the universe-particle and
+        // the cosmic galaxies remain bright. Gives a sense of vast, empty scale.
+        // Deep blue-violet at maximum (peaks at scene_norm 0.88, clears before exit glow).
+        float void_t = smoothstep(0.80, 0.92, u_scene_norm)
+                     * (1.0 - smoothstep(0.90, 0.96, u_scene_norm));
+        if (void_t > 0.001) {
+            float r_void = length(ctr * 1.6);
+            float edge_mask = smoothstep(0.35, 0.80, r_void);  // 0=centre, 1=corners
+            col *= 1.0 - edge_mask * void_t * 0.65;            // darken corners 65% max
+            // Add faint deep-space chromatic scatter in the void region
+            col += edge_mask * void_t * vec3(0.004, 0.006, 0.018) * 0.9;
+        }
     }
 
     // 2d. Anamorphic lens streaks — Acts III/IV (Scenes 5,6,7): cinematic horizontal streaks
