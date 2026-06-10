@@ -155,6 +155,100 @@ float march_shards(vec3 ro, vec3 rd, out float cat) {
     return SHARD_FAR;
 }
 
+// ─── Frozen-time deep space starfield ────────────────────────────────────────
+// Multi-scale field of stars in the void where time has stopped.
+// Colours shift from cold blue (far-past) to orange-white (present moment).
+vec3 frozen_starfield(vec2 uv) {
+    vec3 col = vec3(0.0);
+    for (int i = 0; i < 4; i++) {
+        float fi    = float(i);
+        vec2 seed   = vec2(fi * 3.71 + 1.3, fi * 1.97 + 0.5);
+        float scale = mix(55.0, 140.0, fi / 3.0);
+        vec2 cell   = floor((uv + seed) * scale);
+        vec2 frac   = fract((uv + seed) * scale) - 0.5;
+        float h     = hash(dot(cell, vec2(127.1, 311.7)));
+        if (h < 0.18) {
+            float sz      = 0.004 + h * 0.022;
+            float twinkle = 1.0;  // time is frozen — no twinkle
+            float d       = length(frac);
+            // Colour: past=cold blue, present=warm white, future=acid cyan
+            vec3 sc = (h < 0.06) ? vec3(0.55, 0.75, 1.00)   // cold blue (past)
+                    : (h < 0.12) ? vec3(1.00, 0.80, 0.60)   // warm orange (present)
+                                 : vec3(0.40, 1.00, 0.85);  // acid cyan (future)
+            col += sc * sz / (d + 0.003) * 0.08 * twinkle;
+        }
+    }
+    // Sparse large bright stars (distance heroes)
+    for (int i = 0; i < 2; i++) {
+        vec2 seed = vec2(float(i) * 7.13, float(i) * 3.97);
+        vec2 cell = floor((uv + seed) * 30.0);
+        vec2 frac = fract((uv + seed) * 30.0) - 0.5;
+        float h   = hash(dot(cell, vec2(127.1, 311.7)));
+        if (h < 0.08) {
+            float d = length(frac);
+            col += vec3(0.70, 0.85, 1.00) * 0.022 / (d + 0.002);
+        }
+    }
+    return col;
+}
+
+// ─── Frozen time light trails ─────────────────────────────────────────────────
+// Objects whose motion was captured mid-flight when time froze — their velocity
+// becomes a bright glowing arc permanently inscribed in the void.
+// 18 trails at fixed pseudo-random positions; each is a line-segment SDF trail
+// with soft-edge glow and brightness fade toward the "tail" end.
+float trail_seg(vec2 uv, vec2 a, vec2 b, float w) {
+    vec2 pa = uv - a;
+    vec2 ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    float d = length(pa - ba * h);
+    float tail_fade = 1.0 - h * 0.75;  // bright at start, dim at tail
+    return tail_fade * exp(-d * w);
+}
+
+vec3 frozen_trails(vec2 uv) {
+    vec3 col = vec3(0.0);
+    // 18 frozen trails seeded from compile-time constants.
+    // Positions are in aspect-corrected UV space (~[-1.5, 1.5] x [-1, 1]).
+    const int N = 18;
+    const vec2 TA[18] = vec2[18](
+        vec2(-1.20,  0.55), vec2( 0.80,  0.70), vec2(-0.40, -0.80),
+        vec2( 1.10, -0.30), vec2(-0.70,  0.10), vec2( 0.30,  0.90),
+        vec2(-1.30, -0.50), vec2( 0.60, -0.60), vec2(-0.10,  0.70),
+        vec2( 1.25,  0.20), vec2(-0.90, -0.20), vec2( 0.45,  0.40),
+        vec2(-0.55,  0.85), vec2( 0.95, -0.75), vec2(-1.05,  0.35),
+        vec2( 0.15, -0.50), vec2( 0.75,  0.55), vec2(-0.35, -0.35)
+    );
+    const vec2 TB[18] = vec2[18](
+        vec2(-0.85,  0.30), vec2( 1.10,  0.50), vec2(-0.15, -0.55),
+        vec2( 0.78, -0.55), vec2(-0.48,  0.28), vec2( 0.05,  0.70),
+        vec2(-1.00, -0.28), vec2( 0.35, -0.45), vec2( 0.14,  0.44),
+        vec2( 0.90,  0.40), vec2(-0.58, -0.48), vec2( 0.18,  0.18),
+        vec2(-0.25,  0.55), vec2( 0.60, -0.50), vec2(-0.72,  0.08),
+        vec2(-0.12, -0.28), vec2( 0.42,  0.30), vec2(-0.05, -0.12)
+    );
+    // Category: 0=past(blue), 1=present(orange), 2=future(cyan)
+    const float TCAT[18] = float[18](
+        0.0,0.0,0.0,0.0,0.0,0.0,
+        1.0,1.0,1.0,1.0,1.0,1.0,
+        2.0,2.0,2.0,2.0,2.0,2.0
+    );
+    const float TBRIGHT[18] = float[18](
+        0.55,0.45,0.60,0.40,0.50,0.35,
+        0.70,0.55,0.65,0.48,0.52,0.38,
+        0.60,0.45,0.55,0.50,0.42,0.48
+    );
+
+    for (int i = 0; i < N; i++) {
+        float g = trail_seg(uv, TA[i], TB[i], 520.0);
+        vec3 tc = (TCAT[i] < 0.5) ? vec3(0.30, 0.60, 1.00)   // past: cold blue
+               : (TCAT[i] < 1.5) ? vec3(1.00, 0.55, 0.25)   // present: hot orange
+                                  : vec3(0.20, 0.90, 0.80);  // future: acid cyan
+        col += tc * g * TBRIGHT[i];
+    }
+    return col * u_scene_norm;  // fade in as scene progresses
+}
+
 // Render frozen shard field: returns HDR colour for blending with feedback
 vec3 render_shards(vec2 uv) {
     // Slowly orbiting camera spirals slightly inward over the scene
@@ -170,9 +264,11 @@ vec3 render_shards(vec2 uv) {
     float cat;
     float t = march_shards(ro, rd, cat);
 
-    // Deep space void background — faint blue nebula haze
+    // Frozen deep-space void: multi-scale starfield + nebula haze + light trails
     vec3 col = vec3(0.002, 0.004, 0.014);
     col += vnoise(uv * vec2(2.1, 3.7) + u_time * 0.04) * 0.018 * vec3(0.1, 0.3, 1.0);
+    col += frozen_starfield(uv) * 0.85;
+    col += frozen_trails(uv) * 0.30;
 
     if (t < SHARD_FAR) {
         vec3 p = ro + rd * t;
