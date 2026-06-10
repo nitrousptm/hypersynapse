@@ -444,6 +444,53 @@ void main() {
             float sb = sky_background(fold_sky_rd(ref_b, fold_k_srf)).b;
             col += vec3(sr, sg, sb) * ref_strength;
         }
+    } else if (rd.y < -0.001) {
+        // ── Dark reflective ground plane: fractal flowers float above a still mirror ──
+        // Fills pixels that missed geometry but hit the ground below — replaces sky.
+        // Polished obsidian surface reflects the aurora/nebula sky beneath the flowers.
+        // Beat-driven ripples break the mirror on each 133 BPM kick.
+        const float GROUND_Y = -1.5;
+        float t_gnd = (GROUND_Y - ro.y) / rd.y;
+        if (t_gnd > 0.1) {
+            vec3  gp      = ro + rd * t_gnd;
+            float gd      = length(gp.xz);
+            float gd_fade = smoothstep(6.5, 1.8, gd);   // full near centre, fades at edge
+
+            float gnd_gate = smoothstep(0.12, 0.38, u_scene_norm) * gd_fade;
+            if (gnd_gate > 0.001) {
+                // Surface ripple: beat-driven noise slightly roughens the mirror
+                float ripple  = fbm(vec3(gp.x, 0.0, gp.z) * 2.2 + vec3(u_time * 0.42))
+                              * smoothstep(0.06, 0.0, u_beat) * 0.055 * u_scene_norm;
+                vec3  n_gnd   = normalize(vec3(ripple, 1.0, ripple));
+                vec3  rd_refl = reflect(rd, n_gnd);
+
+                // Reflected sky — aurora curtains and nebulae appear beneath the flowers
+                // Apply same kaleidoscope fold as sky so reflection stays coherent
+                float beat_snap_r = exp(-u_beat * 8.0) * 2.0;
+                float fold_k_r    = mix(6.0, 12.0, u_scene_norm * u_scene_norm) + beat_snap_r;
+                vec3  refl_col    = mix(sky_background(rd_refl),
+                                        sky_background(fold_sky_rd(rd_refl, fold_k_r)),
+                                        smoothstep(0.38, 0.60, u_scene_norm));
+
+                // Fresnel: near-perfect mirror at grazing angles
+                float cos_i   = abs(dot(rd, n_gnd));
+                float fresnel = pow(1.0 - cos_i, 3.0) * 0.78;
+
+                // Base: dark polished obsidian
+                vec3 gnd_mat = vec3(0.015, 0.008, 0.030);
+
+                // Expanding beat-ripple ring (like dropping a stone in still water)
+                float beat_ring = exp(-u_beat * 3.5)
+                                * smoothstep(0.12, 0.0, abs(gd - u_beat * 4.5))
+                                * u_scene_norm;
+                gnd_mat += beat_ring * vec3(0.04, 0.16, 0.50);
+
+                // Faint violet halo emanating from centre — "sacred ground"
+                gnd_mat += exp(-gd * 0.8) * vec3(0.02, 0.005, 0.045) * u_scene_norm;
+
+                col = mix(gnd_mat, refl_col * vec3(0.40, 0.22, 0.70), fresnel) * gnd_gate;
+            }
+        }
     }
 
     // Volumetric light scattering — dual-source god rays
