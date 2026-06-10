@@ -343,6 +343,9 @@ const int BOOT_L1[12] = int[12](5,17,10,4,11,12,17,8,1,10,12,4);
 const int BOOT_L2[20] = int[20](8,4,14,11,1,7,0,2,9,11,13,4,16,0,9,8,7,6,8,4);
 // "REALITY OVERRIDE ACTIVE"
 const int BOOT_L3[23] = int[23](11,4,1,7,6,13,17,0,9,15,4,11,11,6,3,4,0,1,2,13,6,15,4);
+// "PROTOCOL EXECUTED" — cold white completion stamp, scene_norm 0.91 → 0.978
+// P=10 R=11 O=9 T=13 O=9 C=2 O=9 L=7 sp=0 E=4 X=16 E=4 C=2 U=14 T=13 E=4 D=3
+const int BOOT_L4[17] = int[17](10,11,9,13,9,2,9,7,0,4,16,4,2,14,13,4,3);
 
 float boot_char_px(vec2 uv, int ch, float cx, float cy) {
     const float CW = 0.055;
@@ -359,18 +362,19 @@ float boot_char_px(vec2 uv, int ch, float cx, float cy) {
     return 1.0 - smoothstep(0.22, 0.50, length(vec2(dx, dy)));
 }
 
-// Renders 3-line boot terminal; uv_t is fixed screen-space (aspect-corrected, centered).
-// Returns vec3: x=line1 px, y=line2 px, z=line3 px (separate for per-line coloring).
-vec3 render_boot_terminal(vec2 uv_t, float sn) {
+// Renders 4-line boot terminal; uv_t is fixed screen-space (aspect-corrected, centered).
+// Returns vec4: x=line1, y=line2, z=line3, w=line4 (separate for per-line coloring).
+vec4 render_boot_terminal(vec2 uv_t, float sn) {
     const float CW   = 0.055;
     const float GAP  = 0.010;
     const float STEP = CW + GAP;
     const float LY1  =  0.69;  // bottom-edge y of line 1
     const float LY2  =  0.49;  // line 2
     const float LY3  =  0.29;  // line 3
+    const float LY4  =  0.09;  // line 4 — "PROTOCOL EXECUTED"
     const float X0   = -1.58;  // left edge
 
-    vec3 acc = vec3(0.0);
+    vec4 acc = vec4(0.0);
 
     // Line 1: HYPERSYNAPSE — types 0.04 → 0.30
     {
@@ -405,7 +409,19 @@ vec3 render_boot_terminal(vec2 uv_t, float sn) {
             acc.z += boot_char_px(uv_t, BOOT_L3[i], X0 + float(i) * STEP, LY3) * (ap + bth * 2.2);
         }
     }
-    return min(acc, vec3(3.5));
+    // Line 4: PROTOCOL EXECUTED — cold white stamp, fills the ~2s before 0:18 kick
+    // Rapid type-in (STG=0.004) so all 17 chars appear quickly at scene_norm 0.91→0.978
+    {
+        const float BASE = 0.91; const float STG = 0.004; const float DUR = 0.008;
+        for (int i = 0; i < 17; i++) {
+            float ct = BASE + float(i) * STG;
+            float ap = smoothstep(ct, ct + DUR, sn);
+            if (ap < 0.001) continue;
+            float bth = exp(-max(sn - ct, 0.0) * 55.0);  // faster flash for crisp readout
+            acc.w += boot_char_px(uv_t, BOOT_L4[i], X0 + float(i) * STEP, LY4) * (ap + bth * 2.8);
+        }
+    }
+    return min(acc, vec4(3.5));
 }
 
 // ─── Main Rendering Pipeline ──────────────────────────────────────────────────
@@ -592,11 +608,12 @@ void main() {
     // Fixed screen-space UV (aspect-corrected, no camera drift) so text is stable.
     vec2 uv_txt = (gl_FragCoord.xy / u_res * 2.0 - 1.0);
     uv_txt.x *= u_res.x / u_res.y;
-    vec3 term_px = render_boot_terminal(uv_txt, u_scene_norm);
-    // Per-line colors: L1=electric-blue, L2=teal-green, L3=amber-violet (escalating AI alert)
+    vec4 term_px = render_boot_terminal(uv_txt, u_scene_norm);
+    // Per-line colors: L1=electric-blue, L2=teal-green, L3=amber-violet, L4=cold white
     col += term_px.x * vec3(0.35, 0.68, 1.00) * 2.5;
     col += term_px.y * vec3(0.10, 0.85, 0.62) * 2.2;
     col += term_px.z * vec3(0.82, 0.42, 1.00) * 2.2;
+    col += term_px.w * vec3(0.92, 0.96, 1.00) * 3.0;  // cold white — execution stamp
     // Cursor blink: small bar at the typing frontier of the active line
     {
         float sn = u_scene_norm;
@@ -623,6 +640,13 @@ void main() {
                        smoothstep(0.004, 0.0, abs(uv_txt.x - l3cx - 0.010)) *
                        smoothstep(0.041, 0.0, abs(uv_txt.y - 0.328));
         col += l3_cur * vec3(0.82, 0.42, 1.00) * 2.2;
+        // Line 4 cursor: active 0.91→0.978 — faster blink (×1.4) for urgency
+        float l4_typing = step(0.91, sn) * (1.0 - step(0.91 + 16.0 * 0.004 + 0.02, sn));
+        float l4cx = -1.58 + clamp(floor((sn - 0.91) / 0.004) + 1.0, 0.0, 17.0) * 0.065;
+        float l4_cur = l4_typing * step(0.5, sin(u_time * 19.6)) *
+                       smoothstep(0.004, 0.0, abs(uv_txt.x - l4cx - 0.010)) *
+                       smoothstep(0.041, 0.0, abs(uv_txt.y - 0.128));
+        col += l4_cur * vec3(0.92, 0.96, 1.00) * 3.0;
     }
 
     // ── Overall Brightness and Tone ──
