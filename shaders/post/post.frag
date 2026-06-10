@@ -668,12 +668,56 @@ void main() {
             }
         }
 
-        // Wet pavement glint — faint electric-blue sheen near screen bottom
-        // where falling rain collects on the megacity floor.
-        float puddle = smoothstep(-0.25, -0.48, ctr.y) * rain_fade;
-        if (puddle > 0.001) {
-            float pn = hash21(vec2(floor(ctr.x * 22.0 + wind * 40.0), floor(u_time * 4.0)));
-            col += puddle * pn * (0.035 + kick * 0.05) * vec3(0.08, 0.38, 0.90);
+        // Wet megacity street reflections — screen-space mirror of buildings in rain-soaked asphalt.
+        // FPV camera at y≈1.5 means street-level occupies the lower screen; pixels below the
+        // "street horizon" (ctr.y < HORIZON) mirror the building content above it.
+        // Two-frequency rain-ripple distortion. AI electric-blue tint. Fresnel falloff.
+        // Beat-driven surface ring (raindrop impact). Dark-mask: only active where street is
+        // dark (asphalt between buildings), not on lit building faces.
+        {
+            const float HORIZON = -0.15;    // screen-space horizon for reflections
+            float below_h = smoothstep(HORIZON + 0.02, HORIZON - 0.02, ctr.y);
+            if (below_h > 0.001) {
+                float depth = clamp((HORIZON - ctr.y) / 0.38, 0.0, 1.0);
+
+                // Rain-ripple distortion: two coprime sinusoids + beat-surge wave
+                float rw1   = sin(ctr.x * 28.0 + u_time * 2.3) * 0.009;
+                float rw2   = sin(ctr.x * 13.5 - u_time * 1.7 + ctr.y * 22.0) * 0.005;
+                float bwave = exp(-u_beat * 4.5) * sin(ctr.x * 18.0 + u_time * 3.1) * 0.022;
+                float rdist = rw1 + rw2 + bwave;
+
+                // Reflected UV: mirror vertically across the street horizon
+                vec2 refl_uv = vec2(
+                    uv.x + rdist,
+                    (0.5 + HORIZON) - (ctr.y - HORIZON)
+                );
+                refl_uv = clamp(refl_uv, 0.001, 0.999);
+                vec3 refl_samp = texture(u_scene, refl_uv).rgb;
+
+                // Electric-blue AI tint: the charged rainwater catches the signal
+                refl_samp = refl_samp * vec3(0.32, 0.60, 1.05) * (0.7 + u_scene_norm * 0.55);
+
+                // Fresnel: near-perfect at horizon (grazing angle), vanishes at screen bottom
+                float fresnel = pow(1.0 - depth, 1.8) * 0.70;
+
+                // Dark asphalt base — wet black tarmac between buildings
+                vec3 asphalt = vec3(0.007, 0.012, 0.022);
+                // Per-beat radial ripple ring on puddle surface (raindrop impact)
+                float bq   = exp(-u_beat * 3.2);
+                float br_r = length(vec2(ctr.x * (u_res.x/u_res.y), ctr.y - HORIZON));
+                float bpud = bq * smoothstep(0.022, 0.0, abs(br_r - u_beat * 0.50));
+                asphalt += bpud * vec3(0.04, 0.16, 0.42) * below_h;
+
+                // Gate: reflections appear as the scene builds; fade with rain_fade
+                float ref_gate = smoothstep(0.04, 0.22, u_scene_norm) * rain_fade;
+
+                // Only blend onto dark pixels (streets/gaps), not lit building surfaces
+                float slum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+                float dark_mask = smoothstep(0.20, 0.05, slum);
+
+                vec3 wet_col = mix(asphalt, refl_samp, fresnel);
+                col = mix(col, wet_col, dark_mask * ref_gate * below_h * 0.88);
+            }
         }
 
         // Stormy sky atmosphere — only affects dark/sky areas between/above buildings.
