@@ -54,6 +54,14 @@ float smin(float a, float b, float k) {
     return mix(b,a,h)-k*h*(1.0-h);
 }
 
+// 2-D segment glow: soft-width line from a→b sampled at q
+float seg_glo2D(vec2 q, vec2 a, vec2 b, float w) {
+    vec2 pa = q - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / max(dot(ba, ba), 1e-6), 0.0, 1.0);
+    float d = length(pa - ba * h);
+    return w / (d + w);
+}
+
 // ─── Sacred Geometry Engravings on Monolith Surface ──────────────────────────
 // Returns depth of engraving at surface point p (surface-normal parameterized)
 float sacred_geometry(vec2 uv_surface) {
@@ -419,6 +427,58 @@ void main() {
 
     // Beat flash
     col += smoothstep(0.03, 0.0, u_beat) * reveal * vec3(0.1, 0.25, 0.8) * 0.5;
+
+    // ── Synaptic handoff: Metatron's Cube neural web (screen-space overlay) ──
+    // As the sacred geometry progressively inscribes itself onto the monolith,
+    // neural connection lines form between the nodes — matching Scene 1's
+    // HYPERSYNAPSE synaptic activation and bridging to Scene 5's synaptic web.
+    // Fades out as the monolith splits (reveal > 0.82) to hand off to the burst.
+    {
+        float exit_fade = 1.0 - smoothstep(0.78, 0.90, reveal);
+        float syn_beat  = 1.0 + smoothstep(0.05, 0.0, u_beat) * reveal * 0.8;
+
+        // Metatron's Cube: centre node + 6 at 60° intervals, radius 0.28
+        // Positioned slightly below screen centre to sit on the monolith face
+        const float SR   = 0.28;
+        const vec2  SCTR = vec2(0.0, -0.08);
+        vec2 nd[7];
+        nd[0] = SCTR;
+        for (int i = 0; i < 6; i++) {
+            float a = float(i) * 1.0471975;
+            nd[i + 1] = SCTR + vec2(cos(a), sin(a)) * SR;
+        }
+
+        float web = 0.0;
+
+        // Centre spoke lines — appear as inner 6-circles materialise (reveal 0.52)
+        float spoke_v = smoothstep(0.52, 0.64, reveal) * exit_fade;
+        if (spoke_v > 0.001) {
+            float sw = 0.0010;
+            for (int i = 0; i < 6; i++)
+                web += seg_glo2D(uv, nd[0], nd[i+1], sw) * spoke_v;
+        }
+
+        // Outer ring connections — appear as hex circles materialise (reveal 0.64)
+        float ring_v = smoothstep(0.64, 0.80, reveal) * exit_fade;
+        if (ring_v > 0.001) {
+            float rw = 0.00080;
+            for (int i = 0; i < 6; i++) {
+                int j = (i + 1) % 6;
+                web += seg_glo2D(uv, nd[i+1], nd[j+1], rw) * ring_v;
+            }
+        }
+
+        // Node glow dots — centre appears first (reveal 0.38), outer nodes stagger in
+        web += exp(-dot(uv - nd[0], uv - nd[0]) * 180.0)
+             * smoothstep(0.38, 0.52, reveal) * exit_fade * 0.55;
+        for (int i = 0; i < 6; i++) {
+            float ov = smoothstep(0.52 + float(i)*0.012, 0.66 + float(i)*0.012, reveal) * exit_fade;
+            web += exp(-dot(uv - nd[i+1], uv - nd[i+1]) * 160.0) * ov * 0.40;
+        }
+
+        // Cold electric-blue matches Act I "BOOT" colour palette
+        col += web * syn_beat * vec3(0.20, 0.52, 1.00) * 0.70;
+    }
 
     // Opening crack light (floods the screen at split moment)
     float split_flood = smoothstep(0.85, 1.0, reveal) * 0.8;

@@ -190,8 +190,33 @@ float tip_glow(vec2 uv, vec2 bp) {
     return exp(-dot(uv - bp, uv - bp) * 220.0) * 0.055 * beat_boost;
 }
 
+// Helper: draw a 3-segment leaflet sub-branch from point bp in direction bd.
+// fork_sign: +1 or -1 selects which side the leaflet forks toward.
+// gate: scene-progress factor [0,1] so leaflets grow in over time.
+float leaflet(vec2 uv, vec2 bp, vec2 bd, float sw, float fork_sign,
+              float seed_l, float t_l, float gate) {
+    float fa  = fork_sign * (0.28 + hash(seed_l) * 0.22);
+    float fc  = cos(fa), fs = sin(fa);
+    vec2  ld  = vec2(bd.x * fc - bd.y * fs, bd.x * fs + bd.y * fc);
+    float lw  = sw * 1.5;
+    float lacc = 0.0;
+    for (int i = 0; i < 3; i++) {
+        float angle = sin(float(i) * 1.9 + seed_l + t_l * 0.7) * 0.28;
+        float c2 = cos(angle), s2 = sin(angle);
+        ld = vec2(ld.x * c2 - ld.y * s2, ld.x * s2 + ld.y * c2);
+        vec2 next = bp + ld * 0.040;
+        lacc += lw / (sdSeg2D(uv, bp, next) + lw);
+        lw  *= 0.68;
+        bp   = next;
+    }
+    lacc += tip_glow(uv, bp);
+    return lacc * gate;
+}
+
 float tendril(vec2 uv, float seed, float t) {
     float acc = 0.0;
+    // Sub-branches fade in from scene_norm 0.18→0.38 so leaflets "grow in" progressively.
+    float leaf_gate = smoothstep(0.18, 0.38, u_scene_norm);
 
     // ── Trunk: 4 segments radiating outward from centre ──────────────────────
     vec2 p   = vec2(0.0);
@@ -225,6 +250,11 @@ float tendril(vec2 uv, float seed, float t) {
             bp = next;
         }
         acc += tip_glow(uv, bp);
+        // Leaflet pair off left-branch tip — only compute when visible (leaf_gate > 0)
+        if (leaf_gate > 0.001) {
+            acc += leaflet(uv, bp, bd, bw, +1.0, seed + 5.3, t, leaf_gate);
+            acc += leaflet(uv, bp, bd, bw, -1.0, seed + 6.1, t, leaf_gate);
+        }
     }
 
     // ── Right branch: fork at trunk tip with a negative rotation ─────────────
@@ -244,6 +274,11 @@ float tendril(vec2 uv, float seed, float t) {
             bp = next;
         }
         acc += tip_glow(uv, bp);
+        // Leaflet pair off right-branch tip — only compute when visible
+        if (leaf_gate > 0.001) {
+            acc += leaflet(uv, bp, bd, bw, +1.0, seed + 7.3, t, leaf_gate);
+            acc += leaflet(uv, bp, bd, bw, -1.0, seed + 8.1, t, leaf_gate);
+        }
     }
 
     return acc * u_scene_norm;
