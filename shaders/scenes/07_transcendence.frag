@@ -740,6 +740,25 @@ void main() {
     col += (logo_mask + streams * 0.25) * logo_col * logo_appear * 3.5;
     col += logo_halo * vec3(0.3, 0.5, 1.0) * 1.5;
 
+    // Prismatic edge fringing: R/B channels sample logo SDF at ±offset UV.
+    // The "fringe" is the region covered by the offset mask but not the centered
+    // mask — exactly the chromatic aberration band at each letter edge.
+    // Mimics light dispersion through crystalline letter forms.
+    // Pulses with the breathing sine and fades with the halo.
+    {
+        float prism = logo_appear * (0.70 + 0.30 * sin(u_time * 3.14)) * 0.45;
+        if (prism > 0.002) {
+            const float off = 0.0065;
+            float mask_r = smoothstep(0.009, 0.0, logo_sdf((uv + vec2(off, 0.0)) * 2.0));
+            float mask_b = smoothstep(0.009, 0.0, logo_sdf((uv - vec2(off, 0.0)) * 2.0));
+            float fringe_r = max(mask_r - logo_mask, 0.0);  // red halo on +x edge
+            float fringe_b = max(mask_b - logo_mask, 0.0);  // blue halo on -x edge
+            col.r += fringe_r * prism * 2.2;
+            col.b += fringe_b * prism * 2.8;
+            col.g += (fringe_r + fringe_b) * prism * 0.40;  // slight green for full spectrum
+        }
+    }
+
     // Breathing pulse — logo "breathes" once it's up (slow sine, 0.5 Hz)
     float logo_breath = logo_appear * (0.85 + 0.15 * sin(u_time * 3.14));
     col *= mix(1.0, logo_breath, logo_appear * 0.3);
