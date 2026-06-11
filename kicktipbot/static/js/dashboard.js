@@ -6,15 +6,19 @@ async function refreshStats() {
         const response = await fetch('/api/stats');
         const stats = await response.json();
 
-        // Update stats cards
+        const values = [
+            stats.total_tips,
+            stats.total_points,
+            stats.avg_points_per_match,
+            stats.exact_correct,
+            stats.difference_correct,
+            stats.tendency_correct,
+            stats.avg_expected_points,
+            `${(stats.avg_confidence * 100).toFixed(1)}%`
+        ];
+
         document.querySelectorAll('.stat-value').forEach((el, idx) => {
-            const values = [
-                stats.total_tips,
-                `${stats.win_rate.toFixed(1)}%`,
-                stats.correct_tips,
-                stats.avg_confidence.toFixed(2)
-            ];
-            el.textContent = values[idx];
+            if (values[idx] !== undefined) el.textContent = values[idx];
         });
     } catch (error) {
         console.error('Error refreshing stats:', error);
@@ -31,19 +35,31 @@ async function refreshTipps() {
 
         tipps.forEach(tipp => {
             const row = document.createElement('tr');
-            row.className = tipp.won === true ? 'won' : tipp.won === false ? 'lost' : 'pending';
 
-            const confidencePercent = (tipp.confidence * 100).toFixed(0);
-            const statusBadge = tipp.won === true ? '✓' : tipp.won === false ? '✗' : '…';
-            const statusClass = tipp.won === true ? 'success' : tipp.won === false ? 'error' : 'pending';
+            let rowClass = 'pending';
+            if (tipp.points_won === 4) rowClass = 'exact';
+            else if (tipp.points_won === 3) rowClass = 'diff';
+            else if (tipp.points_won === 2) rowClass = 'tend';
+            else if (tipp.points_won === 0) rowClass = 'lost';
+            row.className = rowClass;
+
+            const confPercent = ((tipp.confidence || 0) * 100).toFixed(1);
+            const ep = (tipp.expected_points || 0).toFixed(2);
+            const lambdaH = (tipp.lambda_home || 0).toFixed(1);
+            const lambdaA = (tipp.lambda_away || 0).toFixed(1);
+
+            const pointsBadge = tipp.points_won !== null && tipp.points_won !== undefined
+                ? `<span class="badge points-${tipp.points_won}">${tipp.points_won}P</span>`
+                : `<span class="badge pending">…</span>`;
 
             row.innerHTML = `
                 <td><strong>${tipp.team1} vs ${tipp.team2}</strong></td>
-                <td class="tip-badge">${tipp.tip}</td>
-                <td>${confidencePercent}%</td>
-                <td><small>${new Date(tipp.placed_at).toLocaleString('de-DE')}</small></td>
-                <td>${tipp.result || '⏳'}</td>
-                <td><span class="badge ${statusClass}">${statusBadge}</span></td>
+                <td class="tip-badge">${tipp.tip_str}</td>
+                <td>${ep}</td>
+                <td>${confPercent}%</td>
+                <td><small>${lambdaH}/${lambdaA}</small></td>
+                <td>${tipp.actual_str || '⏳'}</td>
+                <td>${pointsBadge}</td>
             `;
 
             tbody.appendChild(row);
@@ -86,17 +102,11 @@ function refreshDashboard() {
     refreshLogs();
 }
 
-// Initial refresh
 refreshDashboard();
-
-// Auto-refresh every 30 seconds
 setInterval(refreshDashboard, REFRESH_INTERVAL);
 
-// Refresh on focus
 document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) {
-        refreshDashboard();
-    }
+    if (!document.hidden) refreshDashboard();
 });
 
 console.log('✅ Dashboard JS loaded. Auto-refresh every 30s');

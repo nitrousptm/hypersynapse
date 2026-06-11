@@ -10,33 +10,47 @@
     <div class="container">
         <header>
             <h1>⚽ kicktipbot Dashboard</h1>
-            <p>WM 2026 Automatischer Tipp-Bot</p>
+            <p>WM 2026 — Automatischer Tipp-Bot mit Poisson-Modell</p>
         </header>
 
-        <!-- Stats Section -->
         <section class="stats-section">
             <h2>📊 Statistiken</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-value">{{ stats.total_tips }}</div>
-                    <div class="stat-label">Gesamt Tipps</div>
+                    <div class="stat-label">Tipps Gesamt</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">{{ "%.1f"|format(stats.win_rate) }}%</div>
-                    <div class="stat-label">Erfolgsquote</div>
+                    <div class="stat-value">{{ stats.total_points }}</div>
+                    <div class="stat-label">Punkte Gesamt</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">{{ stats.correct_tips }}</div>
-                    <div class="stat-label">Korrekte Tipps</div>
+                    <div class="stat-value">{{ stats.avg_points_per_match }}</div>
+                    <div class="stat-label">Ø Punkte/Spiel</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-value">{{ "%.2f"|format(stats.avg_confidence) }}</div>
+                    <div class="stat-value">{{ stats.exact_correct }}</div>
+                    <div class="stat-label">Exakte Tipps (4P)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.difference_correct }}</div>
+                    <div class="stat-label">Tor-Differenz (3P)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.tendency_correct }}</div>
+                    <div class="stat-label">Tendenz (2P+)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.avg_expected_points }}</div>
+                    <div class="stat-label">Ø Erwartete Punkte</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.1f"|format(stats.avg_confidence * 100) }}%</div>
                     <div class="stat-label">Ø Confidence</div>
                 </div>
             </div>
         </section>
 
-        <!-- Tipps Section -->
         <section class="tipps-section">
             <h2>🎯 Letzte Tipps</h2>
             <div class="tipps-table">
@@ -45,25 +59,25 @@
                         <tr>
                             <th>Match</th>
                             <th>Tipp</th>
-                            <th>Confidence</th>
-                            <th>Platziert</th>
+                            <th>EP</th>
+                            <th>Conf</th>
+                            <th>Lambda</th>
                             <th>Ergebnis</th>
-                            <th>Status</th>
+                            <th>Punkte</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for tipp in tipps %}
-                        <tr class="{% if tipp.won %}won{% elif tipp.won == False %}lost{% else %}pending{% endif %}">
+                        <tr class="{% if tipp.points_won == 4 %}exact{% elif tipp.points_won == 3 %}diff{% elif tipp.points_won == 2 %}tend{% elif tipp.points_won == 0 %}lost{% else %}pending{% endif %}">
                             <td><strong>{{ tipp.team1 }} vs {{ tipp.team2 }}</strong></td>
-                            <td class="tip-badge">{{ tipp.tip }}</td>
-                            <td>{{ "%.0f"|format(tipp.confidence * 100) }}%</td>
-                            <td><small>{{ tipp.placed_at }}</small></td>
-                            <td>{{ tipp.result or "⏳" }}</td>
+                            <td class="tip-badge">{{ tipp.tip_str }}</td>
+                            <td>{{ "%.2f"|format(tipp.expected_points or 0) }}</td>
+                            <td>{{ "%.1f"|format((tipp.confidence or 0) * 100) }}%</td>
+                            <td><small>{{ "%.1f"|format(tipp.lambda_home or 0) }}/{{ "%.1f"|format(tipp.lambda_away or 0) }}</small></td>
+                            <td>{{ tipp.actual_str or "⏳" }}</td>
                             <td>
-                                {% if tipp.won == True %}
-                                    <span class="badge success">✓</span>
-                                {% elif tipp.won == False %}
-                                    <span class="badge error">✗</span>
+                                {% if tipp.points_won is not none %}
+                                    <span class="badge points-{{ tipp.points_won }}">{{ tipp.points_won }}P</span>
                                 {% else %}
                                     <span class="badge pending">…</span>
                                 {% endif %}
@@ -75,7 +89,6 @@
             </div>
         </section>
 
-        <!-- Logs Section -->
         <section class="logs-section">
             <h2>📝 Logs</h2>
             <div class="logs-list">
@@ -90,7 +103,7 @@
         </section>
 
         <footer>
-            <p>🤖 kicktipbot v1.0 | Entwickelt für WM 2026</p>
+            <p>🤖 kicktipbot v2.0 — Poisson-Engine | WM 2026</p>
         </footer>
     </div>
 
