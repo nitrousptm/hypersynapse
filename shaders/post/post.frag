@@ -1210,6 +1210,57 @@ void main() {
         }
     }
 
+    // 4l. Gravitational wave cascade — Scene 6 holy-shit reveal (scene_norm ≥ 0.795).
+    // The universe-particle's revelation as a gravitating mass sends spacetime ripples
+    // outward through the cosmic background — LIGO-style expanding ring system.
+    // Unlike periodic beat rings (section 4j), these fire ONCE from the particle position
+    // at UV (0.3, 0.2) → ctr (-0.20, -0.30) and expand slowly over ~6 seconds.
+    // 3 rings with gravitational redshift colors: inner blue-white → outer red-shifted.
+    if (u_scene_idx == 5) {
+        float gw_t = max(0.0, u_scene_norm - 0.795);
+        if (gw_t < 0.20) {
+            float norm_t  = gw_t / 0.20;
+            vec2  pp      = vec2(-0.20, -0.30);        // particle_pos in ctr space
+            vec2  asp_d   = ctr - pp;
+            asp_d.x      *= u_res.x / u_res.y;        // aspect-correct distance
+            float pp_r    = length(asp_d);
+            // Ring speeds: inner races ahead (blue-shifted), outer lags (red-shifted)
+            const float SPD[3] = float[3](1.20, 0.78, 0.48);
+            const vec3  GWC[3] = vec3[3](
+                vec3(0.65, 0.82, 1.00),   // inner — blue-white (short wavelength)
+                vec3(1.00, 0.88, 0.52),   // mid   — amber/gold
+                vec3(1.00, 0.52, 0.28)    // outer — red-shifted (long wavelength)
+            );
+            for (int wi = 0; wi < 3; wi++) {
+                float wave_r   = norm_t * SPD[wi];
+                float ring_str = smoothstep(0.028, 0.0, abs(pp_r - wave_r))
+                               * exp(-norm_t * 4.0 - float(wi) * 0.55);
+                col += ring_str * GWC[wi] * 1.9;
+            }
+        }
+    }
+
+    // 8m. Big-bang CMB expansion — Scene 7 opening: universe born from singularity.
+    // Concentric expanding rings simulate the cosmic microwave background radiation
+    // pattern, fired from screen centre as the demo erupts into Act IV.
+    // Warm CMB palette (inner white → outer amber) fades over first ~3 seconds.
+    // Layered above the UV burst (top of main) and bang_flash (8b) for compound effect.
+    if (u_scene_idx == 6) {
+        float cmb_t = 1.0 - smoothstep(0.0, 0.11, u_scene_norm);
+        if (cmb_t > 0.001) {
+            float r_cmb = length(ctr * 2.0);
+            for (int ci = 0; ci < 4; ci++) {
+                float fci      = float(ci);
+                float ring_r   = u_scene_norm * (1.5 + fci * 0.50);
+                float ring_str = cmb_t * smoothstep(0.020, 0.0, abs(r_cmb - ring_r))
+                               * exp(-fci * 0.45);
+                // CMB thermal spectrum: inner white-blue → outer warm amber
+                vec3 cmb_col   = mix(vec3(1.00, 0.94, 0.82), vec3(1.00, 0.58, 0.18), fci * 0.36);
+                col += ring_str * cmb_col * 2.8;
+            }
+        }
+    }
+
     // 9. ACES tonemapping
     col = aces(col);
 
