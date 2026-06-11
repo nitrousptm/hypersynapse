@@ -8,9 +8,14 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 import time
 import config
+
+# Pfade für Chromium auf Debian
+CHROMIUM_BINARY = "/usr/bin/chromium"
+CHROMEDRIVER_PATH = "/usr/bin/chromedriver"
 
 
 class KicktippBot:
@@ -27,58 +32,99 @@ class KicktippBot:
 
     def __init__(self):
         options = Options()
+        options.binary_location = CHROMIUM_BINARY
         if config.HEADLESS:
             options.add_argument("--headless=new")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
         options.add_argument("--disable-gpu")
         options.add_argument("--window-size=1920,1080")
-        options.add_argument("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36")
+        # Screenshots-Verzeichnis für Debugging
+        self.screenshot_dir = "/tmp/kicktipbot_screenshots"
+        import os; os.makedirs(self.screenshot_dir, exist_ok=True)
 
-        self.driver = webdriver.Chrome(options=options)
+        service = Service(executable_path=CHROMEDRIVER_PATH)
+        self.driver = webdriver.Chrome(service=service, options=options)
         self.wait = WebDriverWait(self.driver, config.TIMEOUT)
         self.logged_in = False
+
+    def screenshot(self, name):
+        """Macht Screenshot zum Debugging"""
+        try:
+            path = f"{self.screenshot_dir}/{name}.png"
+            self.driver.save_screenshot(path)
+            print(f"[Bot] Screenshot: {path}")
+        except Exception:
+            pass
 
     def login(self):
         """Logged sich in kicktipp.at ein"""
         try:
             print(f"[Bot] Opening {self.LOGIN_URL}")
             self.driver.get(self.LOGIN_URL)
+            time.sleep(2)
+
+            self.screenshot("01_login_page")
 
             # Akzeptiere ggf. Cookie-Banner
             self._accept_cookies()
+            time.sleep(1)
 
-            # Email-Feld
-            email_field = self.wait.until(
-                EC.presence_of_element_located((By.ID, "kennung"))
-            )
+            self.screenshot("02_after_cookies")
+
+            # Email-Feld — kicktipp nutzt 'kennung' als ID
+            try:
+                email_field = self.wait.until(
+                    EC.presence_of_element_located((By.ID, "kennung"))
+                )
+            except TimeoutException:
+                # Fallback: Suche über Name oder Type
+                email_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='text'], input[type='email']")
+
             email_field.clear()
             email_field.send_keys(config.KICKTIPP_EMAIL)
 
             # Passwort-Feld
-            pass_field = self.driver.find_element(By.ID, "passwort")
+            try:
+                pass_field = self.driver.find_element(By.ID, "passwort")
+            except NoSuchElementException:
+                pass_field = self.driver.find_element(By.CSS_SELECTOR, "input[type='password']")
+
             pass_field.clear()
             pass_field.send_keys(config.KICKTIPP_PASSWORD)
 
-            # Submit (Login-Button)
-            submit_btn = self.driver.find_element(By.NAME, "submitbutton")
+            self.screenshot("03_filled_login")
+
+            # Submit
+            try:
+                submit_btn = self.driver.find_element(By.NAME, "submitbutton")
+            except NoSuchElementException:
+                submit_btn = self.driver.find_element(By.CSS_SELECTOR, "input[type='submit'], button[type='submit']")
+
             submit_btn.click()
+            time.sleep(3)
 
-            time.sleep(2)
+            self.screenshot("04_after_login")
 
-            # Login erfolgreich? Check URL oder Element
-            if "login" not in self.driver.current_url.lower():
+            current_url = self.driver.current_url
+            print(f"[Bot] URL after login: {current_url}")
+
+            if "login" not in current_url.lower():
                 self.logged_in = True
                 print("[Bot] ✓ Login successful")
                 return True
             else:
-                print("[Bot] ✗ Login failed - check credentials")
+                print("[Bot] ✗ Login failed - wrong credentials or blocked")
+                print(f"[Bot] Page title: {self.driver.title}")
                 return False
 
         except TimeoutException:
-            print("[Bot] ✗ Login timeout - page didn't load")
+            self.screenshot("error_login_timeout")
+            print("[Bot] ✗ Login timeout")
             return False
         except Exception as e:
+            self.screenshot("error_login")
             print(f"[Bot] ✗ Login error: {e}")
             return False
 
