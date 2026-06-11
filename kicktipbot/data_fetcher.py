@@ -130,22 +130,69 @@ class DataFetcher:
 
     def get_odds_heuristic(self, team1, team2):
         """
-        Heuristik-Fallback: Schätzt Quoten basierend auf FIFA-Ranking.
+        Heuristik-Fallback: Schätzt Quoten basierend auf FIFA-Ranking WM 2026.
         Wird genutzt wenn keine echte Quote verfügbar ist.
         """
-        # FIFA Rankings (vereinfacht, Stand 2026)
+        # FIFA Rankings (WM 2026 Qualifikation, Stand Juni 2026)
         rankings = {
-            "argentina": 1, "frankreich": 2, "france": 2, "spanien": 3, "spain": 3,
-            "england": 4, "brasilien": 5, "brazil": 5, "portugal": 6, "niederlande": 7,
-            "netherlands": 7, "belgien": 8, "belgium": 8, "deutschland": 9, "germany": 9,
-            "italien": 10, "italy": 10, "kroatien": 11, "croatia": 11,
-            "marokko": 12, "morocco": 12, "kolumbien": 13, "colombia": 13,
-            "uruguay": 14, "schweiz": 15, "switzerland": 15, "usa": 16,
-            "japan": 17, "senegal": 18, "iran": 19, "mexiko": 20, "mexico": 20,
-            "österreich": 21, "austria": 21, "serbien": 22, "serbia": 22,
-            "dänemark": 23, "denmark": 23, "ukraine": 24, "polen": 25, "poland": 25,
-            "ecuador": 26, "südkorea": 27, "south korea": 27, "kanada": 28, "canada": 28,
-            "wales": 29, "ghana": 30, "kamerun": 31, "cameroon": 31, "katar": 32, "qatar": 32,
+            # Tier 1 (1-10)
+            "argentina": 1, "argentinien": 1,
+            "frankreich": 2, "france": 2,
+            "spanien": 3, "spain": 3,
+            "england": 4,
+            "brasilien": 5, "brazil": 5,
+            "portugal": 6,
+            "niederlande": 7, "netherlands": 7, "holland": 7,
+            "belgien": 8, "belgium": 8,
+            "deutschland": 9, "germany": 9,
+            "kroatien": 11, "croatia": 11,
+            # Tier 2 (11-20)
+            "marokko": 12, "morocco": 12,
+            "kolumbien": 13, "colombia": 13,
+            "uruguay": 14,
+            "schweiz": 15, "switzerland": 15,
+            "usa": 16, "vereinigte staaten": 16,
+            "japan": 17,
+            "senegal": 18,
+            "mexiko": 19, "mexico": 19,
+            "österreich": 20, "austria": 20,
+            # Tier 3 (21-35)
+            "südkorea": 21, "south korea": 21, "korea": 21,
+            "serbien": 22, "serbia": 22,
+            "dänemark": 23, "denmark": 23,
+            "ukraine": 24,
+            "türkei": 25, "turkey": 25, "turkiye": 25,
+            "polen": 26, "poland": 26,
+            "ecuador": 27,
+            "kanada": 28, "canada": 28,
+            "australien": 29, "australia": 29,
+            "tschechien": 30, "czech republic": 30, "czechia": 30, "tschechische republik": 30,
+            "schottland": 31, "scotland": 31,
+            "katar": 32, "qatar": 32,
+            "panama": 33,
+            "bolivien": 34, "bolivia": 34,
+            "paraguay": 35,
+            # Tier 4 (36-48)
+            "jamaika": 36, "jamaica": 36,
+            "ghana": 37,
+            "kamerun": 38, "cameroon": 38,
+            "algerien": 39, "algeria": 39,
+            "nigeria": 40,
+            "elfenbeinküste": 41, "ivory coast": 41, "côte d'ivoire": 41,
+            "saudi-arabien": 42, "saudi arabia": 42, "saudi arabien": 42,
+            "südafrika": 43, "south africa": 43,
+            "bosnien-herzegowina": 44, "bosnien": 44, "bosnia": 44, "bosnien und herzegowina": 44,
+            "haiti": 45,
+            "el salvador": 46,
+            "honduras": 47,
+            "neuseeland": 48, "new zealand": 48,
+            "venezuela": 44, "chile": 30, "griechenland": 35, "greece": 35,
+            "albanien": 38, "albania": 38, "norwegen": 29, "norway": 29,
+            "iran": 34, "irak": 40, "iraq": 40,
+            "ägypten": 39, "egypt": 39, "mali": 43, "tunesien": 38, "tunisia": 38,
+            "demokratische republik kongo": 42, "dr kongo": 42, "congo": 42,
+            "jordanien": 44, "jordan": 44, "oman": 46,
+            "costa rica": 40, "nicaragua": 50,
         }
 
         r1 = rankings.get(team1.lower(), 50)

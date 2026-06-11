@@ -27,8 +27,8 @@ class KicktippBot:
     4. Tipps absenden
     """
 
-    LOGIN_URL = "https://www.kicktipp.at/info/profil/login"
-    BASE_URL = "https://www.kicktipp.at"
+    LOGIN_URL = "https://www.kicktipp.de/info/profil/login"
+    BASE_URL = "https://www.kicktipp.de"
 
     def __init__(self):
         options = Options()
@@ -129,26 +129,64 @@ class KicktippBot:
             return False
 
     def _accept_cookies(self):
-        """Akzeptiert Cookie-Banner falls vorhanden"""
-        try:
-            # Verschiedene mögliche Cookie-Buttons
-            for selector in [
-                "button[id*='accept']",
-                "button[class*='accept']",
-                "button[class*='cookie']",
-                "a.cookie-accept",
-                "button.cmpboxbtnyes"  # consentmanager.net (häufig auf kicktipp)
-            ]:
-                try:
-                    btn = self.driver.find_element(By.CSS_SELECTOR, selector)
-                    if btn.is_displayed():
+        """Akzeptiert Cookie/Consent-Banner - mit iframe-Support"""
+        # 1. Hauptseite: CSS-Selektoren
+        for selector in [
+            "button.cmpboxbtnyes",
+            "button[id*='accept']",
+            "button[class*='accept']",
+            "button[class*='consent']",
+            "button[class*='cookie']",
+            "a.cookie-accept",
+        ]:
+            try:
+                btn = self.driver.find_element(By.CSS_SELECTOR, selector)
+                if btn.is_displayed():
+                    btn.click()
+                    time.sleep(0.5)
+                    return
+            except NoSuchElementException:
+                continue
+
+        # 2. Hauptseite: XPath nach deutschem/englischem Consent-Text
+        for text in ["AKZEPTIEREN", "Akzeptieren", "akzeptieren", "Accept", "Zustimmen"]:
+            try:
+                btn = self.driver.find_element(
+                    By.XPATH, f"//button[contains(., '{text}')]"
+                )
+                if btn.is_displayed():
+                    btn.click()
+                    time.sleep(0.5)
+                    return
+            except Exception:
+                continue
+
+        # 3. Alle iframes durchsuchen (Cross-Origin-Consent-Dialoge)
+        iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
+        print(f"[Bot] Scanning {len(iframes)} iframe(s) for consent button")
+        for i, iframe in enumerate(iframes):
+            try:
+                src = iframe.get_attribute("src") or ""
+                print(f"[Bot]   iframe[{i}]: {src[:80]}")
+                self.driver.switch_to.frame(iframe)
+                for text in ["AKZEPTIEREN", "Akzeptieren", "Accept", "Zustimmen"]:
+                    try:
+                        btn = self.driver.find_element(
+                            By.XPATH, f"//button[contains(., '{text}')]"
+                        )
                         btn.click()
-                        time.sleep(0.5)
+                        print(f"[Bot] ✓ Consent clicked inside iframe[{i}]")
+                        self.driver.switch_to.default_content()
+                        time.sleep(1)
                         return
-                except NoSuchElementException:
-                    continue
-        except Exception:
-            pass
+                    except Exception:
+                        pass
+                self.driver.switch_to.default_content()
+            except Exception as e:
+                print(f"[Bot]   iframe[{i}] error: {e}")
+                self.driver.switch_to.default_content()
+
+        print("[Bot] No consent button found (modal may not be present)")
 
     def open_tippabgabe(self):
         """Öffnet die Tippabgabe-Seite der Gruppe"""
@@ -160,8 +198,30 @@ class KicktippBot:
             tippabgabe_url = f"{config.KICKTIPP_GROUP_URL}/tippabgabe"
             print(f"[Bot] Opening {tippabgabe_url}")
             self.driver.get(tippabgabe_url)
-            time.sleep(2)
+            time.sleep(3)
+
+            self.screenshot("tippabgabe_before_consent")
             self._accept_cookies()
+            time.sleep(1)
+            self.screenshot("tippabgabe_after_consent")
+
+            # Prüfe ob Seite korrekt geladen (nicht mehr Modal)
+            page_src = self.driver.page_source
+            if "AKZEPTIEREN UND WEITER" in page_src:
+                print("[Bot] ⚠ Consent modal still visible after dismiss attempt")
+                # Letzter Versuch: direkt per JS auf modal-button klicken
+                self.driver.execute_script("""
+                    var all = document.querySelectorAll('button, a');
+                    for (var el of all) {
+                        if (el.textContent && el.textContent.includes('AKZEPTIEREN')) {
+                            el.click();
+                            break;
+                        }
+                    }
+                """)
+                time.sleep(1)
+                self.screenshot("tippabgabe_after_js_consent")
+
             return True
         except Exception as e:
             print(f"[Bot] ✗ Error opening tippabgabe: {e}")
