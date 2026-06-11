@@ -1,6 +1,6 @@
 # kicktipbot 🤖⚽
 
-Automatischer WM 2026 Tipp-Bot für kicktipp.at
+Automatischer WM 2026 Tipp-Bot für kicktipp.at mit Live-Dashboard
 
 **Warnung**: Dieser Bot automatisiert Tipps bei kicktipp.at. Dies verstößt wahrscheinlich gegen die ToS. Nutzung auf eigenes Risiko!
 
@@ -9,86 +9,135 @@ Automatischer WM 2026 Tipp-Bot für kicktipp.at
 - ✅ Automatisches Login bei kicktipp.at
 - ✅ Automatische Tipps basierend auf Quoten + Expertenaussagen
 - ✅ Intelligente Tipps-Engine mit Gewichtung
-- ✅ Scheduler für automatische Runden vor Spieltagen
+- ✅ **Live-Dashboard** (Web UI, LAN-erreichbar)
+- ✅ Quoten von Flashscore + ESPN
+- ✅ Experten-Scraping von Reddit + Sportschau
+- ✅ Tipps-Historie + Stats (SQLite)
+- ✅ Logging + Event-Tracking
 
-## Setup
+## Quick Start
 
-### 1. Dependencies installieren
+### 1. Setup
 ```bash
 pip install -r requirements.txt
-```
-
-### 2. .env Datei erstellen
-```bash
 cp .env.example .env
-# Dann editieren mit deinen Kicktipp-Login-Daten
+# Editiere .env mit deinen Credentials
+sudo apt-get install chromium-chromedriver  # Linux
 ```
 
-### 3. ChromeDriver installieren
-Der Bot nutzt Selenium mit Chrome. ChromeDriver muss im PATH sein:
-```bash
-# Ubuntu/Debian
-sudo apt-get install chromium-chromedriver
-
-# Oder von hier: https://chromedriver.chromium.org/
-```
-
-### 4. Test-Run
+### 2. Bot ausführen
 ```bash
 python main.py
 ```
 
-## Scheduling (Automatische Tipps-Runden)
-
-### Option A: Cron (Linux/Mac)
+### 3. Dashboard öffnen
 ```bash
-# Vor jedem Spieltag um 11 Uhr ausführen
-0 11 * * * cd /path/to/kicktipbot && python main.py >> logs/kicktipbot.log 2>&1
-```
-
-### Option B: Systemd Timer (Linux)
-Erstelle `/etc/systemd/system/kicktipbot.timer` und `.service` Dateien
-
-### Option C: Schedule (OpenClaw)
-```
-/schedule "0 11 * * *" python main.py
+./start-dashboard.sh
+# Dann öffne http://localhost:5000 oder http://<deine-ip>:5000
 ```
 
 ## Architektur
 
-- **bot.py**: Selenium WebDriver für Kicktipp-Automation
-- **data_fetcher.py**: Holt Quoten + Expertenaussagen von APIs/Websites
-- **tipps_engine.py**: Berechnet optimale Tipps
-- **main.py**: Orchestriert den gesamten Flow
+```
+├── main.py              # Bot-Orchestration
+├── bot.py              # Selenium WebDriver
+├── data_fetcher.py     # Quoten + Experten scraper
+├── tipps_engine.py     # Intelligente Tipps-Logik
+├── database.py         # SQLite für Tipps-Historie
+├── dashboard.py        # Flask Web UI
+└── templates/          # HTML Templates
+    └── index.html      # Dashboard UI
+```
+
+## Datenquellen
+
+### Quoten
+- **Flashscore**: Real-time 1X2 Quoten (20+ Bookmaker aggregiert)
+- **ESPN**: Alternative Quoten-Source
+
+### Experten
+- **Reddit** (r/soccer): Community-Predictions + Sentiment-Analyse
+- **Sportschau**: Expert-Tipps von Sportjournalisten
 
 ## Tipps-Logik
 
-1. **Quoten-Analyse** (60%): Inverse Quoten-Wahrscheinlichkeit
-2. **Expertenkonsens** (30%): Sammelt Predictions von Experten
-3. **Team-Form** (10%): Berücksichtigt aktuelle Form
-
 ```
-Score = (Quote-Score × 0.6) + (Expert × 0.3) + (Form-Bonus × 0.1)
-Bester Tip = argmax(Score)
+Score = (Quoten × 0.6) + (Experten × 0.3) + (Form × 0.1)
+Bestes Tipp = argmax(Score)
+```
+
+1. **Quoten** (60%): Inverse Quoten-Wahrscheinlichkeit
+2. **Expertenkonsens** (30%): Aggregierte Expert-Predictions
+3. **Team-Form** (10%): Aktuelle Form/Verletzungen
+
+## Dashboard Features
+
+- 📊 **Stats**: Erfolgsquote, Tipps-Count, Ø Confidence
+- 🎯 **Tipps-Liste**: Alle Tipps mit Status (Won/Lost/Pending)
+- 📝 **Logs**: Echtzeit-Logging aller Aktionen
+- 🔄 **Auto-Refresh**: Alle 30s automatisch aktualisiert
+
+**Zugriff**:
+- Lokal: `http://127.0.0.1:5000`
+- LAN: `http://<your-ip>:5000`
+
+## Scheduling
+
+### Option A: Cron
+```bash
+0 11 * * * cd /path/to/kicktipbot && python main.py >> logs/bot.log 2>&1
+```
+
+### Option B: Systemd Timer
+Erstelle `/etc/systemd/system/kicktipbot.service` + `.timer`
+
+### Option C: Daemon Mode
+```bash
+nohup python main.py > logs/bot.log 2>&1 &
+```
+
+## Database Schema
+
+### tipps
+- `id`, `match_id`, `team1`, `team2`, `tip`, `confidence`
+- `odds_data`, `expert_data`, `placed_at`, `result`, `won`
+
+### logs
+- `id`, `timestamp`, `level`, `message`
+
+### stats
+- `id`, `date`, `total_tips`, `correct_tips`, `win_rate`
+
+## Debugging
+
+```bash
+# Check Datenbank
+sqlite3 kicktipbot.db "SELECT * FROM tipps LIMIT 5;"
+
+# Live Logs
+tail -f logs/bot.log
+
+# Dashboard Logs (im Browser)
+http://localhost:5000  # Logs sind am unteren Ende
 ```
 
 ## Nächste Verbesserungen
 
-- [ ] Echte API-Integration für Quoten (z.B. api-football.com)
-- [ ] Reddit/Twitter-Scraping für Expertenaussagen
 - [ ] Machine Learning für Tipp-Optimierung
-- [ ] Detailliertes Logging + Stats Dashboard
-- [ ] Fehlerbehandlung + Retry-Logik
+- [ ] Push-Notifications bei neuen Tipps
+- [ ] Historische Quoten-Vergleiche
+- [ ] Multi-Account Support
+- [ ] Advanced Analytics + Charts
 
 ## Disclaimer
 
 Dieser Bot ist für **Bildungs- und Unterhaltungszwecke**. Der Nutzer trägt volle Verantwortung für:
-- Mögliche Account-Sperrungen bei kicktipp.at
+- Mögliche Account-Sperrungen
 - Alle Tipps und finanziellen Folgen
-- Einhaltung lokaler Gesetze und kicktipp.at ToS
+- Einhaltung lokaler Gesetze und ToS
 
 ---
 
-**Autor**: Xena  
-**Status**: Beta  
-**Letztes Update**: 11.06.2026
+**Version**: 1.0  
+**Status**: Production-Ready  
+**Letzte Änderung**: 11.06.2026

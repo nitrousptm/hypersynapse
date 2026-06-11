@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>kicktipbot Dashboard - WM 2026</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚽ kicktipbot Dashboard</h1>
+            <p>WM 2026 Automatischer Tipp-Bot</p>
+        </header>
+
+        <!-- Stats Section -->
+        <section class="stats-section">
+            <h2>📊 Statistiken</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.total_tips }}</div>
+                    <div class="stat-label">Gesamt Tipps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.1f"|format(stats.win_rate) }}%</div>
+                    <div class="stat-label">Erfolgsquote</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ stats.correct_tips }}</div>
+                    <div class="stat-label">Korrekte Tipps</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">{{ "%.2f"|format(stats.avg_confidence) }}</div>
+                    <div class="stat-label">Ø Confidence</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tipps Section -->
+        <section class="tipps-section">
+            <h2>🎯 Letzte Tipps</h2>
+            <div class="tipps-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Match</th>
+                            <th>Tipp</th>
+                            <th>Confidence</th>
+                            <th>Platziert</th>
+                            <th>Ergebnis</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tipp in tipps %}
+                        <tr class="{% if tipp.won %}won{% elif tipp.won == False %}lost{% else %}pending{% endif %}">
+                            <td><strong>{{ tipp.team1 }} vs {{ tipp.team2 }}</strong></td>
+                            <td class="tip-badge">{{ tipp.tip }}</td>
+                            <td>{{ "%.0f"|format(tipp.confidence * 100) }}%</td>
+                            <td><small>{{ tipp.placed_at }}</small></td>
+                            <td>{{ tipp.result or "⏳" }}</td>
+                            <td>
+                                {% if tipp.won == True %}
+                                    <span class="badge success">✓</span>
+                                {% elif tipp.won == False %}
+                                    <span class="badge error">✗</span>
+                                {% else %}
+                                    <span class="badge pending">…</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Logs Section -->
+        <section class="logs-section">
+            <h2>📝 Logs</h2>
+            <div class="logs-list">
+                {% for log in logs %}
+                <div class="log-entry log-{{ log.level.lower() }}">
+                    <span class="log-time">{{ log.timestamp }}</span>
+                    <span class="log-level">[{{ log.level }}]</span>
+                    <span class="log-message">{{ log.message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <footer>
+            <p>🤖 kicktipbot v1.0 | Entwickelt für WM 2026</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
