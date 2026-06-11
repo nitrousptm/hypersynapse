@@ -199,7 +199,13 @@ void Renderer::draw_scene(const Timeline& tl) {
     // Crossfade overlay — only during the PRE-BOUNDARY half of the window (trans < 0.5).
     // The window is centered on the boundary: once scene() has flipped (trans >= 0.5),
     // the new scene is already the main draw and sc+1 would point to the wrong target.
-    if (trans >= 0.0 && trans < 0.5) {
+    //
+    // Exception: Scene 2 → Scene 3 (bass drop at 0:45). CityCorruption uses the mesh
+    // pipeline and its fragment shader expects mesh varyings that fullscreen.vert cannot
+    // supply. Skip the crossfade overlay here — the hard cut at the bass drop is
+    // intentional and more impactful than a blended city-facade pattern.
+    if (trans >= 0.0 && trans < 0.5 &&
+        !(sc == Scene::AwakeningCore)) {
         int next_scene_idx = (static_cast<int>(sc) + 1) % 7;
         uint32_t next_prog = scene_programs_[next_scene_idx];
 
@@ -270,21 +276,50 @@ void Renderer::draw_mesh_scene(const Timeline& tl) {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    // Camera: fast FPV flying through city canyons
-    float t = static_cast<float>(tl.time());
+    // Camera: fast FPV flying through city canyons with realistic banking.
+    // Uses scene-relative time so the path is stable regardless of start time.
+    float t  = static_cast<float>(tl.time());
+    float st = t - 45.0f;  // scene-local time (0 = scene start)
 
     glm::vec3 cam_pos = glm::vec3(
-        std::sin(t * 0.4f) * 15.0f + t * 2.0f,  // moving forward
-        1.5f + std::sin(t * 0.3f) * 0.8f,
-        std::cos(t * 0.35f) * 15.0f
+        std::sin(st * 0.4f) * 15.0f + st * 2.0f,
+        1.5f + std::sin(st * 0.3f) * 0.8f,
+        std::cos(st * 0.35f) * 15.0f
     );
     glm::vec3 cam_look = cam_pos + glm::vec3(
-        std::cos(t * 0.4f),
-        -0.1f + std::sin(t * 0.15f) * 0.2f,
-        -std::sin(t * 0.35f)
+        std::cos(st * 0.4f),
+        -0.1f + std::sin(st * 0.15f) * 0.2f,
+        -std::sin(st * 0.35f)
     );
 
-    glm::mat4 view = glm::lookAt(cam_pos, cam_look, glm::vec3(0, 1, 0));
+    // FPV banking: tilt camera based on lateral turning rate, like a real drone.
+    // Compute the right-vector direction change to estimate yaw rate.
+    float dt     = 1.0f / 60.0f;
+    glm::vec3 fw = glm::normalize(cam_look - cam_pos);
+    glm::vec3 cam_pos_next  = glm::vec3(
+        std::sin((st + dt) * 0.4f) * 15.0f + (st + dt) * 2.0f,
+        1.5f + std::sin((st + dt) * 0.3f) * 0.8f,
+        std::cos((st + dt) * 0.35f) * 15.0f
+    );
+    glm::vec3 fw_next = glm::normalize(
+        (cam_pos_next + glm::vec3(
+            std::cos((st + dt) * 0.4f),
+            -0.1f + std::sin((st + dt) * 0.15f) * 0.2f,
+            -std::sin((st + dt) * 0.35f))) - cam_pos_next);
+
+    // Lateral yaw rate: cross with world-up gives left/right signed rate
+    glm::vec3 world_up = glm::vec3(0.0f, 1.0f, 0.0f);
+    glm::vec3 right    = glm::normalize(glm::cross(fw, world_up));
+    float     yaw_rate = glm::dot(glm::cross(fw, fw_next), world_up);
+
+    // Bank angle proportional to yaw rate (max ±28°), smoothly clamped
+    float bank_deg  = glm::clamp(yaw_rate * 1800.0f, -28.0f, 28.0f);
+    float bank_rad  = glm::radians(bank_deg);
+    // Rotate the up-vector around the forward axis to produce the roll
+    glm::vec3 cam_up = glm::normalize(
+        world_up * std::cos(bank_rad) + right * std::sin(bank_rad));
+
+    glm::mat4 view = glm::lookAt(cam_pos, cam_look, cam_up);
     glm::mat4 proj = glm::perspective(
         glm::radians(75.0f),
         float(width_) / float(height_),
@@ -420,7 +455,6 @@ void Renderer::emit_particles(const Timeline& tl) {
     if (!particles_) return;
 
     float beat  = static_cast<float>(tl.beat_phase());
-    float t     = static_cast<float>(tl.time());
     Scene sc    = tl.scene();
 
     // Only emit on downbeats (beat_phase near 0)
@@ -513,18 +547,57 @@ void Renderer::emit_particles(const Timeline& tl) {
         break;
     }
     case Scene::GeometryBloom: {
-        // Colorful petal particles
-        int burst = 80;
+        // Act III palette: violet/magenta → cyan at peak → white at bloom
+        // Two emission modes mix across scene: radial petal spray + vertical sparks.
+        float sn5 = static_cast<float>(tl.scene_norm());
+        // Color arc: deep violet early → electric cyan mid → white-magenta late
+        float arc  = sn5;
+        int burst = 120;
         for (int i = 0; i < burst; i++) {
-            float angle = glm::linearRand(0.0f, 6.28318f);
-            float r = glm::linearRand(0.2f, 1.0f);
-            glm::vec3 pos = glm::vec3(std::cos(angle)*r, glm::linearRand(-0.5f, 0.5f), std::sin(angle)*r);
-            glm::vec3 vel = glm::vec3(std::cos(angle)*0.5f, 0.3f, std::sin(angle)*0.5f);
-            glm::vec3 col = glm::vec3(
-                0.5f + 0.5f*std::sin(t + float(i)*0.3f),
-                0.3f,
-                0.8f + 0.2f*std::cos(t + float(i)*0.7f));
-            particles_->emit(pos, vel, 0, 2.0f, col);
+            float angle  = glm::linearRand(0.0f, 6.28318f);
+            float r      = glm::linearRand(0.15f, 1.2f);
+            float vy_var = glm::linearRand(0.0f, 1.0f);
+
+            glm::vec3 pos, vel;
+            if (i < 80) {
+                // Radial petal spray from fractal core
+                pos = glm::vec3(std::cos(angle)*r,
+                                glm::linearRand(-0.6f, 0.6f),
+                                std::sin(angle)*r);
+                float spd = 0.35f + glm::linearRand(0.0f, 0.3f);
+                vel = glm::vec3(std::cos(angle)*spd,
+                                0.15f + vy_var * 0.45f,
+                                std::sin(angle)*spd);
+            } else {
+                // Vertical sparks rising from centre — organic "pollen drift"
+                pos = glm::vec3(glm::linearRand(-0.3f, 0.3f),
+                                glm::linearRand(-0.2f, 0.4f),
+                                glm::linearRand(-0.3f, 0.3f));
+                vel = glm::vec3(glm::linearRand(-0.15f, 0.15f),
+                                0.6f + glm::linearRand(0.0f, 0.6f),
+                                glm::linearRand(-0.15f, 0.15f));
+            }
+
+            // Color arc: violet → cyan → white, with per-particle phase variation
+            float phi = arc + float(i) * 0.028f;  // stagger phase per particle
+            glm::vec3 col;
+            if (phi < 0.45f) {
+                // violet/magenta (Act III entry)
+                float a = phi / 0.45f;
+                col = glm::mix(glm::vec3(0.55f, 0.05f, 1.00f),   // deep violet
+                               glm::vec3(1.00f, 0.10f, 0.90f), a); // magenta
+            } else if (phi < 0.75f) {
+                // magenta → electric cyan (peak)
+                float a = (phi - 0.45f) / 0.30f;
+                col = glm::mix(glm::vec3(1.00f, 0.10f, 0.90f),   // magenta
+                               glm::vec3(0.10f, 0.80f, 1.00f), a); // electric cyan
+            } else {
+                // cyan → white-gold (late bloom)
+                float a = std::min((phi - 0.75f) / 0.25f, 1.0f);
+                col = glm::mix(glm::vec3(0.10f, 0.80f, 1.00f),   // cyan
+                               glm::vec3(1.00f, 0.90f, 0.80f), a); // warm white
+            }
+            particles_->emit(pos, vel, 0, 2.2f, col);
         }
         break;
     }

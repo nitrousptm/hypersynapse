@@ -720,23 +720,54 @@ void main() {
             }
         }
 
-        // Stormy sky atmosphere — only affects dark/sky areas between/above buildings.
-        // Luminance gate ensures lit building faces are untouched. Darkened storm-cloud
-        // gradient at screen top + beat-reactive cloud-lightning illumination flash.
+        // Stormy megacity sky — FBM clouds + AI-corruption horizon glow.
+        // Only affects dark sky areas between/above buildings (luminance gate).
+        // Uses bilinear smooth value noise (2 octaves) for cloud structures.
         float scene_lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
-        float sky_mask  = smoothstep(0.12, 0.03, scene_lum);  // 1=dark sky, 0=lit buildings
+        float sky_mask  = smoothstep(0.12, 0.03, scene_lum);
         if (sky_mask > 0.001) {
-            // Dark blue-violet storm gradient: stronger near zenith (uv.y high)
-            float sky_h   = smoothstep(0.35, 0.78, uv.y);  // upper portion of frame
-            float cloud_n = hash21(vec2(floor(ctr.x * 8.0 + u_time * 0.15),
-                                        floor(ctr.y * 6.0 + u_time * 0.08)));
-            float storm   = sky_h * (0.60 + cloud_n * 0.40);
-            col          += sky_mask * storm * (0.020 + u_scene_norm * 0.015)
-                          * vec3(0.04, 0.06, 0.18);
-            // Cloud-lightning illumination: beat-driven flash brightens the sky briefly.
-            // Simulates distant cloud-to-cloud lightning inside the storm layer.
-            float sky_flash = kick * kick * sky_h * sky_mask * u_scene_norm;
-            col += sky_flash * 0.28 * vec3(0.22, 0.36, 0.70);
+            // Smooth 2D value noise: bilinear interpolation of hash lattice
+            vec2  cp0 = ctr * vec2(1.8, 2.2) + vec2(u_time * 0.022, u_time * 0.009);
+            vec2  cp1 = ctr * vec2(3.7, 4.5) + vec2(-u_time * 0.038, u_time * 0.017);
+            // Octave 0
+            vec2 i0 = floor(cp0), f0 = fract(cp0); f0 = f0*f0*(3.0-2.0*f0);
+            float c00 = hash21(i0), c10 = hash21(i0+vec2(1,0));
+            float c01 = hash21(i0+vec2(0,1)), c11 = hash21(i0+vec2(1,1));
+            float n0  = mix(mix(c00,c10,f0.x), mix(c01,c11,f0.x), f0.y);
+            // Octave 1 (finer detail)
+            vec2 i1 = floor(cp1), f1 = fract(cp1); f1 = f1*f1*(3.0-2.0*f1);
+            float d00 = hash21(i1), d10 = hash21(i1+vec2(1,0));
+            float d01 = hash21(i1+vec2(0,1)), d11 = hash21(i1+vec2(1,1));
+            float n1  = mix(mix(d00,d10,f1.x), mix(d01,d11,f1.x), f1.y);
+            float cloud_n = n0 * 0.65 + n1 * 0.35;  // 2-octave cloud density
+
+            float sky_h  = smoothstep(0.28, 0.78, uv.y);   // upper sky zone
+            float horz_h = smoothstep(0.56, 0.28, uv.y);   // horizon glow zone
+
+            // Dark storm cloud layer: visible blue-grey FBM structures
+            float storm = sky_h * (0.35 + cloud_n * 0.65);
+            col += sky_mask * storm
+                 * vec3(0.010, 0.016, 0.055)
+                 * (2.0 + u_scene_norm * 1.2);
+
+            // AI-corruption horizon glow: electric-blue energy rising from city grid.
+            // Grows with u_scene_norm as the AI takeover intensifies.
+            float ai_glow = horz_h * (0.45 + cloud_n * 0.55) * u_scene_norm;
+            col += sky_mask * ai_glow
+                 * vec3(0.014, 0.038, 0.120)
+                 * (0.9 + kick * 1.4);
+
+            // Thin horizontal AI energy band just above the building skyline
+            float energy_band = exp(-abs(ctr.y + 0.10) * 22.0);
+            col += sky_mask * energy_band * (0.4 + cloud_n * 0.6) * u_scene_norm
+                 * vec3(0.012, 0.055, 0.145) * (1.0 + kick * 3.0);
+
+            // Cloud-lightning illumination: FBM-modulated, dramatically brighter.
+            // Per-flash seed changes ~2× per second for unique cloud illumination.
+            float flash_id  = hash11(floor(u_time * 2.1 + 0.5));
+            float sky_flash = kick * kick * sky_mask * (0.50 + flash_id * 0.50);
+            col += sky_flash * storm * (0.55 + u_scene_norm * 0.45)
+                 * vec3(0.28, 0.48, 0.88);
         }
     }
 
