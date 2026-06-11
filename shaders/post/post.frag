@@ -771,6 +771,57 @@ void main() {
         }
     }
 
+    // 4b-sky. AI Intelligence Orb — Scene 3 (City Corruption): the awakened mind made visible.
+    // A slowly drifting geometric sphere hangs in the storm sky as the AI takes over the city.
+    // Appears scene_norm 0.30→0.82: from early corruption through the power-grid peak.
+    // Concentric expanding rings + directional energy beam aimed at the grid below.
+    // Beat-reactive core-pulse. Only drawn in dark sky pixels (above/between buildings).
+    // The orb is the AI's physical avatar — its presence causes the corruption below.
+    if (u_scene_idx == 2) {
+        float orb_gate = smoothstep(0.30, 0.52, u_scene_norm)
+                       * (1.0 - smoothstep(0.76, 0.86, u_scene_norm));
+        if (orb_gate > 0.001) {
+            float asp_o = u_res.x / u_res.y;
+            // Slow sinusoidal drift across the sky: orb "patrols" the city
+            vec2 orb_pos = vec2(sin(u_time * 0.045) * 0.30, 0.25 + sin(u_time * 0.031) * 0.04);
+            vec2 od      = vec2((ctr.x - orb_pos.x) * asp_o, ctr.y - orb_pos.y);
+            float or_r   = length(od);
+
+            // Central glow core — bright nucleus marking the AI singularity
+            float core = exp(-or_r * or_r * 70.0) * 3.2;
+
+            // Two expanding concentric rings, animating outward at different rates
+            float rp1  = fract(u_time * 0.14) * 0.28;
+            float rp2  = fract(u_time * 0.14 + 0.55) * 0.28;
+            float ring1 = exp(-pow(or_r - rp1, 2.0) * 520.0) * 0.9;
+            float ring2 = exp(-pow(or_r - rp2, 2.0) * 520.0) * 0.5;
+
+            // Outer atmospheric halo: faint blue-violet aura
+            float halo = exp(-or_r * or_r * 10.0) * 0.28;
+
+            // Directional beam: vertical column of AI energy projected onto the city grid.
+            // Scanned sinusoidally to create a "searching" sweep across building tops.
+            float bx     = (ctr.x - orb_pos.x) * asp_o;
+            float bw     = 0.014 + u_scene_norm * 0.010;
+            float beam_h = smoothstep(orb_pos.y + 0.01, orb_pos.y - 0.62, ctr.y);
+            float beam   = exp(-bx * bx / (bw * bw))
+                         * beam_h
+                         * (0.40 + 0.60 * abs(sin(ctr.y * 22.0 - u_time * 5.0 + 1.2)));
+
+            // Beat surge: orb flares bright on each 133 BPM kick
+            float b_surge = 1.0 + kick * 2.2;
+
+            float total = (core + ring1 + ring2) * b_surge + halo;
+            vec3  orb_col = total * vec3(0.10, 0.48, 1.00) * orb_gate
+                          + beam  * 0.50 * vec3(0.06, 0.32, 0.85) * u_scene_norm * orb_gate;
+
+            // Gate: only add to dark sky pixels — never overwrite lit building surfaces
+            float olum  = dot(col, vec3(0.2126, 0.7152, 0.0722));
+            float sky_g = smoothstep(0.14, 0.03, olum);
+            col += orb_col * sky_g;
+        }
+    }
+
     // 4b-ext. Electric lightning arcs — Scene 3 (City Corruption): AI overwhelms the
     // power grid. Fractal bolts strike on ~45% of beats, fading in under 0.1s.
     // Two simultaneous bolts from top-screen to random impact points in the lower half;
