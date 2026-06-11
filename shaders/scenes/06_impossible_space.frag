@@ -272,14 +272,40 @@ vec3 cosmic_particles(vec2 uv) {
         col += exp(-gr * gr * 80.0) * vec3(0.8, 0.6, 0.4) * 1.2;
     }
 
-    // Faint intergalactic filament hinting at large-scale cosmic structure
+    // ── Cosmic Web — large-scale structure connecting all three galaxy clusters ──
+    // The real universe forms a web of dark-matter filaments threading galaxy clusters.
+    // Three galaxies + two intermediate cluster nodes form the web skeleton.
+    // FBM density variation gives filaments their characteristic knotted appearance.
     {
-        vec2 a2 = vec2(0.15, -0.10);
-        vec2 b2 = vec2(-0.55, 0.35);
-        vec2 ab = b2 - a2;
-        float t2 = clamp(dot(uv - a2, ab) / dot(ab, ab), 0.0, 1.0);
-        float fil_d = length((uv - a2) - ab * t2);
-        col += exp(-fil_d * fil_d * 600.0) * vec3(0.08, 0.05, 0.15) * 0.6;
+        const vec2 G1 = vec2( 0.15, -0.10);   // Milky-Way analog
+        const vec2 G2 = vec2(-0.55,  0.35);   // Andromeda companion
+        const vec2 G3 = vec2( 0.60, -0.45);   // Edge-on sliver
+
+        // Intermediate galaxy cluster nodes — bright points where filaments knot
+        const vec2 N1 = vec2(-0.10,  0.18);   // cluster between G1 and G2
+        const vec2 N2 = vec2( 0.38, -0.28);   // cluster between G1 and G3
+
+        // Segment SDF helper (inline): distance from uv to segment a→b
+        float web = 0.0;
+
+        // G1 → N1 → G2 (two-segment chain, original G1↔G2 replaced)
+        { vec2 ab=N1-G1, av=uv-G1; float t=clamp(dot(av,ab)/dot(ab,ab),0.,1.); web=max(web, exp(-dot(av-ab*t, av-ab*t)*800.0)); }
+        { vec2 ab=G2-N1, av=uv-N1; float t=clamp(dot(av,ab)/dot(ab,ab),0.,1.); web=max(web, exp(-dot(av-ab*t, av-ab*t)*800.0)); }
+
+        // G1 → N2 → G3
+        { vec2 ab=N2-G1, av=uv-G1; float t=clamp(dot(av,ab)/dot(ab,ab),0.,1.); web=max(web, exp(-dot(av-ab*t, av-ab*t)*800.0)); }
+        { vec2 ab=G3-N2, av=uv-N2; float t=clamp(dot(av,ab)/dot(ab,ab),0.,1.); web=max(web, exp(-dot(av-ab*t, av-ab*t)*800.0)); }
+
+        // G2 → G3 (long spanning arc, slightly wider — major void-crossing filament)
+        { vec2 ab=G3-G2, av=uv-G2; float t=clamp(dot(av,ab)/dot(ab,ab),0.,1.); web=max(web, exp(-dot(av-ab*t, av-ab*t)*480.0)*0.75); }
+
+        // FBM density knots: noise dims filaments between nodes (void underdensity)
+        float density = 0.50 + 0.50 * vnoise(vec3(uv * 3.8, 0.37));
+        col += web * density * vec3(0.05, 0.04, 0.14) * 0.75;
+
+        // Cluster node glows — intermediate galaxy groups
+        col += exp(-dot(uv-N1, uv-N1) * 220.0) * vec3(0.10, 0.08, 0.24) * 0.55;
+        col += exp(-dot(uv-N2, uv-N2) * 220.0) * vec3(0.10, 0.08, 0.24) * 0.55;
     }
 
     return col;
@@ -295,11 +321,22 @@ void main() {
     vec2 view_uv = apply_zoom_out(uv);
     float zoom = zoom_out_t();
 
-    // Camera moving through impossible rooms
-    float t_cam = u_time * 0.15;
-    vec3 ro = vec3(sin(t_cam) * 1.2, 0.3 * sin(t_cam * 0.7), cos(t_cam) * 1.5);
-    vec3 ta = vec3(0.0, 0.0, -1.8); // look at main portal
-    ta = mix(ta, vec3(0.0), u_scene_norm * 0.3);
+    // Camera path: spiral inward toward main portal as scene progresses,
+    // building tension before the holy-shit zoom-out at scene_norm 0.80.
+    // Phase 1 (0→0.65): orbit at shrinking radius — exploring impossible space.
+    // Phase 2 (0.65→0.80): camera aligns with portal axis, nearly enters it.
+    // Phase 3 (0.80+): reality fractures; zoom_out_t() takes over.
+    float t_cam  = u_time * 0.15;
+    float spiral = smoothstep(0.0, 0.72, u_scene_norm);
+    float orbit_r = mix(1.30, 0.55, spiral * spiral);          // 1.3 → 0.55
+    float orbit_h = 0.28 * sin(t_cam * 0.7) * (1.0 - spiral * 0.65);
+    vec3 ro = vec3(sin(t_cam) * orbit_r, orbit_h, cos(t_cam) * orbit_r * 1.15);
+
+    // Late approach: camera drifts toward the portal axis (0,0,-1.8)
+    float pull = smoothstep(0.50, 0.80, u_scene_norm);
+    ro = mix(ro, vec3(ro.x * (1.0 - pull * 0.70), 0.0, -1.15 - pull * 0.15), pull * pull);
+
+    vec3 ta = mix(vec3(0.0, 0.0, -1.8), vec3(0.0), u_scene_norm * 0.25);
 
     vec3 fw = normalize(ta - ro);
     vec3 ri = normalize(cross(fw, vec3(0,1,0)));

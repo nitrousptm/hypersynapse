@@ -411,17 +411,53 @@ void main() {
     float t_vol = hit.hit ? hit.t : MAX_DIST;
     col += volumetric_fog(cam.pos, rd, min(t_vol, 8.0));
 
-    // Ground reflection (very subtle)
-    if(!hit.hit) {
+    // ─── Polished Obsidian Mirror Pool — monolith stands on dark reflective floor ──
+    // True Fresnel reflection: reflected ray marches the monolith SDF, producing
+    // an upside-down mirror image of the geometry below the horizon line.
+    // Beat ripple distorts the mirror surface; sacred-geometry glow bleeds onto floor.
+    if (!hit.hit && rd.y < -0.001) {
         float ground_t = -(cam.pos.y + 2.0) / rd.y;
-        if(ground_t > 0.0 && ground_t < MAX_DIST) {
-            vec3 gp = cam.pos + rd * ground_t;
+        if (ground_t > 0.0 && ground_t < MAX_DIST) {
+            vec3  gp = cam.pos + rd * ground_t;
             float gd = length(gp.xz);
-            float grid_x = step(0.45, fract(gp.x * 0.5 + 0.5));
-            float grid_z = step(0.45, fract(gp.z * 0.5 + 0.5));
-            float ground_grid = max(grid_x, grid_z) * 0.03;
-            float ground_fall = exp(-gd * 0.25);
-            col += ground_grid * ground_fall * vec3(0.05, 0.15, 0.5) * reveal;
+
+            // Beat-driven two-frequency surface ripple
+            float rn = vnoise3(vec3(gp.xz * 2.8, u_time * 0.70))
+                     + vnoise3(vec3(gp.xz * 5.1, u_time * 1.10)) * 0.4;
+            float rbeat = exp(-u_beat * 5.0) * 0.013 * reveal;
+            vec2  roff  = vec2(rn * (0.005 + rbeat), rn * (0.003 + rbeat));
+
+            // Reflected ray with ripple perturbation
+            vec3 rd_r = normalize(reflect(rd, vec3(0, 1, 0)) + vec3(roff.x, 0.0, roff.y));
+
+            // March the reflected ray: monolith appears upside-down in the mirror
+            HitInfo refl = march(gp + rd_r * 0.015, rd_r, reveal);
+            vec3 refl_col = vec3(0.001, 0.001, 0.005);
+            if (refl.hit) {
+                vec3 rp = gp + rd_r * refl.t;
+                vec3 rn2 = calc_normal(rp, reveal);
+                refl_col = shade_monolith(rp, rn2, rd_r, reveal) * 0.55;
+            }
+
+            // Fresnel: near-perfect mirror at grazing angle; dark face-on
+            float cos_th  = abs(dot(rd, vec3(0, 1, 0)));
+            float fresnel = pow(1.0 - cos_th, 2.8) * 0.82;
+            float dfade   = exp(-gd * 0.18);
+
+            // Dark obsidian base + reflected monolith
+            vec3 ground_col = vec3(0.003, 0.003, 0.009) + refl_col * fresnel;
+
+            // Sacred geometry glow footprint radiating from monolith base
+            float geo_glow = exp(-gd * gd * 0.50) * reveal;
+            ground_col += geo_glow * vec3(0.008, 0.035, 0.16);
+
+            // Expanding beat ring on water surface (radiates outward from base)
+            float ring_r = u_beat * 1.80;
+            float ring_d = abs(gd - ring_r);
+            ground_col  += exp(-u_beat * 3.5) * smoothstep(0.07, 0.0, ring_d)
+                         * dfade * vec3(0.03, 0.12, 0.50) * reveal;
+
+            col = mix(vec3(0.001, 0.001, 0.004), ground_col, dfade);
         }
     }
 
