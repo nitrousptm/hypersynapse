@@ -855,6 +855,51 @@ void main() {
         }
     }
 
+    // 4c-art. Light arteries — Scene 3 (City Corruption): AI infection spreading as a
+    // glowing circuit-trace grid emanating outward from the city centre.
+    // Regular screen-space grid (city block cadence) with a expanding infection wavefront
+    // driven by scene_norm.  Grid intersections ("junctions") are extra bright — like power
+    // nodes where the AI concentrates its routing.  Electric-blue, beat-reactive.
+    // Active from first signs of corruption (0.12) through city dissolution (0.84).
+    if (u_scene_idx == 2) {
+        float art_gate = smoothstep(0.12, 0.32, u_scene_norm)
+                       * (1.0 - smoothstep(0.70, 0.84, u_scene_norm));
+        if (art_gate > 0.001) {
+            float asp_a = u_res.x / u_res.y;
+            vec2  ug    = vec2(ctr.x * asp_a, ctr.y);
+
+            // Infection wavefront: radius grows from 0 to 1.7 (beyond screen corners)
+            float spread  = smoothstep(0.12, 0.82, u_scene_norm);
+            const float CS = 0.14;  // grid cell size
+
+            vec2  cid  = floor(ug / CS);        // integer cell index
+            vec2  cfr  = fract(ug / CS);        // fractional within cell
+            float gx   = min(cfr.x, 1.0 - cfr.x);  // 0 at vertical grid lines
+            float gy   = min(cfr.y, 1.0 - cfr.y);  // 0 at horizontal grid lines
+
+            // Per-cell random offset: some cells activate slightly before/after front
+            float ch     = hash21(cid * vec2(13.1, 47.7));
+            // Cell activation: wavefront arrives when spread radius > cell distance
+            float c_dist = length((cid + 0.5) * CS);   // dist from screen centre
+            float lit    = smoothstep(spread * 1.65 + ch * 0.10,
+                                      spread * 1.65 - CS * 2.0,
+                                      c_dist);
+
+            const float LW = 0.009;  // line half-width
+            float gline  = smoothstep(LW, 0.0, min(gx, gy)) * lit;
+
+            // Junction nodes: cross-point of horizontal + vertical lines — bright dots
+            float junc   = smoothstep(LW * 2.8, 0.0, gx)
+                         * smoothstep(LW * 2.8, 0.0, gy) * lit;
+
+            // Beat surge: arteries pulse electric-bright on each 133 BPM kick
+            float beat_b = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.85;
+
+            col += (gline * 0.38 + junc * 0.65) * beat_b * art_gate
+                 * vec3(0.04, 0.34, 1.00);
+        }
+    }
+
     // 4d. Cosmic beat ripple — Scene 7 (Transcendence): expanding ring on each kick.
     // Starts at screen center and races outward between beats — "universe heartbeat".
     if (u_scene_idx == 6) {

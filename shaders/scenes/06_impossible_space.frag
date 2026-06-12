@@ -311,6 +311,52 @@ vec3 cosmic_particles(vec2 uv) {
     return col;
 }
 
+// ─── Volumetric portal fog ─────────────────────────────────────────────────────
+// 8-step march along each view ray; each step accumulates colored in-scatter from
+// the 3 portal point-lights with inverse-square falloff.  Result: the portal light
+// beams become physically visible as coloured atmospheric mist — "rooms within light
+// beams" DESIGN doc intent, now actually visible in the air rather than just on walls.
+// Gate fades out as the zoom-out to cosmic background takes over (scene_norm 0.65→0.82).
+vec3 volumetric_portal_fog(vec3 ro, vec3 rd, float hit_t) {
+    float gate = 1.0 - smoothstep(0.65, 0.82, u_scene_norm);
+    if (gate < 0.001) return vec3(0.0);
+
+    // Exact portal world-positions (must match sdf_world portal centers)
+    const vec3 P0 = vec3( 0.0,  0.0, -1.8);  // portal 1: cyan-blue
+    const vec3 P1 = vec3(-1.5,  0.2,  0.0);  // portal 2: violet
+    const vec3 P2 = vec3( 1.5, -0.3,  0.5);  // portal 3: teal-cyan
+
+    const vec3 C0 = vec3(0.00, 0.48, 1.00);
+    const vec3 C1 = vec3(0.50, 0.04, 0.95);
+    const vec3 C2 = vec3(0.04, 0.70, 0.88);
+
+    // Beat surge: atmosphere brightens on each 133 BPM kick
+    float beat_str = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.65;
+    float base_dens = 0.016 * gate * beat_str;
+
+    const int STEPS = 8;
+    float march_end = min(hit_t, 4.0);
+    float dt = march_end / float(STEPS);
+
+    vec3 acc = vec3(0.0);
+    for (int i = 0; i < STEPS; i++) {
+        float t = (float(i) + 0.5) * dt;
+        vec3 pos = ro + rd * t;
+
+        // Inverse-square scatter from each portal — attenuation constant 0.25
+        // avoids division-by-zero and prevents blinding near-portal overbrightness
+        float d0 = dot(pos - P0, pos - P0);
+        float d1 = dot(pos - P1, pos - P1);
+        float d2 = dot(pos - P2, pos - P2);
+
+        acc += C0 / (d0 * 1.6 + 0.25);
+        acc += C1 / (d1 * 1.6 + 0.25);
+        acc += C2 / (d2 * 1.6 + 0.25);
+    }
+
+    return acc * base_dens * dt;
+}
+
 // ─── main ─────────────────────────────────────────────────────────────────────
 
 void main() {
@@ -436,6 +482,11 @@ void main() {
             col = mat * (0.12 + diff * ao_val);
         }
     }
+
+    // Volumetric portal fog: portal light beams visible as coloured atmospheric mist.
+    // Only in room phase; gates out cleanly as zoom-out reveals cosmic background.
+    float fog_t = (hit.t < MAX_DIST) ? hit.t : 4.0;
+    col += volumetric_portal_fog(ro, rd, fog_t);
 
     // Beat pulse: energy wave through non-euclidean space
     float pulse_kick = smoothstep(0.04, 0.0, u_beat);
