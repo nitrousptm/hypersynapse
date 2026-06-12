@@ -227,6 +227,23 @@ float sdf_ao(vec3 p, vec3 n) {
     return clamp(1.0 - occ * 3.5, 0.0, 1.0);
 }
 
+// ─── flower/temple soft shadow on obsidian floor ─────────────────────────────
+// 16-step penumbra march from the floor hit point toward the orbiting key light.
+// Uses sdf_world() — flowers, temple, stamen rings all contribute shadow.
+// k=4.5: moderate softness — contact region sharp, penumbra fans broadly.
+// Returns 0 = fully shadowed, 1 = fully lit.
+float floor_soft_shadow(vec3 p, vec3 ldir) {
+    float shadow = 1.0;
+    float t = 0.06;
+    for (int i = 0; i < 16; i++) {
+        float h = sdf_world(p + ldir * t);
+        shadow = min(shadow, 4.5 * h / t);
+        t += clamp(h, 0.015, 0.30);
+        if (shadow < 0.001 || t > 4.5) break;
+    }
+    return clamp(shadow, 0.0, 1.0);
+}
+
 // ─── kaleidoscope fold for sky ray directions ─────────────────────────────────
 // Applies the same evolving azimuthal fold used for sky_background() to a ray
 // direction. Used by crystal refraction to keep refracted sky and surface mandala
@@ -499,6 +516,20 @@ void main() {
                 gnd_mat   += vg * vec3(0.08, 0.03, 0.40) * 0.24;
                 // Beat flare: veins surge violet-white on each 133 BPM kick
                 gnd_mat   += vg * smoothstep(0.06, 0.0, u_beat) * vec3(0.18, 0.05, 0.90) * 0.20;
+
+                // Soft shadow from flowers and temple cast onto the obsidian floor.
+                // Shadow origin offset 0.08 above GROUND_Y to avoid self-intersection.
+                // Key light matches geometry shading: slowly orbiting overhead magenta.
+                // Shadow darkens the obsidian base; contact pools tint violet from
+                // indirect petal-glow bounce light — luminous veins glow through.
+                float lt_sh  = u_time * 0.25;
+                vec3  shad_l = normalize(vec3(sin(lt_sh) * 0.6, 2.0, cos(lt_sh) * 0.6));
+                float fshad  = floor_soft_shadow(gp + vec3(0.0, 0.08, 0.0), shad_l);
+
+                // Minimum 0.06: veins remain faintly visible even in deepest shadow.
+                // Violet tint in shadow pools — indirect scatter from glowing petals above.
+                gnd_mat *= mix(0.06, 1.0, fshad);
+                gnd_mat += (1.0 - fshad) * vec3(0.010, 0.002, 0.035) * u_scene_norm * gd_fade;
 
                 col = mix(gnd_mat, refl_col * vec3(0.40, 0.22, 0.70), fresnel) * gnd_gate;
             }

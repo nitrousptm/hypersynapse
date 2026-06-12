@@ -312,6 +312,25 @@ vec3 render_shards(vec2 uv) {
         float kick = smoothstep(0.05, 0.0, u_beat) * u_scene_norm;
         col += mat * kick * 2.8;
 
+        // Ice crystal refraction: background starfield bends through each shard.
+        // IOR of ice ≈ 1.31 → incoming_ior/transmitted_ior = 1.0/1.31 ≈ 0.76.
+        // Project refracted ray onto camera axes for screen-space background sample.
+        // Face-on views (fresnel→0) show the most refraction; grazing angles reflect.
+        vec3 refr_d = refract(rd, n, 0.76);
+        if (length(refr_d) > 0.001) {
+            float rz_v = dot(refr_d, fw);
+            if (rz_v > 0.001) {
+                vec2 refr_sc = vec2(dot(refr_d, ri), dot(refr_d, up)) / (rz_v * 1.9);
+                vec2 rsamp   = clamp(refr_sc * 0.5 + 0.5, 0.02, 0.98);
+                vec3 refr_bg = frozen_starfield(rsamp) * 1.8
+                             + frozen_trails(rsamp) * 0.25;
+                refr_bg *= mat * 1.6;   // tint refracted view with crystal material
+                // Blend: face-on sees most refraction; weight builds over scene
+                float refr_str = (1.0 - fresnel) * 0.38 * u_scene_norm;
+                col = mix(col, refr_bg, refr_str);
+            }
+        }
+
         // Exponential fog for atmospheric depth
         col = mix(col, vec3(0.003, 0.006, 0.020), 1.0 - exp(-t * 0.22));
     }
