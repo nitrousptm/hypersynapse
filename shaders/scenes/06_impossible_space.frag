@@ -311,6 +311,31 @@ vec3 cosmic_particles(vec2 uv) {
     return col;
 }
 
+// ─── Distant universe-particle helper ────────────────────────────────────────
+// Renders a single small universe-particle at screen-UV position ep.
+// es: visual scale (smaller = more distant).  sp: spiral arm rotation speed.
+// mg: master gate (outer_fade * zoom) — invisible until cosmic reveal.
+void uni_mini(vec2 uv, vec2 ep, float es, float sp, float mg, inout vec3 col) {
+    vec2  dp  = uv - ep;
+    float dr  = length(dp);
+    float inv = 1.0 / es;
+    // Bright nucleus
+    col += exp(-dr * dr * 900.0 * inv * inv) * es * 2.5 * mg * vec3(0.42, 0.65, 1.0);
+    // Two-arm logarithmic spiral (same technique as the main universe-particle)
+    float ang  = atan(dp.y, dp.x) - dr * 5.0 * inv + u_time * sp;
+    float arm1 = pow(max(cos(ang),           0.0), 8.0);
+    float arm2 = pow(max(cos(ang + 3.14159), 0.0), 8.0);
+    float env  = exp(-dr * dr * 200.0 * inv * inv) * exp(-dr * 12.0 * inv);
+    col += (arm1 + arm2) * env * mg * vec3(0.35, 0.58, 0.90) * 1.8;
+    // Soft atmospheric halo
+    col += exp(-dr * dr * 80.0 * inv * inv) * mg * vec3(0.10, 0.22, 0.48) * es * 1.8;
+    // Single slow pulse ring — each universe breathes at its own rate
+    float ring_t = fract(u_time * sp * 0.55);
+    float ring_r = ring_t * 0.32 * es;
+    float ring_f = (1.0 - ring_t) * mg * 0.55;
+    col += ring_f * smoothstep(0.007, 0.0, abs(dr - ring_r)) * vec3(0.28, 0.52, 0.90);
+}
+
 // ─── Volumetric portal fog ─────────────────────────────────────────────────────
 // 8-step march along each view ray; each step accumulates colored in-scatter from
 // the 3 portal point-lights with inverse-square falloff.  Result: the portal light
@@ -563,6 +588,44 @@ void main() {
         float ring_fade = (1.0 - ring_phase) * zoom;
         float ring_d = abs(dp_r - ring_r);
         col += ring_fade * smoothstep(0.008, 0.0, ring_d) * vec3(0.3, 0.6, 1.0) * 1.2;
+    }
+
+    // ── Distant universe-particles — multiverse reveal ─────────────────────────
+    // Five additional tiny universes scattered across the cosmic void, each with
+    // its own spiral galaxy structure and pulse rings. Appear only during zoom-out
+    // (gated by outer_fade*zoom): sells "we are one of countless universes" and
+    // realises the design-doc "recursive universes / worlds within worlds" concept
+    // at the full cosmic scale of the holy-shit reveal window.
+    // Positions in aspect-corrected screen UV (same space as particle_pos = (0.3,0.2)).
+    {
+        float mg = outer_fade * zoom;
+        const vec2 MP0 = vec2(-0.80, -0.55);
+        const vec2 MP1 = vec2(-1.30,  0.35);
+        const vec2 MP2 = vec2( 0.95, -0.62);
+        const vec2 MP3 = vec2(-0.38,  0.68);
+        const vec2 MP4 = vec2( 1.22,  0.20);
+        // ep = screen-UV position, es = visual scale, sp = spiral speed
+        uni_mini(uv, MP0, 0.28, 0.38, mg, col);
+        uni_mini(uv, MP1, 0.33, 0.25, mg, col);
+        uni_mini(uv, MP2, 0.22, 0.45, mg, col);
+        uni_mini(uv, MP3, 0.30, 0.32, mg, col);
+        uni_mini(uv, MP4, 0.26, 0.41, mg, col);
+
+        // Faint multiverse filaments — 5-segment web connecting the nearest neighbors.
+        // Extremely dim (0.009) — context rather than foreground; readable as
+        // "large-scale multiverse structure" by the audience without competing with galaxies.
+        if (mg > 0.001) {
+            float fil_str = mg * 0.009;
+            const vec2 FIL_A[5] = vec2[5](MP0, MP0, MP1, MP2, MP3);
+            const vec2 FIL_B[5] = vec2[5](MP2, MP3, MP3, MP4, MP4);
+            for (int fi = 0; fi < 5; fi++) {
+                vec2 fa = FIL_A[fi], fb = FIL_B[fi];
+                vec2 seg = fb - fa;
+                float tt = clamp(dot(uv - fa, seg) / dot(seg, seg), 0.0, 1.0);
+                float fd = length(uv - fa - seg * tt);
+                col += fil_str * exp(-fd * fd * 60.0) * vec3(0.05, 0.04, 0.14);
+            }
+        }
     }
 
     // Reality-fracture flash: brief white burst exactly when zoom begins (scene_norm 0.80)
