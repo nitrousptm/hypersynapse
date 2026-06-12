@@ -419,13 +419,65 @@ float tesseract(vec2 uv, float beat_t) {
     return clamp(acc, 0.0, 3.0);
 }
 
-// ─── reversed particle stream ─────────────────────────────────────────────────
+// ─── Multi-timeline temporal streams ─────────────────────────────────────────
+// Three simultaneous temporal streams flowing through frozen space, each
+// representing a different time offset — past (blue, rightward), future
+// (cyan, leftward/reversed), and present (orange, radial from explosion centres).
+// The three directions make the three "time copies" physically visible.
+// Impact positions match space_cracks() to tie the visual language together.
 
-float reversed_stream(vec2 uv) {
-    float x_spread = vnoise(vec2(uv.x * 8.0, floor(uv.y * 40.0)));
-    float w = 0.002 / (abs(uv.x - (x_spread * 2.0 - 1.0) * 0.8) + 0.002);
-    float y = fract(uv.y - u_time * 0.5);
-    return w * y * (1.0 - y) * 4.0;
+vec3 temporal_streams(vec2 uv) {
+    vec3  col  = vec3(0.0);
+    float kick = smoothstep(0.05, 0.0, u_beat) * u_scene_norm;
+    float sn   = u_scene_norm;
+
+    // ── Past: horizontal bands flowing rightward (time flowing forward to past) ──
+    for (int i = 0; i < 3; i++) {
+        float fi   = float(i);
+        float y_c  = -0.42 + fi * 0.42 + sin(fi * 2.31 + 0.7) * 0.14;
+        // Sinusoidal wobble — crystal shard gravity distorts the stream path
+        float y_w  = y_c + sin(uv.x * 2.6 + fi * 1.9 + u_time * 0.13) * 0.030;
+        float dist = abs(uv.y - y_w);
+        float w    = 0.0018;
+        float s    = w / (dist + w);
+        float ph   = fract(uv.x - u_time * 0.28 + fi * 0.41 + hash1(fi * 7.13 + 1.5) * 2.0);
+        s *= ph * (1.0 - ph) * 4.0;
+        col += s * vec3(0.22, 0.52, 1.00) * sn * 0.55;
+    }
+
+    // ── Future: horizontal bands flowing leftward (reversed, anti-causal) ───────
+    for (int i = 0; i < 3; i++) {
+        float fi   = float(i) + 0.5;
+        float y_c  = -0.62 + fi * 0.42 + cos(fi * 1.73 + 1.2) * 0.16;
+        float y_w  = y_c + cos(uv.x * 3.1 + fi * 2.5 - u_time * 0.10) * 0.024;
+        float dist = abs(uv.y - y_w);
+        float w    = 0.0015;
+        float s    = w / (dist + w);
+        float ph   = fract(uv.x + u_time * 0.52 + fi * 0.53 + hash1(fi * 3.71 + 0.5) * 2.0);
+        s *= ph * (1.0 - ph) * 4.0;
+        col += s * vec3(0.08, 0.88, 0.78) * sn * 0.48;
+    }
+
+    // ── Present: radial expanding rings from explosion epicentres ─────────────
+    // Continuous wavefronts from the 3 crack-line impact points — "now" radiating outward.
+    const vec2 IMPS[3] = vec2[3](
+        vec2( 0.14,  0.10),
+        vec2(-0.30,  0.22),
+        vec2( 0.06, -0.33)
+    );
+    for (int i = 0; i < 3; i++) {
+        float fi    = float(i);
+        float r     = length(uv - IMPS[i]);
+        float spd   = 0.24 + fi * 0.07;
+        for (int j = 0; j < 2; j++) {
+            float ring_r = fract(r * 2.2 - u_time * spd + fi * 0.38 + float(j) * 0.50);
+            float ring   = ring_r * (1.0 - ring_r) * 4.0 * exp(-r * 2.8);
+            col += ring * vec3(1.00, 0.58, 0.18) * sn * 0.30;
+        }
+    }
+
+    col *= 1.0 + kick * 1.6;
+    return col;
 }
 
 // ─── reprojection feedback ────────────────────────────────────────────────────
@@ -477,8 +529,8 @@ void main() {
     vec3 prev = feedback_sample(uv01);
     vec3 col  = shard_col + prev * 0.60;
 
-    // ── Reversed particle streams (anti-gravity, blue light) ─────────────────
-    col += reversed_stream(uv) * vec3(0.1, 0.4, 1.0) * 0.7;
+    // ── Multi-timeline temporal streams: past (rightward) / future (leftward) / present (radial) ──
+    col += temporal_streams(uv);
 
     // ── Time portal rings + interiors ─────────────────────────────────────────
     float pr1 = portal_ring(uv, vec2( 0.00,  0.00), 0.60, 0.00);

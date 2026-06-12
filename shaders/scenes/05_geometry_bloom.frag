@@ -488,6 +488,18 @@ void main() {
                 // Faint violet halo emanating from centre — "sacred ground"
                 gnd_mat += exp(-gd * 0.8) * vec3(0.02, 0.005, 0.045) * u_scene_norm;
 
+                // Phosphorescent energy veins: thin glowing channels in the obsidian base.
+                // Two-frequency noise creates organic mineral-crack lines (Lichtenberg pattern).
+                // They suggest the floor was pre-inscribed with sacred mathematics before
+                // the flowers arrived — now lit by Act III's fractal energy.
+                float vn1  = vnoise(vec3(gp.x * 2.2, u_time * 0.022, gp.z * 2.2));
+                float vn2  = vnoise(vec3(gp.x * 3.7, u_time * 0.015 + 5.3, gp.z * 3.7));
+                float vein = abs(fract((vn1 + vn2 * 0.50) * 4.0) - 0.5) * 2.0;
+                float vg   = smoothstep(0.88, 1.0, vein) * u_scene_norm * gd_fade;
+                gnd_mat   += vg * vec3(0.08, 0.03, 0.40) * 0.24;
+                // Beat flare: veins surge violet-white on each 133 BPM kick
+                gnd_mat   += vg * smoothstep(0.06, 0.0, u_beat) * vec3(0.18, 0.05, 0.90) * 0.20;
+
                 col = mix(gnd_mat, refl_col * vec3(0.40, 0.22, 0.70), fresnel) * gnd_gate;
             }
         }
