@@ -56,44 +56,32 @@ class TippsEngine:
         """
         Schätzt erwartete Tore (Lambda für Poisson) aus 1X2-Wahrscheinlichkeiten.
 
-        Heuristik basiert auf historischen WM/EM-Daten:
-        - Klarer Favorit (P_home > 0.65): ~2.2 vs 0.8 Tore
-        - Knapper Favorit (P_home > 0.45): ~1.7 vs 1.1 Tore
-        - Ausgeglichen: ~1.4 vs 1.3 Tore
+        Kalibriert auf WM 2026 Gruppenphase (~2.9 Tore/Spiel historisch).
+        Lambda-Verhältnisse so gewählt, dass die Engine realistische Tipps
+        produziert (2:0, 2:1, 1:1 statt immer 1:0):
+        - Klarer Favorit (diff > 0.35): λH=2.30, λA=0.60 → Tipp: 2:0
+        - Heim-Favorit   (diff > 0.15): λH=1.95, λA=1.10 → Tipp: 2:1
+        - Ausgeglichen   (diff < 0.15): λH=1.55, λA=1.45 → Tipp: 1:1
         """
         p_home = probabilities["home"]
         p_away = probabilities["away"]
-
-        # Stärke-Differenz bestimmt Tor-Erwartung
         strength_diff = p_home - p_away
 
-        # WM-Durchschnitt: ~2.5 Tore pro Spiel
-        avg_goals = 2.5
-
-        # Heim hat Vorteil (~0.1 Tore extra im Schnitt)
-        home_boost = 0.1
-
-        # Berechne erwartete Tore
-        if strength_diff > 0.30:
-            # Klarer Heim-Favorit
-            lambda_home = avg_goals * 0.70 + home_boost
-            lambda_away = avg_goals * 0.30
-        elif strength_diff > 0.10:
-            # Leichter Heim-Favorit
-            lambda_home = avg_goals * 0.60 + home_boost
-            lambda_away = avg_goals * 0.40
-        elif strength_diff > -0.10:
-            # Ausgeglichen
-            lambda_home = avg_goals * 0.52 + home_boost
-            lambda_away = avg_goals * 0.48
-        elif strength_diff > -0.30:
-            # Leichter Auswärts-Favorit
-            lambda_home = avg_goals * 0.42 + home_boost
-            lambda_away = avg_goals * 0.58
+        if strength_diff > 0.35:
+            # Klarer Heim-Favorit → 2:0
+            lambda_home, lambda_away = 2.30, 0.60
+        elif strength_diff > 0.15:
+            # Leichter Heim-Favorit → 2:1
+            lambda_home, lambda_away = 1.95, 1.10
+        elif strength_diff > -0.15:
+            # Ausgeglichen → 1:1
+            lambda_home, lambda_away = 1.55, 1.45
+        elif strength_diff > -0.35:
+            # Leichter Auswärts-Favorit → 1:2
+            lambda_home, lambda_away = 1.10, 1.95
         else:
-            # Klarer Auswärts-Favorit
-            lambda_home = avg_goals * 0.32 + home_boost
-            lambda_away = avg_goals * 0.68
+            # Klarer Auswärts-Favorit → 0:2
+            lambda_home, lambda_away = 0.60, 2.30
 
         return lambda_home, lambda_away
 
