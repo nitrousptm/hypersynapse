@@ -155,6 +155,69 @@ float march_shards(vec3 ro, vec3 rd, out float cat) {
     return SHARD_FAR;
 }
 
+// ─── Time Singularity — event horizon at the fracture origin ─────────────────
+// Where time completely stopped, a gravitational singularity formed.
+// Crystal shards orbit it; temporal matter forms an accretion disk; light bends.
+
+const float EH_R     = 0.148;   // event horizon radius
+const float DISK_IN  = 0.185;   // accretion disk inner edge
+const float DISK_OUT = 0.460;   // accretion disk outer edge
+
+// Analytical ray-sphere intersection; returns t>0 or -1 on miss.
+float ray_sphere(vec3 ro, vec3 rd, float r) {
+    float b = dot(ro, rd);
+    float c = dot(ro, ro) - r * r;
+    float h = b * b - c;
+    if (h < 0.0) return -1.0;
+    float t = -b - sqrt(h);
+    return (t > 0.001) ? t : -1.0;
+}
+
+// Photon sphere halo: bright ring where light is trapped at r = 1.5 × EH.
+// Additive glow visible around the silhouette of the black hole.
+vec3 photon_halo(vec3 ro, vec3 rd) {
+    // Closest approach distance
+    float t_ca = max(0.0, -dot(ro, rd));
+    float impact = length(ro + rd * t_ca);
+    float photon_r = EH_R * 1.5;
+    // Photon ring: glows brightest at r = photon_r, exp-decay inside and outside
+    float ring = exp(-pow((impact - photon_r) / (EH_R * 0.5), 2.0) * 12.0);
+    // Hawking radiation: ultra-faint thermal glow right at event horizon
+    float hr   = exp(-pow((impact - EH_R) / (EH_R * 0.18), 2.0) * 30.0) * 0.35;
+    return (ring * vec3(0.50, 0.72, 1.00) * 1.6 + hr * vec3(0.60, 0.50, 1.00))
+           * smoothstep(EH_R * 3.0, EH_R * 0.5, impact);  // fades toward far field
+}
+
+// Accretion disk: ring of temporal matter orbiting in y=0 plane.
+// Colors match the three time copies — past=blue (inner), present=orange (mid), future=cyan (outer).
+vec3 accretion_disk(vec3 hit) {
+    float dr    = length(hit.xz);
+    float ring_t = (dr - DISK_IN) / (DISK_OUT - DISK_IN);  // 0=inner, 1=outer
+
+    // Radial density: peaks near inner edge (like real accretion disks)
+    float density = pow(1.0 - ring_t, 1.6) * smoothstep(0.0, 0.05, ring_t)
+                  * exp(-abs(hit.y) * 18.0);   // thin disk vertically
+
+    // Temporal color zones matching shard palette
+    vec3 disk_col;
+    if (ring_t < 0.33)      disk_col = vec3(0.30, 0.60, 1.00);  // inner: past/blue
+    else if (ring_t < 0.66) disk_col = vec3(1.00, 0.45, 0.15);  // mid: present/orange
+    else                    disk_col = vec3(0.15, 0.90, 0.80);  // outer: future/cyan
+
+    // Orbital angle + Keplerian speed (frozen time → very slow)
+    float angle = atan(hit.z, hit.x);
+    float orbit_v = 0.08 / max(dr, DISK_IN);
+    float phase   = angle + u_time * orbit_v;  // barely drifting in frozen time
+
+    // Doppler shift: approaching edge brighter/bluer, receding dimmer/redder
+    float doppler = 1.0 + 0.50 * sin(phase);
+
+    // Beat surge: on each kick the disk flares
+    float surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 1.20;
+
+    return disk_col * density * doppler * surge * 3.2;
+}
+
 // ─── Frozen-time deep space starfield ────────────────────────────────────────
 // Multi-scale field of stars in the void where time has stopped.
 // Colours shift from cold blue (far-past) to orange-white (present moment).
@@ -261,8 +324,33 @@ vec3 render_shards(vec2 uv) {
     vec3 up = cross(ri, fw);
     vec3 rd = normalize(uv.x * ri + uv.y * up + 1.9 * fw);
 
+    // Gravitational lensing: rays passing close to the singularity are deflected.
+    // Strength grows as the scene progresses — the singularity is gaining mass.
+    float sing_gate = smoothstep(0.15, 0.45, u_scene_norm);
+    if (sing_gate > 0.001) {
+        float t_ca   = max(0.0, -dot(ro, rd));
+        vec3  p_ca   = ro + rd * t_ca;
+        float impact = length(p_ca);
+        if (impact < EH_R * 4.0 && impact > EH_R) {
+            float defl   = EH_R * 0.60 * sing_gate / max(impact * impact, 0.004);
+            rd = normalize(rd + normalize(-p_ca) * min(defl, 0.25));
+        }
+    }
+
     float cat;
-    float t = march_shards(ro, rd, cat);
+    float t_shard = march_shards(ro, rd, cat);
+
+    // Event horizon + accretion disk intersection
+    float t_eh   = ray_sphere(ro, rd, EH_R);
+    float t_disk = -1.0;
+    if (abs(rd.y) > 0.0005) {
+        float td = -ro.y / rd.y;
+        if (td > 0.0) {
+            vec3 dhit = ro + rd * td;
+            float dr = length(dhit.xz);
+            if (dr >= DISK_IN && dr <= DISK_OUT) t_disk = td;
+        }
+    }
 
     // Frozen deep-space void: multi-scale starfield + nebula haze + light trails
     vec3 col = vec3(0.002, 0.004, 0.014);
@@ -270,7 +358,29 @@ vec3 render_shards(vec2 uv) {
     col += frozen_starfield(uv) * 0.85;
     col += frozen_trails(uv) * 0.30;
 
-    if (t < SHARD_FAR) {
+    // Additive photon halo + Hawking radiation rim (visible at all depths)
+    col += photon_halo(ro, rd) * sing_gate;
+
+    float t = t_shard;
+
+    // Accretion disk — check if it's the closest thing we hit
+    bool disk_visible = (t_disk > 0.0)
+                     && (t_eh < 0.0 || t_disk < t_eh)   // not behind event horizon
+                     && (t_disk < t_shard);              // not behind a crystal shard
+    if (disk_visible) {
+        vec3 disk_hit = ro + rd * t_disk;
+        col += accretion_disk(disk_hit) * sing_gate;
+        // Disk doesn't occlude void — it's additive glow from thermal plasma
+    }
+
+    // Event horizon: solid black sphere (absorbs everything)
+    bool eh_visible = (t_eh > 0.0) && (t_eh < t_shard);
+    if (eh_visible) {
+        col = vec3(0.0);  // absolute black — no light escapes
+        t = t_eh;          // treat as a surface for fog calculation
+    }
+
+    if (t < SHARD_FAR && !eh_visible) {
         vec3 p = ro + rd * t;
         vec3 n = shard_normal(p);
 

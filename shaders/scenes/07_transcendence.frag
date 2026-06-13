@@ -99,36 +99,39 @@ vec3 galaxy(vec3 rd) {
     col += max(big_neb - 0.4, 0.0) * vec3(0.0, 0.08, 0.18) * 1.5;
 
     // Three named emission nebula clusters — visual anchors matching the tendril color arc.
-    // Each sits at a distinct sky position so they spread across the framing as the camera drifts.
-    // Tight dot thresholds (0.90–0.96) keep each cluster to ~15–25 deg half-angle — visible
-    // patches rather than a color wash. FBM adds wispy internal structure.
-    // Colors: magenta (organic / Act IV early) · amber (energy / mid) · teal (cosmic / late).
+    // Beat-reactive: kick surge makes them flash like real HII photoionisation pulses.
+    // Color arc: hues evolve over the 60s finale with the tendril palette (amber→cyan→violet).
     {
-        // Nebula A — Magenta (Rosette-type HII region, upper-right)
+        float neb_surge  = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.40 * u_scene_norm;
+        float color_arc  = clamp(u_scene_norm / 0.875, 0.0, 1.0);  // 0→1 over active window
+
+        // Nebula A — Magenta Rosette, drifts toward deep violet as transcendence deepens
         vec3 na = normalize(vec3( 0.30,  0.12, 1.0));
         float aa = dot(rd, na);
         if (aa > 0.88) {
             float cld_a = fbm(rd * 7.0 + vec3(3.1, 7.3, 0.5));
             float den_a = smoothstep(0.88, 0.97, aa) * max(cld_a - 0.30, 0.0) * 3.5;
-            col += den_a * vec3(0.65, 0.08, 0.42) * 0.70;
+            vec3  colA  = mix(vec3(0.65, 0.08, 0.42), vec3(0.42, 0.04, 0.80), color_arc * color_arc);
+            col += den_a * colA * 0.70 * neb_surge;
         }
-        // Nebula B — Amber (supernova remnant, left flank): ragged filamentary shell.
+        // Nebula B — Amber supernova remnant, shifts warm-gold→cyan mid-scene (energy arc)
         vec3 nb = normalize(vec3(-0.38, -0.05, 1.0));
         float ab = dot(rd, nb);
         if (ab > 0.86) {
             float cld_b = fbm(rd * 5.5 + vec3(17.2, 0.8, 29.4));
             float den_b = smoothstep(0.86, 0.97, ab) * max(cld_b - 0.28, 0.0) * 4.0;
-            col += den_b * vec3(0.85, 0.42, 0.06) * 0.75;
+            vec3  colB  = mix(vec3(0.85, 0.42, 0.06), vec3(0.08, 0.60, 0.82), smoothstep(0.20, 0.72, color_arc));
+            col += den_b * colB * 0.75 * neb_surge;
         }
-        // Nebula C — Teal planetary shell (lower-right): thin ionised ring + central core.
+        // Nebula C — Teal planetary shell, deepens toward cosmic indigo
         vec3 nc = normalize(vec3( 0.10, -0.22, 1.0));
         float ac = dot(rd, nc);
         if (ac > 0.87) {
             float cld_c = fbm(rd * 9.0 + vec3(41.7, 13.5, 6.2));
-            // Ring: bright at annular band (~0.90), dimmer core + faint fill
             float shell = smoothstep(0.87, 0.93, ac) * (1.0 - smoothstep(0.93, 0.975, ac));
             float fill  = smoothstep(0.93, 0.975, ac) * max(cld_c - 0.32, 0.0) * 3.0;
-            col += (shell * 0.50 + fill) * vec3(0.04, 0.65, 0.60) * 0.65;
+            vec3  colC  = mix(vec3(0.04, 0.65, 0.60), vec3(0.06, 0.28, 0.88), color_arc);
+            col += (shell * 0.50 + fill) * colC * 0.65 * neb_surge;
         }
     }
 
@@ -717,11 +720,16 @@ void main() {
                                 smoothstep(0.50, 0.875, u_scene_norm));
                 col += ring * rcol * vgate * 0.38;
             }
-            // Faint radial starburst: thin rays toward centre hinting at the singularity point
-            float star_ang = atan(uv.y, uv.x);
-            float spokes   = pow(max(0.0, cos(star_ang * 8.0)), 12.0);
-            float star_r   = smoothstep(1.0, 0.0, r_asp) * exp(-r_asp * 3.5);
-            col += spokes * star_r * vgate * vec3(0.35, 0.18, 0.88) * 0.12;
+            // Rotating radial starburst: two counter-rotating spoke systems weave together
+            // as the singularity pulls inward. The dual-rotation creates a "mandala collapsing"
+            // read that builds tension toward the logo reveal.
+            float ang0   = atan(uv.y, uv.x) - u_time * 0.32;  // CW slow primary
+            float ang1   = atan(uv.y, uv.x) + u_time * 0.55;  // CCW faster secondary
+            float spokes0 = pow(max(0.0, cos(ang0 * 8.0)), 12.0);
+            float spokes1 = pow(max(0.0, cos(ang1 * 12.0)), 16.0);
+            float star_r  = smoothstep(1.0, 0.0, r_asp) * exp(-r_asp * 3.5);
+            col += spokes0 * star_r * vgate * vec3(0.35, 0.18, 0.88) * 0.16;
+            col += spokes1 * star_r * vgate * vec3(0.60, 0.10, 0.96) * 0.09;
         }
     }
 

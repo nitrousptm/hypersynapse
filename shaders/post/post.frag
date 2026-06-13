@@ -1140,6 +1140,31 @@ void main() {
         }
     }
 
+    // 4m. City corruption AI power-grid beat ring — Scene 3 body (0.12→0.78).
+    // Each 133 BPM kick propagates an electric-blue wavefront outward through
+    // the corrupted city grid — "the AI cycling power through the urban network"
+    // on beat. Primary ring: fast AI pulse. Echo ring: grid resonance bounce-back.
+    // Color evolves electric-blue → cyan-white as corruption deepens with scene_norm.
+    // Gate clears city materialisation entry (0→0.10) and city data-death (0.80+).
+    if (u_scene_idx == 2) {
+        float city_ring_gate = smoothstep(0.12, 0.26, u_scene_norm)
+                             * (1.0 - smoothstep(0.72, 0.82, u_scene_norm));
+        if (city_ring_gate > 0.01) {
+            float cr    = length(ctr * 2.0);
+            // Color arc: electric blue early → cyan-white at full corruption
+            vec3 ring_col = mix(vec3(0.10, 0.48, 1.00), vec3(0.18, 0.80, 1.00),
+                                u_scene_norm);
+            // Primary ring: rapid AI power pulse — faster than monolith (kinetic city energy)
+            float p_d   = abs(cr - u_beat * 1.58);
+            float pring = exp(-u_beat * 5.2) * smoothstep(0.018, 0.0, p_d);
+            col += pring * city_ring_gate * ring_col * 1.40;
+            // Echo ring: secondary grid-return resonance at shorter radius
+            float e_d   = abs(cr - u_beat * 0.88);
+            float ering = exp(-u_beat * 7.5) * smoothstep(0.012, 0.0, e_d);
+            col += ering * city_ring_gate * ring_col * 0.62;
+        }
+    }
+
     // 8i. Scene 1 exit — Boot sequence lock-on surge (scene_norm 0.84→1.0).
     // The boot progress ring completes its sweep; right before the 0:18 first kick
     // the system "acquires signal" — a sharp horizontal scan-sweep white-out and brief

@@ -86,6 +86,10 @@ float sdBox(vec3 p, vec3 b) {
 
 float sdSphere(vec3 p, float r) { return length(p)-r; }
 
+float sdTorus(vec3 p, float R, float r) {
+    return length(vec2(length(p.xz) - R, p.y)) - r;
+}
+
 float sdf_room(vec3 p) {
     // Beat-reactive: inner geometry expands on each 133 BPM kick
     float beat_expand = smoothstep(0.08, 0.0, u_beat) * 0.018;
@@ -104,6 +108,26 @@ float sdf_room(vec3 p) {
     vec3 pp3 = rotate4d(p * 1.2, u_time * 0.9);
     float inner3 = sdBox(pp3 + vec3(0.2, -0.3, 0.0), vec3(0.08, 0.12, 0.1) + beat_expand * 0.3);
     inner = smin(inner, inner3, 0.04);
+
+    // Interpenetrating Villarceau tori — impossible-space signature.
+    // Two tori with the same major radius but different orientations (XZ and XY planes).
+    // Their intersection traces Villarceau circles: beautiful figure-8 curves that
+    // are impossible to construct in Euclidean space without tori already touching.
+    // The pair slowly counter-rotates so they appear to phase through each other.
+    float ang_a = u_time * 0.12;
+    float ca = cos(ang_a), sa = sin(ang_a);
+    vec3 ta = vec3(p.x * ca - p.z * sa, p.y, p.x * sa + p.z * ca);
+    float torus_a = sdTorus(ta, 0.52, 0.070 + beat_expand * 0.5);
+
+    float ang_b = u_time * 0.09 + 1.5708;  // 90° out of phase
+    float cb = cos(ang_b), sb = sin(ang_b);
+    // Rotated into XY plane (swapped y and z axes then Y-rotated)
+    vec3 tb = vec3(p.x * cb - p.y * sb, p.x * sb + p.y * cb, p.z);
+    float torus_b = sdTorus(tb, 0.52, 0.062 + beat_expand * 0.4);
+
+    // Smooth union: tori blend into each other at their intersection curves
+    float tori = smin(torus_a, torus_b, 0.030);
+    inner = smin(inner, tori, 0.055);
 
     // Fractal detail on walls
     float wall_detail = fbm3(p * 4.0 + u_time * 0.1) * 0.08;
