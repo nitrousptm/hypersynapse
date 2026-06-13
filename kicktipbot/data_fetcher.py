@@ -198,23 +198,28 @@ class DataFetcher:
         r1 = rankings.get(team1.lower(), 50)
         r2 = rankings.get(team2.lower(), 50)
 
-        # Stärke-Differenz → Quoten
-        diff = r2 - r1  # Positiv = team1 stärker
+        # Stärke-Differenz → Quoten (feinere Abstufung)
+        diff = r2 - r1  # Positiv = team1 (Heim) stärker
 
+        src = "heuristic_ranking"
         if diff > 20:
-            return {"home": 1.30, "draw": 5.0, "away": 9.0, "source": "heuristic_ranking"}
+            return {"home": 1.25, "draw": 5.0,  "away": 10.0, "source": src}
         elif diff > 10:
-            return {"home": 1.60, "draw": 3.8, "away": 5.5, "source": "heuristic_ranking"}
+            return {"home": 1.45, "draw": 4.2,  "away": 6.5,  "source": src}
         elif diff > 5:
-            return {"home": 2.00, "draw": 3.2, "away": 3.8, "source": "heuristic_ranking"}
+            return {"home": 1.65, "draw": 3.8,  "away": 5.0,  "source": src}
+        elif diff > 2:
+            return {"home": 2.00, "draw": 3.4,  "away": 3.6,  "source": src}
+        elif diff > -2:
+            return {"home": 2.50, "draw": 3.1,  "away": 2.80, "source": src}
         elif diff > -5:
-            return {"home": 2.60, "draw": 3.0, "away": 2.80, "source": "heuristic_ranking"}
+            return {"home": 3.60, "draw": 3.4,  "away": 2.00, "source": src}
         elif diff > -10:
-            return {"home": 3.80, "draw": 3.2, "away": 2.00, "source": "heuristic_ranking"}
+            return {"home": 5.00, "draw": 3.8,  "away": 1.65, "source": src}
         elif diff > -20:
-            return {"home": 5.50, "draw": 3.8, "away": 1.60, "source": "heuristic_ranking"}
+            return {"home": 6.50, "draw": 4.2,  "away": 1.45, "source": src}
         else:
-            return {"home": 9.0, "draw": 5.0, "away": 1.30, "source": "heuristic_ranking"}
+            return {"home": 10.0, "draw": 5.0,  "away": 1.25, "source": src}
 
     def get_odds_betano(self, team1, team2):
         """Betano-Quoten scraping"""
