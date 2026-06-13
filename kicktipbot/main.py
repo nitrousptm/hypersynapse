@@ -153,6 +153,29 @@ def test_engine():
         print()
 
 
+def generate_daily_tips():
+    """Generiere Tipps für den nächsten Spieltag (täglich ~20:00 UTC)"""
+    from daily_tipps_generator import DailyTippsGenerator
+
+    logger.info("=== Generating daily tips ===")
+    generator = DailyTippsGenerator()
+
+    # Generiere Tipps für morgen
+    tips = generator.generate_all_tips(day_offset=1)
+
+    if tips:
+        # Speichere
+        generator.save_tips_to_file(tips)
+        generator.print_tips_summary(tips)
+        db.log_event("SUCCESS", f"Generated {len(tips)} daily tips")
+        logger.info(f"✓ {len(tips)} daily tips generated")
+        return True
+    else:
+        logger.warning("No daily tips generated")
+        db.log_event("WARNING", "No matches for tomorrow")
+        return False
+
+
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "test":
         test_engine()

@@ -143,17 +143,37 @@ class TippsEngine:
         """
         Findet das Score-Tipp mit dem höchsten Erwartungswert an Punkten.
         Das ist mathematisch optimal!
+
+        Wichtig: Betrachtet ALLE realistischen Scores, nicht nur konservative (0:0, 1:0, 1:1).
         """
         best_score = (1, 1)
         best_ep = 0.0
 
+        # Berechne Expected Points für ALLE möglichen Scores
+        ep_by_score = {}
         for score in score_matrix.keys():
             ep = self.calculate_expected_points(score, score_matrix)
+            ep_by_score[score] = ep
+
             if ep > best_ep:
                 best_ep = ep
                 best_score = score
 
         return best_score, best_ep
+
+    def get_top_n_scores(self, score_matrix, n=5):
+        """
+        Gibt die Top-N Scores nach Expected Points zurück.
+        Nützlich für Alternatives + Analyse.
+        """
+        ep_by_score = {}
+        for score in score_matrix.keys():
+            ep = self.calculate_expected_points(score, score_matrix)
+            ep_by_score[score] = ep
+
+        # Sortiere nach EP
+        sorted_scores = sorted(ep_by_score.items(), key=lambda x: x[1], reverse=True)
+        return [(score, ep) for score, ep in sorted_scores[:n]]
 
     def apply_expert_bias(self, lambda_home, lambda_away, expert):
         """Passt Lambda an Expertenkonsens an"""
