@@ -286,13 +286,16 @@ float vol_shadow(vec3 p, vec3 ldir) {
 }
 
 vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
-    // Two animated light sources for richness
+    // Three animated light sources — magenta overhead + cyan opposing + amber-gold sun
     float lt = u_time * 0.25;
-    vec3 light1 = normalize(vec3(sin(lt) * 0.6,        2.0, cos(lt) * 0.6));         // overhead sweep
-    vec3 light2 = normalize(vec3(cos(lt * 0.7 + 1.3), -0.5, sin(lt * 0.7 + 1.3)));  // low opposing
+    vec3 light1 = normalize(vec3(sin(lt) * 0.6,        2.0, cos(lt) * 0.6));          // overhead magenta sweep
+    vec3 light2 = normalize(vec3(cos(lt * 0.7 + 1.3), -0.5, sin(lt * 0.7 + 1.3)));   // low cyan opposing
+    vec3 light3 = normalize(vec3(sin(lt * 0.4 + 0.8) * 1.0, 1.5, cos(lt * 0.4 + 0.8)));  // mid amber sun
 
-    vec3 col1 = vec3(0.9, 0.3, 1.0);   // magenta
-    vec3 col2 = vec3(0.2, 0.8, 1.0);   // cyan
+    // Colors evolve with scene_norm — magenta/cyan dominate early, amber emerges at bloom peak
+    vec3 col1 = mix(vec3(0.9, 0.3, 1.0), vec3(0.6, 0.1, 1.0), u_scene_norm * 0.4);  // magenta→deep violet
+    vec3 col2 = mix(vec3(0.2, 0.8, 1.0), vec3(0.0, 0.9, 0.8), u_scene_norm * 0.5);  // cyan→teal
+    vec3 col3 = vec3(1.0, 0.75, 0.18) * smoothstep(0.25, 0.70, u_scene_norm);        // amber-gold: fades in mid-scene
 
     // Beat-driven intensity surge
     float beat_surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 1.8 * u_scene_norm;
@@ -314,18 +317,22 @@ vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
 
         float sigma_t = dens * 2.5;   // extinction coefficient
 
-        // Phase for both lights
+        // Phase for all three lights
         float cos1 = dot(rd, light1);
         float cos2 = dot(rd, light2);
+        float cos3 = dot(rd, light3);
         float ph1 = hg_phase(cos1, 0.4);
         float ph2 = hg_phase(cos2, 0.3);
+        float ph3 = hg_phase(cos3, 0.6);  // tighter forward scatter for warm sunbeams
 
-        // Soft shadow
+        // Soft shadow (skip amber shadow for cost savings; it's a fill light)
         float shad1 = vol_shadow(p, light1);
         float shad2 = vol_shadow(p, light2);
 
-        // Scatter contribution weighted by current transmittance (Beer-Lambert)
-        vec3 scatter = col1 * ph1 * shad1 + col2 * ph2 * shad2 * 0.6;
+        // Scatter: tri-color rays with amber as a complementary warmth layer
+        vec3 scatter = col1 * ph1 * shad1
+                     + col2 * ph2 * shad2 * 0.6
+                     + col3 * ph3 * 0.45;  // unshadowed for performance, still beautiful
         acc += scatter * dens * transmittance * step_size;
 
         // Multiplicative transmittance decay — physically correct

@@ -694,6 +694,37 @@ void main() {
         }
     }
 
+    // ─── Singularity convergence rings (scene_norm 0.50→0.875) ───────────────
+    // During the vortex window, concentric rings spiral inward toward screen centre
+    // (the future SG logo position) — building tension and previewing the singularity.
+    // Three simultaneous ring phases at offset intervals give a "tightening spiral" feel.
+    // Gated off right before the silence/blackout so the logo reveal stays clean.
+    {
+        float vgate = smoothstep(0.50, 0.64, u_scene_norm)
+                    * (1.0 - smoothstep(0.84, 0.875, u_scene_norm));
+        if (vgate > 0.001) {
+            float r_asp = length(uv);  // centre is SG logo position in screen space
+            float beat_boost = 1.0 + exp(-u_beat * 5.5) * 0.55 * u_scene_norm;
+            for (int ri = 0; ri < 3; ri++) {
+                // Rings travel inward: phase starts at 1 (edge of screen) and falls to 0 (centre)
+                float phase = fract(-u_time * 0.28 + float(ri) * 0.333 + u_scene_norm * 0.6);
+                float ring_r = phase * 1.35;  // ring radius: 1.35 → 0.0 as phase 1→0
+                float ring_d = abs(r_asp - ring_r);
+                float ring   = smoothstep(0.020, 0.0, ring_d) * (1.0 - phase)
+                             * beat_boost;
+                // Color arc: blue-violet early (scene_norm 0.50) → violet-magenta late (0.875)
+                vec3 rcol = mix(vec3(0.28, 0.42, 0.95), vec3(0.78, 0.18, 0.95),
+                                smoothstep(0.50, 0.875, u_scene_norm));
+                col += ring * rcol * vgate * 0.38;
+            }
+            // Faint radial starburst: thin rays toward centre hinting at the singularity point
+            float star_ang = atan(uv.y, uv.x);
+            float spokes   = pow(max(0.0, cos(star_ang * 8.0)), 12.0);
+            float star_r   = smoothstep(1.0, 0.0, r_asp) * exp(-r_asp * 3.5);
+            col += spokes * star_r * vgate * vec3(0.35, 0.18, 0.88) * 0.12;
+        }
+    }
+
     // ─── Silence + Logo (final ~10s, scene_norm > 0.875) ─────────────────────
     float logo_t = smoothstep(0.875, 0.92, u_scene_norm);
 
