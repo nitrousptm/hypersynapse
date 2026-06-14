@@ -174,18 +174,32 @@ float ray_sphere(vec3 ro, vec3 rd, float r) {
 }
 
 // Photon sphere halo: bright ring where light is trapped at r = 1.5 × EH.
-// Additive glow visible around the silhouette of the black hole.
+// Chromatic dispersion: shorter wavelengths (blue) orbit at smaller radii than
+// longer wavelengths (red) because they are bent more strongly by gravity.
+// This produces a physically motivated rainbow Einstein ring: blue inside, red outside.
 vec3 photon_halo(vec3 ro, vec3 rd) {
     // Closest approach distance
     float t_ca = max(0.0, -dot(ro, rd));
     float impact = length(ro + rd * t_ca);
-    float photon_r = EH_R * 1.5;
-    // Photon ring: glows brightest at r = photon_r, exp-decay inside and outside
-    float ring = exp(-pow((impact - photon_r) / (EH_R * 0.5), 2.0) * 12.0);
-    // Hawking radiation: ultra-faint thermal glow right at event horizon
-    float hr   = exp(-pow((impact - EH_R) / (EH_R * 0.18), 2.0) * 30.0) * 0.35;
-    return (ring * vec3(0.50, 0.72, 1.00) * 1.6 + hr * vec3(0.60, 0.50, 1.00))
-           * smoothstep(EH_R * 3.0, EH_R * 0.5, impact);  // fades toward far field
+
+    // Per-channel photon sphere radii: blue bends most (smallest r), red least (largest r)
+    float pr_r = EH_R * 1.56;   // red   — widest orbit (less bent)
+    float pr_g = EH_R * 1.50;   // green — middle
+    float pr_b = EH_R * 1.44;   // blue  — tightest orbit (most bent)
+
+    // Gaussian ring brightness per channel (slightly different widths for natural spread)
+    float ring_r = exp(-pow((impact - pr_r) / (EH_R * 0.42), 2.0) * 13.0);
+    float ring_g = exp(-pow((impact - pr_g) / (EH_R * 0.38), 2.0) * 14.0);
+    float ring_b = exp(-pow((impact - pr_b) / (EH_R * 0.34), 2.0) * 15.0);
+
+    // Hawking radiation: gravitationally redshifted — thermal glow at the horizon is
+    // warm amber/red because photons lose energy climbing out of the gravity well.
+    float hr = exp(-pow((impact - EH_R) / (EH_R * 0.18), 2.0) * 30.0) * 0.35;
+    vec3 hr_col = vec3(0.90, 0.52, 0.18);  // redshifted thermal glow
+
+    vec3 halo = vec3(ring_r * 1.3, ring_g * 1.1, ring_b * 1.7);
+    float fade = smoothstep(EH_R * 3.2, EH_R * 0.5, impact);
+    return (halo + hr * hr_col) * fade;
 }
 
 // Accretion disk: ring of temporal matter orbiting in y=0 plane.
@@ -209,13 +223,21 @@ vec3 accretion_disk(vec3 hit) {
     float orbit_v = 0.08 / max(dr, DISK_IN);
     float phase   = angle + u_time * orbit_v;  // barely drifting in frozen time
 
-    // Doppler shift: approaching edge brighter/bluer, receding dimmer/redder
-    float doppler = 1.0 + 0.50 * sin(phase);
+    // Relativistic Doppler per channel: blue shifts most (λ sensitive to velocity),
+    // red shifts least. On the approaching side (sin>0): blue boosted, red muted.
+    // On the receding side (sin<0): blue suppressed → warm reddish glow.
+    // Inner edge (ring_t≈0) has higher v/c → stronger per-channel spread.
+    float v_frac = mix(0.60, 0.22, ring_t);    // velocity fraction 0.6c inner → 0.22c outer
+    float raw_d  = sin(phase);                  // -1=receding, +1=approaching
+    float dop_r  = 1.0 + v_frac * 0.30 * raw_d;  // red:   30% swing
+    float dop_g  = 1.0 + v_frac * 0.48 * raw_d;  // green: 48% swing
+    float dop_b  = 1.0 + v_frac * 0.72 * raw_d;  // blue:  72% swing (most sensitive)
+    disk_col = disk_col * vec3(dop_r, dop_g, dop_b);
 
     // Beat surge: on each kick the disk flares
     float surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 1.20;
 
-    return disk_col * density * doppler * surge * 3.2;
+    return disk_col * density * surge * 3.2;
 }
 
 // ─── Frozen-time deep space starfield ────────────────────────────────────────
@@ -421,6 +443,18 @@ vec3 render_shards(vec2 uv) {
         // Beat-reactive pulse: shards flare on each kick
         float kick = smoothstep(0.05, 0.0, u_beat) * u_scene_norm;
         col += mat * kick * 2.8;
+
+        // Gravitational redshift: crystals deep inside the singularity's gravity well
+        // lose energy to photons climbing out — they appear warmer/redder as they
+        // approach the event horizon. Only visible once the singularity has formed.
+        float r_bh = length(p);   // distance from singularity (world-space origin)
+        float grav_rs = smoothstep(0.60, 0.08, r_bh) * sing_gate * 0.40;
+        if (grav_rs > 0.001) {
+            float shift = grav_rs;
+            col.r += col.b * shift * 0.65;  // bleed energy: blue → red
+            col.g -= col.b * shift * 0.15;
+            col.b *= (1.0 - shift * 0.75);
+        }
 
         // Ice crystal refraction: background starfield bends through each shard.
         // IOR of ice ≈ 1.31 → incoming_ior/transmitted_ior = 1.0/1.31 ≈ 0.76.

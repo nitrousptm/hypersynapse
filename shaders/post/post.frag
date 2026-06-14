@@ -517,6 +517,33 @@ void main() {
         col += past   * vec3(1.00, 0.16, 0.06) * echo_str * 0.62;
     }
 
+    // 1b2. Gravity mirage — Scene 4 body (Time Fracture, scene_norm 0.15→0.80).
+    // The temporal singularity distorts space around it even in post-space: any light passing
+    // near the black hole's screen-space projection shimmers as if passing through a heat
+    // mirage — the same physical phenomenon as gravitational lensing but applied to the
+    // post-processed 2D frame. Two-frequency sinusoidal UV turbulence grows in amplitude
+    // as scene_norm increases (singularity gaining mass) and surges on each 133 BPM kick.
+    // Black hole projects to approximately (0.5, 0.42) in UV space (camera orbits slightly
+    // above, looking down at a gentle angle, placing the singularity a little below centre).
+    if (u_scene_idx == 3) {
+        float mg = smoothstep(0.15, 0.30, u_scene_norm)
+                 * (1.0 - smoothstep(0.76, 0.82, u_scene_norm));
+        if (mg > 0.001) {
+            vec2 bh_uv = vec2(0.50, 0.42);  // black hole screen projection
+            vec2 bh_d  = uv - bh_uv;
+            float bh_r = length(bh_d) + 0.001;
+            // Inverse-square mirage strength: strongest near the BH, falls off quickly
+            float proximity = mg * 0.0028 / (bh_r * bh_r + 0.012);
+            // Two-frequency sinusoidal shimmer (coprime frequencies to avoid periodicity)
+            float sh1 = sin(bh_r * 42.0 - u_time * 1.7) * sin(bh_r * 27.3 + u_time * 2.1);
+            float sh2 = sin(bh_r * 63.0 + u_time * 0.9) * cos(bh_r * 18.5 - u_time * 3.3);
+            vec2 shimmer = normalize(bh_d) * (sh1 * 0.6 + sh2 * 0.4) * proximity;
+            // Beat-surge: gravity "pulses" with each kick as the accretion disk flares
+            shimmer *= 1.0 + exp(-u_beat * 7.0) * 0.80;
+            uv = clamp(uv + shimmer, 0.001, 0.999);
+        }
+    }
+
     // 1c. Monolith fracture — Scene 2 (Awakening Core): vertical crack of white-blue
     // light tears the frame as the monolith "opens impossibly" before the Act I→II cut.
     if (u_scene_idx == 1) {
