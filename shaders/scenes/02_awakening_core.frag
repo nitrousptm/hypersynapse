@@ -516,6 +516,50 @@ void main() {
         col += web * syn_beat * vec3(0.20, 0.52, 1.00) * 0.70;
     }
 
+    // ── Archimedean inscription spiral: secondary mathematical law written on void ──
+    // As Metatron's Cube completes its final hex ring (reveal ≈ 0.74), an Archimedean
+    // spiral uncoils outward from the monolith centre — a second tier of sacred math
+    // visible for a brief window before the split.  Reveals inside-out; outer turns
+    // shift from electric-blue to violet, matching the AI's full palette before
+    // it tears reality open at 0:45.
+    {
+        float spi_gate = smoothstep(0.74, 0.80, reveal)
+                       * (1.0 - smoothstep(0.82, 0.90, reveal));
+        if (spi_gate > 0.001) {
+            const vec2 SCTR_S = vec2(0.0, -0.08);
+            vec2  q   = uv - SCTR_S;
+            float r   = length(q);
+            float ang = atan(q.y, q.x);   // −π..π
+
+            // Archimedean spiral: r = rmin + b·θ  (3 turns, rmin=0.065, rmax=0.52)
+            const float RMIN = 0.065, RMAX = 0.52, N_TURNS = 3.0;
+            float b = (RMAX - RMIN) / (N_TURNS * 6.28318);
+
+            // Distance to nearest spiral winding
+            float theta_r  = (r - RMIN) / b;
+            float adiff    = ang - mod(theta_r, 6.28318);
+            adiff         -= 6.28318 * floor(adiff / 6.28318 + 0.5); // wrap ±π
+            float r_spi    = RMIN + b * (theta_r + adiff);
+            float spi_d    = abs(r - r_spi);
+
+            // Inside-out reveal: the spiral uncoils outward as reveal grows
+            float r_front = RMIN + (RMAX - RMIN) * smoothstep(0.74, 0.84, reveal);
+            float visible = step(RMIN - 0.01, r) * (1.0 - step(r_front, r))
+                          * step(r, RMAX + 0.01);
+
+            float sw  = 0.00085;
+            float spi = sw / (spi_d + sw) * visible * spi_gate;
+
+            // Electric-blue (inner) → violet (outer) — AI writing beyond its own geometry
+            vec3 spi_col = mix(vec3(0.22, 0.55, 1.00), vec3(0.50, 0.22, 1.00),
+                               smoothstep(0.25, 0.52, r));
+
+            // Beat kick flash
+            spi *= 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.65;
+            col += spi * spi_col * 0.65;
+        }
+    }
+
     // Opening crack light (floods the screen at split moment)
     float split_flood = smoothstep(0.85, 1.0, reveal) * 0.8;
     col += split_flood * vec3(0.4, 0.7, 1.0) * exp(-length(uv) * 1.5);

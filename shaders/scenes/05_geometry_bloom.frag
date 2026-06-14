@@ -244,6 +244,50 @@ float floor_soft_shadow(vec3 p, vec3 ldir) {
     return clamp(shadow, 0.0, 1.0);
 }
 
+// ─── caustic projections from crystal petal refraction ────────────────────────
+// Orbiting magenta key light passes through curved crystal petal surfaces (IOR 1.5)
+// and focuses onto the obsidian floor as shimmering bright rings and arcs —
+// the caustic shimmer classic to crystal/water/glass environments.
+// Technique: two radial ring fields centered at the key light's floor-projection;
+// their interference produces a moiré caustic pattern distorted by FBM turbulence
+// for organic character.  Gated to the lit/shadow-edge zone (where refraction focuses
+// most strongly) so caustics never appear under opaque shadow or in fully lit areas.
+vec3 floor_caustics(vec3 gp, float fshad, float gd, float lt_sh) {
+    // Key-light cast-point on floor: matches orbiting magenta shad_l direction
+    vec2  focus = vec2(sin(lt_sh) * 0.52, cos(lt_sh) * 0.52);
+    vec2  xz    = gp.xz - focus;
+
+    // Two radial distances give different interference ring sets → moiré caustic
+    float r1 = length(xz);
+    float r2 = length(xz - focus * 0.36);  // secondary from offset focal point
+
+    // Constructive interference only (bright bands): clamp negative to 0
+    float ring = sin(r1 * 11.5 - u_time * 0.057) * sin(r2 * 7.8 + u_time * 0.048);
+    ring = max(ring, 0.0);
+
+    // FBM turbulence breaks algebraic symmetry — real caustics are irregular
+    float turb = vnoise(vec3(gp.x * 3.9 + u_time * 0.038, 0.6, gp.z * 3.9 - u_time * 0.032));
+    ring *= 0.60 + turb * 0.70;
+
+    // Nonlinear compression: thin bright foci, dark between (caustics ≠ soft glow)
+    float caus = pow(ring, 5.5) * 2.2;
+
+    // Shadow-edge zone: refracted beams focus exactly where light exits the crystal
+    // boundary.  Neither fully-lit (passed through straight) nor fully-shadowed (blocked).
+    float edge = smoothstep(0.10, 0.38, fshad) * (1.0 - smoothstep(0.72, 0.95, fshad));
+
+    // Beat boost: key light brightens on each 133 BPM kick
+    float bb = 1.0 + smoothstep(0.07, 0.0, u_beat) * 0.75 * u_scene_norm;
+
+    // Ramp in as flowers mature; floor-edge fade
+    float gate = smoothstep(0.28, 0.58, u_scene_norm) * exp(-gd * 0.38);
+
+    // Color: magenta-pink (key light tinted by translucent petal) → amber-gold at edges
+    vec3 caus_col = mix(vec3(1.00, 0.52, 0.82), vec3(1.00, 0.82, 0.32), turb);
+
+    return caus_col * caus * edge * bb * gate * 0.22;
+}
+
 // ─── kaleidoscope fold for sky ray directions ─────────────────────────────────
 // Applies the same evolving azimuthal fold used for sky_background() to a ray
 // direction. Used by crystal refraction to keep refracted sky and surface mandala
@@ -537,6 +581,10 @@ void main() {
                 // Violet tint in shadow pools — indirect scatter from glowing petals above.
                 gnd_mat *= mix(0.06, 1.0, fshad);
                 gnd_mat += (1.0 - fshad) * vec3(0.010, 0.002, 0.035) * u_scene_norm * gd_fade;
+
+                // Crystal petal caustics: refracted key-light focuses on floor as
+                // shimmering magenta→gold interference rings that orbit with the light.
+                gnd_mat += floor_caustics(gp, fshad, gd, lt_sh);
 
                 col = mix(gnd_mat, refl_col * vec3(0.40, 0.22, 0.70), fresnel) * gnd_gate;
             }
