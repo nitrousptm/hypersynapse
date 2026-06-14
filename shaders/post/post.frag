@@ -1167,6 +1167,29 @@ void main() {
         }
     }
 
+    // 4n. Relativistic jet post-glow — Scene 4 body (0.35→0.82).
+    // Soft vertical light column in screen-space amplifies the 3D jet beams in the scene
+    // shader. Two polar plumes extend from the BH screen position (near ctr origin) up
+    // and down; core white-blue → outer cyan, beat-surge on 133 BPM kicks.
+    // Gate clear of entry row-tear (0→0.10) and exit UV-twist (0.82+).
+    if (u_scene_idx == 3) {
+        float jg = smoothstep(0.35, 0.55, u_scene_norm)
+                 * (1.0 - smoothstep(0.76, 0.86, u_scene_norm));
+        if (jg > 0.01) {
+            // Horizontal Gaussian: narrow column centred at BH (ctr.x ≈ 0)
+            float jet_w  = 0.038;
+            float h_gaus = exp(-(ctr.x * ctr.x) / (jet_w * jet_w));
+            // Vertical profile: dense near BH, fade to screen edge
+            float v_prof = exp(-abs(ctr.y) * 1.80);
+            // Beat surge
+            float pulse  = 1.0 + exp(-u_beat * 4.5) * 1.10;
+            // White-blue core (near BH), cyan outer (high latitude)
+            vec3  jcol   = mix(vec3(0.90, 0.92, 1.00), vec3(0.12, 0.62, 1.00),
+                               smoothstep(0.0, 0.45, abs(ctr.y)));
+            col += jcol * h_gaus * v_prof * pulse * jg * 0.22;
+        }
+    }
+
     // 4m. City corruption AI power-grid beat ring — Scene 3 body (0.12→0.78).
     // Each 133 BPM kick propagates an electric-blue wavefront outward through
     // the corrupted city grid — "the AI cycling power through the urban network"

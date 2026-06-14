@@ -240,6 +240,45 @@ vec3 accretion_disk(vec3 hit) {
     return disk_col * density * surge * 3.2;
 }
 
+// ─── Relativistic Jets ───────────────────────────────────────────────────────
+// Active singularities eject bipolar jets of temporal energy perpendicular to
+// the accretion disk plane (along Y). Magnetic field channels infalling time-matter
+// into two focused beams escaping at near-c: white-blue inner core → cyan outer.
+vec3 relativistic_jets(vec3 ro, vec3 rd) {
+    // Closest approach of ray to the Y axis (jet axis)
+    float denom = dot(rd.xz, rd.xz);
+    if (denom < 0.0001) return vec3(0.0);
+    float s_ca   = max(0.0, -dot(ro.xz, rd.xz) / denom);
+    vec3  ca_pt  = ro + rd * s_ca;
+    float ca_r   = length(ca_pt.xz);   // radial distance from Y axis at c.a.
+    float ca_y   = ca_pt.y;             // axial position
+
+    // Jet geometry: narrow Gaussian beam along both poles
+    float w_jet  = EH_R * 0.28;        // beam half-width at base
+    float beam   = exp(-ca_r * ca_r / (w_jet * w_jet));
+
+    // Axial profile: dense near EH, fades exponentially, cutoff at jet length
+    float jet_len = 3.2;
+    float pole    = exp(-abs(ca_y) * 0.90) * (1.0 - smoothstep(jet_len * 0.55, jet_len, abs(ca_y)));
+
+    // Exclude accretion disk plane (|y| < EH_R×0.7) — disk blocks jet base
+    float disk_exc = 1.0 - smoothstep(EH_R * 0.4, EH_R * 0.90, abs(ca_y));
+
+    // Slight asymmetry: upper jet marginally brighter (observer angle variation)
+    float asym = (ca_y > 0.0) ? 1.0 : 0.82;
+
+    // Color: white-blue core, cyan taper
+    vec3 jet_core = vec3(1.00, 0.92, 1.00) * 2.2;
+    vec3 jet_edge = vec3(0.12, 0.65, 1.00) * 0.9;
+    float r_norm  = ca_r / w_jet;
+    vec3  jet_col = mix(jet_core, jet_edge, smoothstep(0.0, 1.8, r_norm));
+
+    // Beat surge: temporal energy pulse on each 133 BPM kick
+    float pulse = 1.0 + exp(-u_beat * 4.5) * 0.85;
+
+    return jet_col * beam * pole * (1.0 - disk_exc) * asym * pulse;
+}
+
 // ─── Frozen-time deep space starfield ────────────────────────────────────────
 // Multi-scale field of stars in the void where time has stopped.
 // Colours shift from cold blue (far-past) to orange-white (present moment).
@@ -382,6 +421,12 @@ vec3 render_shards(vec2 uv) {
 
     // Additive photon halo + Hawking radiation rim (visible at all depths)
     col += photon_halo(ro, rd) * sing_gate;
+
+    // Relativistic jets: bipolar temporal-energy beams along the polar (Y) axis.
+    // Gate: smoothly ramps in as singularity matures (scene_norm 0.35→0.65).
+    // Narrative: the fractured spacetime bleeds temporal energy along the poles.
+    float jet_gate = smoothstep(0.35, 0.65, u_scene_norm) * sing_gate;
+    col += relativistic_jets(ro, rd) * jet_gate * 0.90;
 
     float t = t_shard;
 

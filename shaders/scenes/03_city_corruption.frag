@@ -24,6 +24,29 @@ in float v_corruption;  // per-building corruption 0..1
 float hash(float n) { return fract(sin(n) * 43758.5453); }
 float hash2(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 
+// ─── Lightning Building Illumination ──────────────────────────────────────────
+// When a lightning bolt discharges above the city, the bright flash momentarily
+// illuminates building rooftops and upper facades from above. Uses a per-bar hash
+// gate to match the ~45% beat-frequency of the post.frag lightning system, with
+// a top-down white-blue directional light that fades within ~0.12s.
+float lightning_flash(vec3 n) {
+    // Per-bar lightning gate: hash gate fires on ~45% of bars, matching post.frag
+    float bar_id   = floor(u_time * (133.0 / 60.0) / 4.0);  // bar index
+    float bar_hash = hash(bar_id * 3.71 + 0.53);
+    float fire     = step(0.55, bar_hash);                     // ~45% of bars
+
+    // Per-beat timing: flash peaks at beat 0, decays very fast (0.12s)
+    float flash    = exp(-u_beat * 12.0) * fire * u_scene_norm;
+
+    // Top-down directional light: only upward-facing normals catch overhead lightning.
+    // Buildings below the flash receive downward illumination; cornice/roof emphasis.
+    float top_dot  = max(dot(n, vec3(0.0, 1.0, 0.0)), 0.0);
+    float mid_dot  = max(dot(n, vec3(0.3, 0.8, 0.2)), 0.0);  // slight angle variation
+    float top_ill  = top_dot * 1.0 + mid_dot * 0.45;
+
+    return flash * top_ill;
+}
+
 // ─── Advanced Window System (multi-layer, flickering networks) ────────────────
 // Returns (window_base, surge_intensity) packed as vec2.
 // surge_intensity: beat-driven power surge wave traveling up the building face —
@@ -60,6 +83,33 @@ float surge_wave(vec2 uv, float id) {
     float above_front = smoothstep(0.08, 0.0, uv.y - wave_front);
     float decay       = exp(-u_beat * 4.0);             // fades over the beat period
     return above_front * decay;
+}
+
+// ─── Mathematical Coordinate Revelation ────────────────────────────────────────
+// At peak AI corruption, physical building surfaces reveal the world-space
+// mathematical coordinate grid the AI perceives reality as — cities decoded
+// to pure data. Dual-frequency: fine 1-unit structural grid + coarse 5-unit
+// city-block coordinate grid. Beat-reactive: lines pulse white-hot on 133 BPM.
+float math_wireframe(vec3 wpos, float corr) {
+    float gate = smoothstep(0.52, 0.88, corr);
+    if (gate < 0.001) return 0.0;
+
+    // Fine 1-unit grid: individual building structure scale
+    vec3 gf1 = fract(wpos);
+    gf1 = min(gf1, 1.0 - gf1);          // distance to nearest integer boundary
+    float d1 = min(gf1.x, min(gf1.y, gf1.z));
+    float line1 = 1.0 - smoothstep(0.0, 0.036, d1);
+
+    // Coarse 5-unit grid: city-block coordinate system
+    vec3 gf5 = fract(wpos * 0.2);
+    gf5 = min(gf5, 1.0 - gf5);
+    float d5 = min(gf5.x, min(gf5.y, gf5.z));
+    float line5 = 1.0 - smoothstep(0.0, 0.020, d5);
+
+    // Beat white-hot pulse
+    float pulse = exp(-u_beat * 5.2) * 0.75;
+
+    return (line1 * 0.62 + line5 * 1.00) * gate * (1.0 + pulse);
 }
 
 // ─── Multi-level Artery System (recursive spreading fractals) ──────────────────
@@ -131,6 +181,13 @@ void main() {
     // Window overload: bright cyan window burst riding the surge front
     col += wins * surge * v_corruption * vec3(0.10, 0.65, 1.00) * 2.2;
 
+    // Lightning flash: overhead bolt illuminates building rooftops and upper facades.
+    // White-blue top-down light, gated to ~45% of bars, fast decay — cinematic bolt flash.
+    float lflash = lightning_flash(n);
+    col += lflash * vec3(0.88, 0.94, 1.00) * 3.8;
+    // Window overbrightness during lightning: windows flash much brighter than concrete
+    col += lflash * wins * vec3(0.90, 0.96, 1.00) * 5.5;
+
     // Roofline glow: AI energy concentrates at building tops during corruption.
     // The corona along the top edge is where mathematical structures first emerge,
     // making each building look like it's burning with electric-blue AI light.
@@ -140,9 +197,17 @@ void main() {
     float side_edge = min(smoothstep(0.06, 0.0, v_uv.x), smoothstep(0.06, 0.0, 1.0 - v_uv.x));
     col += side_edge * v_corruption * vec3(0.04, 0.25, 0.80) * 1.4;
 
-    // Corrupt buildings fade toward bright mathematical lines
+    // Corrupt buildings fade toward a mathematical base tint
     vec3 math_col = vec3(0.0, 0.8, 1.0) * (0.5 + 0.5 * sin(v_world_pos.y * 4.0 + u_time));
-    col = mix(col, math_col, v_corruption * v_corruption * 0.7);
+    col = mix(col, math_col, v_corruption * v_corruption * 0.55);
+
+    // Mathematical coordinate grid: world-space grid lines bleed through surfaces.
+    // The AI perceives physical space as a coordinate dataset — at peak corruption
+    // its internal coordinate system becomes visible through the building material.
+    float wf = math_wireframe(v_world_pos, v_corruption);
+    vec3 wf_col = mix(vec3(0.08, 0.46, 1.00), vec3(0.20, 0.90, 1.00), u_scene_norm);
+    float wf_pulse = exp(-u_beat * 5.2) * 0.75;
+    col += wf * wf_col * (2.6 + wf_pulse * 2.8);
 
     // Distance fog: deep atmospheric perspective
     float fog = 1.0 - exp(-length(v_world_pos) * 0.04);
