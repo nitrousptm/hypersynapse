@@ -183,6 +183,51 @@ float sdf_world(vec3 p) {
     return smin(temple, flowers, 0.2);
 }
 
+// ─── Mandelbulb 3D fractal (power 8, 6 iterations) ───────────────────────────
+// Classic demoscene fractal — infinite self-similar organic geometry via
+// spherical-coordinate escape-time formula. Power oscillates ±0.5 for slow morph.
+// Separate from sdf_world() so vol_shadow() in god_rays() stays cheap.
+
+float mandelbulb_de(vec3 pos) {
+    vec3  z   = pos;
+    float dr  = 1.0, r = 0.0;
+    float pwr = 8.0 + 0.5 * sin(u_time * 0.12);
+    for (int i = 0; i < 6; i++) {
+        r = length(z);
+        if (r > 2.0) break;
+        float theta = acos(clamp(z.z / r, -1.0, 1.0)) * pwr;
+        float phi   = atan(z.y, z.x) * pwr;
+        float zr    = pow(r, pwr - 1.0);
+        dr = zr * pwr * dr + 1.0;
+        z  = (zr * r) * vec3(sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)) + pos;
+    }
+    return 0.5 * log(max(r, 1e-7)) * r / max(dr, 1e-7);
+}
+
+float bulb_de_sc(vec3 p, float sc) { return mandelbulb_de(p / sc) * sc; }
+
+float march_bulb(vec3 ro, vec3 rd, float sc, out int steps) {
+    float t = 0.01;
+    for (steps = 0; steps < 72; steps++) {
+        float d = bulb_de_sc(ro + rd * t, sc);
+        if (d < 0.0005) return t;
+        if (t > 5.0) break;
+        t += max(d * 0.82, 0.0002);
+    }
+    return 6.0;
+}
+
+vec3 normal_at_bulb(vec3 p, float sc) {
+    const float e = 0.0008;
+    const vec2  k = vec2(1.0, -1.0);
+    return normalize(
+        k.xyy * bulb_de_sc(p + k.xyy * e, sc) +
+        k.yyx * bulb_de_sc(p + k.yyx * e, sc) +
+        k.yxy * bulb_de_sc(p + k.yxy * e, sc) +
+        k.xxx * bulb_de_sc(p + k.xxx * e, sc)
+    );
+}
+
 // ─── raymarching ──────────────────────────────────────────────────────────────
 
 const int MAX_STEPS = 128;
@@ -588,6 +633,53 @@ void main() {
 
                 col = mix(gnd_mat, refl_col * vec3(0.40, 0.22, 0.70), fresnel) * gnd_gate;
             }
+        }
+    }
+
+    // ─── Mandelbulb: fractal core emerges at Act III emotional peak ─────────────
+    // Scale 0.36→0.50 world units — inside the flower cluster, visible through gaps.
+    // Marched separately; overwrites col+t if closer than flowers/sky.
+    float mb_gate = smoothstep(0.35, 0.70, u_scene_norm);
+    if (mb_gate > 0.001) {
+        float mb_sc = mix(0.36, 0.50, mb_gate)
+                    * (1.0 + smoothstep(0.07, 0.0, u_beat) * 0.055 * u_scene_norm);
+        int   mb_steps = 0;
+        float t_bulb   = march_bulb(ro, rd, mb_sc, mb_steps);
+        if (t_bulb < 5.0 && t_bulb < t) {
+            vec3  bp  = ro + rd * t_bulb;
+            vec3  bn  = normal_at_bulb(bp, mb_sc);
+
+            // Color by surface normal direction: tips amber-gold, crevices deep ruby
+            float nblend  = smoothstep(-0.15, 0.65, bn.y);
+            vec3  mb_base = mix(vec3(0.55, 0.04, 0.16),  // ruby-red crevices
+                                vec3(1.00, 0.72, 0.14),  // amber-gold tips
+                                nblend) * 0.58;
+
+            // Three-light diffuse matching scene lights
+            float lt   = u_time * 0.25;
+            vec3  ld1  = normalize(vec3(sin(lt)*0.6, 2.0, cos(lt)*0.6));
+            vec3  ld2  = normalize(vec3(cos(lt*0.7+1.3), -0.5, sin(lt*0.7+1.3)));
+            float diff = max(dot(bn, ld1), 0.0) * 0.72 + max(dot(bn, ld2), 0.0) * 0.20;
+            float spec = pow(max(dot(reflect(-ld1, bn), -rd), 0.0), 52.0);
+            mb_base   += spec * vec3(1.0, 0.90, 0.72) * 0.85;
+
+            // Iridescent Fresnel rim: cyan-violet at grazing — contrasts amber body
+            float fr  = pow(1.0 - max(dot(bn, -rd), 0.0), 5.0);
+            float irh = fr * 3.14159;
+            vec3  irc = vec3(0.5+0.5*cos(irh),
+                             0.5+0.5*cos(irh+2.094),
+                             0.5+0.5*cos(irh+4.189));
+            mb_base += irc * fr * 0.52;
+
+            // Beat self-emission: surges white-gold on each 133 BPM kick
+            float beat_emit = smoothstep(0.06, 0.0, u_beat) * u_scene_norm;
+            mb_base += beat_emit * vec3(1.0, 0.82, 0.40) * 1.65;
+
+            // Step-count AO: high step count = deep crevice = darker
+            float ao_b = 1.0 - clamp(float(mb_steps) / 72.0, 0.0, 1.0) * 0.58;
+
+            col = mb_base * (0.10 + diff * ao_b) * mb_gate;
+            t   = t_bulb;  // update depth for god_rays
         }
     }
 

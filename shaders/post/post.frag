@@ -1360,6 +1360,42 @@ void main() {
         }
     }
 
+    // 4p. Multiverse synaptic burst — Scene 6 revelation (scene_norm 0.798→0.93).
+    // At the moment the universe-particle's true identity is revealed, quantum
+    // entanglement threads snap into visibility radiating outward from the particle.
+    // 8 radial filaments fan out; violet-blue palette; brief onset, slow fade.
+    // Beat-reactive halo at particle origin on each 133 BPM kick.
+    if (u_scene_idx == 5) {
+        float syn_t = smoothstep(0.798, 0.806, u_scene_norm)
+                    * smoothstep(0.930, 0.895, u_scene_norm);
+        if (syn_t > 0.001) {
+            float asp_r = u_res.x / u_res.y;
+            vec2  src   = vec2(-0.20, -0.30);  // particle_pos in ctr space
+            float bp    = 1.0 + smoothstep(0.07, 0.0, u_beat) * 0.70;
+
+            for (int fi = 0; fi < 8; fi++) {
+                float ff   = float(fi);
+                float ang  = (ff + 0.5) / 8.0 * 6.28318 + 0.31;
+                float lenV = 0.66 + 0.34 * hash11(ff * 3.71 + 0.53);
+                vec2  dst  = src + vec2(cos(ang), sin(ang)) * lenV * 1.25;
+
+                // Aspect-correct line SDF
+                vec2 pa_a = vec2((ctr.x - src.x) * asp_r, ctr.y - src.y);
+                vec2 ba_a = vec2((dst.x - src.x) * asp_r, dst.y - src.y);
+                float ht  = clamp(dot(pa_a, ba_a) / dot(ba_a, ba_a), 0.0, 1.0);
+                float d   = length(pa_a - ba_a * ht);
+
+                float glow = exp(-d / 0.0022) * (1.0 - ht * 0.60);
+                float hueR = hash11(ff * 5.31 + 1.7);
+                vec3  tc   = mix(vec3(0.20, 0.14, 0.95), vec3(0.52, 0.06, 0.90), hueR);
+                col += glow * tc * 0.20 * syn_t * bp;
+            }
+            // Bright origin halo when threads fire
+            float src_r = length(vec2((ctr.x - src.x) * asp_r, ctr.y - src.y));
+            col += exp(-src_r * src_r * 280.0) * vec3(0.55, 0.40, 1.00) * syn_t * 0.75 * bp;
+        }
+    }
+
     // 8m. Big-bang CMB expansion — Scene 7 opening: universe born from singularity.
     // Concentric expanding rings simulate the cosmic microwave background radiation
     // pattern, fired from screen centre as the demo erupts into Act IV.
