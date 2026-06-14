@@ -35,40 +35,48 @@ class DailyTippsGenerator:
 
     def get_scheduled_matches(self, day_offset=1):
         """
-        Holt die Matches für einen bestimmten Tag.
+        Holt die Matches für einen bestimmten Tag via ESPN API.
         day_offset=1 → Morgen, day_offset=0 → Heute
         """
-        # OpenLigaDB für WM 2026 Matches
+        target_date = (datetime.now() + timedelta(days=day_offset)).date()
+        date_str = target_date.strftime("%Y%m%d")
+
         try:
-            url = "https://api.openligadb.de/getcurrentmatchday/wm2026"
+            url = f"http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates={date_str}"
             resp = requests.get(url, timeout=10)
 
             if resp.status_code != 200:
-                logger.warning("OpenLigaDB not available, returning empty")
+                logger.warning(f"ESPN API returned {resp.status_code}, returning empty")
                 return []
 
-            matches = resp.json()
-            target_date = (datetime.now() + timedelta(days=day_offset)).date()
+            data = resp.json()
+            events = data.get("events", [])
 
             filtered = []
-            for m in matches if isinstance(matches, list) else matches.get("matches", []):
-                match_date = datetime.fromisoformat(
-                    m.get("matchDateTime", "").replace("Z", "+00:00")
-                ).date()
+            for e in events:
+                comps = e.get("competitions", [{}])
+                if not comps:
+                    continue
+                comp = comps[0]
+                competitors = comp.get("competitors", [])
+                if len(competitors) < 2:
+                    continue
 
-                if match_date == target_date:
-                    filtered.append({
-                        "team1": m.get("team1", {}).get("teamName", ""),
-                        "team2": m.get("team2", {}).get("teamName", ""),
-                        "match_id": m.get("matchID"),
-                        "scheduled_time": m.get("matchDateTime")
-                    })
+                home = next((c for c in competitors if c.get("homeAway") == "home"), competitors[0])
+                away = next((c for c in competitors if c.get("homeAway") == "away"), competitors[1])
 
-            logger.info(f"Found {len(filtered)} matches for {target_date}")
+                filtered.append({
+                    "team1": home.get("team", {}).get("displayName", home.get("team", {}).get("name", "")),
+                    "team2": away.get("team", {}).get("displayName", away.get("team", {}).get("name", "")),
+                    "match_id": e.get("id"),
+                    "scheduled_time": e.get("date")
+                })
+
+            logger.info(f"Found {len(filtered)} matches for {target_date} (ESPN)")
             return filtered
 
         except Exception as e:
-            logger.error(f"Error fetching scheduled matches: {e}")
+            logger.error(f"Error fetching scheduled matches from ESPN: {e}")
             return []
 
     def generate_tip_with_analysis(self, team1, team2):
@@ -171,7 +179,8 @@ class DailyTippsGenerator:
             print(f"   Main Tip: {tip['main_tip']} (Confidence: {tip['confidence']})")
             print(f"   Expected Points: {tip['expected_points']:.2f}")
             print(f"   Lambda: H={tip['lambda']['home']:.2f} A={tip['lambda']['away']:.2f}")
-            print(f"   Top Alternatives: {', '.join(f\"{a['score']} ({a['ep']})\" for a in tip['top_3_alternatives'][:2])}")
+            alts = ', '.join(f"{a['score']} ({a['ep']})" for a in tip['top_3_alternatives'][:2])
+            print(f"   Top Alternatives: {alts}")
             print(f"   Data: {tip['data_sources']}")
             print()
 
