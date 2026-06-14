@@ -3,6 +3,7 @@
 kicktipbot - Automatischer WM 2026 Tipp-Bot für kicktipp.at
 """
 
+import json
 import time
 import logging
 import sys
@@ -10,6 +11,26 @@ from datetime import datetime
 
 from tipps_engine import TippsEngine
 from database import TippsDatabase
+
+ODDS_CHANGE_THRESHOLD = 0.15  # 15% Quoten-Änderung → Tipp neu berechnen
+
+
+def _odds_changed(old_odds, new_odds, threshold=ODDS_CHANGE_THRESHOLD):
+    """True wenn sich eine der drei Quoten um >threshold geändert hat."""
+    if not old_odds or not new_odds:
+        return True
+    for key in ("home", "draw", "away"):
+        old_val = old_odds.get(key)
+        new_val = new_odds.get(key)
+        if old_val and new_val and old_val > 0:
+            if abs(new_val - old_val) / old_val > threshold:
+                return True
+    return False
+
+
+def _match_id(team1, team2):
+    """Stabiler Match-Key (kein Datum, da WM2026 jede Paarung nur einmal hat)."""
+    return f"{team1.lower()}_{team2.lower()}"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,6 +49,7 @@ def process_match(fetcher, engine, match):
     """
     team1 = match["team1"]
     team2 = match["team2"]
+    mid = _match_id(team1, team2)
 
     logger.info(f"→ {team1} vs {team2}")
     db.log_event("INFO", f"Processing: {team1} vs {team2}")
@@ -35,6 +57,23 @@ def process_match(fetcher, engine, match):
     odds = fetcher.get_odds(team1, team2)
     expert = fetcher.get_expert_predictions(team1, team2)
     form = fetcher.get_team_stats(team1, team2)
+
+    # Odds-Vergleich: war schon ein Tipp abgegeben?
+    stored = db.get_tip(mid)
+    if stored and stored.get("odds_data"):
+        stored_odds = json.loads(stored["odds_data"])
+        if not _odds_changed(stored_odds, odds):
+            prev = f"{stored['home_goals']}:{stored['away_goals']}"
+            logger.info(f"  → Quoten unverändert, bestehender Tipp {prev} wird übernommen")
+            db.log_event("INFO", f"Odds unchanged for {team1} vs {team2}, keeping {prev}")
+            # Trotzdem zurückgeben damit der Bot den Tipp (idempotent) einträgt
+            tip_result = engine.calculate_tip({"odds": odds, "expert": expert, "form": form})
+            db.save_tip(mid, team1, team2, tip_result, odds, expert, form)
+            return tip_result
+        else:
+            prev = f"{stored['home_goals']}:{stored['away_goals']}"
+            logger.info(f"  ⚡ Quoten geändert! Alter Tipp: {prev} → neu berechnen")
+            db.log_event("INFO", f"Odds changed for {team1} vs {team2}, recalculating (was {prev})")
 
     tip_result = engine.calculate_tip({
         "odds": odds,
@@ -49,8 +88,7 @@ def process_match(fetcher, engine, match):
     logger.info(f"  → Tipp: {score_str} | EP: {ep:.2f} | Conf: {conf:.1%}")
     logger.info(f"  → Lambda: H={tip_result['lambda_home']:.2f} A={tip_result['lambda_away']:.2f}")
 
-    match_id = f"{team1}_{team2}_{datetime.now().strftime('%Y%m%d')}"
-    db.save_tip(match_id, team1, team2, tip_result, odds, expert, form)
+    db.save_tip(mid, team1, team2, tip_result, odds, expert, form)
 
     return tip_result
 

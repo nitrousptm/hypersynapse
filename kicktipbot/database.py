@@ -217,6 +217,16 @@ class TippsDatabase:
             "avg_expected_points": round(avg_ep, 3)
         }
 
+    def get_tip(self, match_id):
+        """Holt einen gespeicherten Tipp anhand der match_id"""
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute('SELECT * FROM tipps WHERE match_id=? ORDER BY placed_at DESC LIMIT 1', (match_id,))
+        row = c.fetchone()
+        conn.close()
+        return dict(row) if row else None
+
     def log_event(self, level, message):
         """Logged ein Event"""
         conn = sqlite3.connect(self.db_path)
