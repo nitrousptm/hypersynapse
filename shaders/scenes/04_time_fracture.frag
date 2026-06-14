@@ -240,6 +240,40 @@ vec3 accretion_disk(vec3 hit) {
     return disk_col * density * surge * 3.2;
 }
 
+// ─── Kerr Ergosphere ─────────────────────────────────────────────────────────
+// The black hole rotates (Kerr metric, spin a ≈ 0.80M). Outside the event horizon
+// lies the ergosphere — an oblate region where frame dragging is so extreme that
+// nothing can remain stationary; space itself co-rotates with the singularity.
+// r_erg(θ) = EH_R * (1 + sin²θ × 0.80): touches EH at poles, extends to 1.80×EH at equator.
+// Visual: soft deep-indigo glow at the ergosphere boundary, distinct from the
+// rainbow photon ring and the amber accretion disk.
+vec3 ergosphere_glow(vec3 ro, vec3 rd, float sg) {
+    if (sg < 0.001) return vec3(0.0);
+
+    float t_ca = max(0.0, -dot(ro, rd));
+    vec3  p_ca = ro + rd * t_ca;
+    float r_ca = length(p_ca);
+
+    // Only draw between EH and 2.2×EH (ergosphere can't exceed 2×EH for any spin)
+    if (r_ca < EH_R || r_ca > EH_R * 2.2) return vec3(0.0);
+
+    // |sin(θ)| at closest approach: fraction of r that lies in the equatorial plane
+    float sin_th = length(p_ca.xz) / max(r_ca, 0.001);
+
+    // Ergosphere boundary radius: oblate spheroid that squeezes to EH at poles
+    float r_erg = EH_R * (1.0 + sin_th * sin_th * 0.80);
+
+    // Gaussian glow at the boundary surface (width ≈ 0.22 × EH_R)
+    float d_erg = abs(r_ca - r_erg);
+    float rim   = exp(-pow(d_erg / (EH_R * 0.22), 2.0) * 8.0);
+
+    // Interior fade: inside ergosphere but outside EH — frame dragging zone
+    float interior = smoothstep(r_erg, EH_R * 1.05, r_ca) * 0.35;
+
+    // Deep indigo-violet: visually separate from rainbow photon ring and amber disk
+    return (rim + interior) * vec3(0.42, 0.08, 0.90) * sg * 0.62;
+}
+
 // ─── Relativistic Jets ───────────────────────────────────────────────────────
 // Active singularities eject bipolar jets of temporal energy perpendicular to
 // the accretion disk plane (along Y). Magnetic field channels infalling time-matter
@@ -421,6 +455,10 @@ vec3 render_shards(vec2 uv) {
 
     // Additive photon halo + Hawking radiation rim (visible at all depths)
     col += photon_halo(ro, rd) * sing_gate;
+
+    // Kerr ergosphere: indigo-violet oblate glow outside EH where frame dragging dominates.
+    // Appears as a faint distended halo between photon ring and accretion disk inner edge.
+    col += ergosphere_glow(ro, rd, sing_gate);
 
     // Relativistic jets: bipolar temporal-energy beams along the polar (Y) axis.
     // Gate: smoothly ramps in as singularity matures (scene_norm 0.35→0.65).

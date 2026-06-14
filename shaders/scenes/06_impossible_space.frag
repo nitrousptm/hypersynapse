@@ -339,25 +339,34 @@ vec3 cosmic_particles(vec2 uv) {
 // Renders a single small universe-particle at screen-UV position ep.
 // es: visual scale (smaller = more distant).  sp: spiral arm rotation speed.
 // mg: master gate (outer_fade * zoom) — invisible until cosmic reveal.
-void uni_mini(vec2 uv, vec2 ep, float es, float sp, float mg, inout vec3 col) {
+// rz: cosmological redshift 0=blue (nearby) → 1=amber-red (far, fast recession).
+//     Hubble recession shifts shorter wavelengths to longer: blue→amber→red.
+void uni_mini(vec2 uv, vec2 ep, float es, float sp, float mg, float rz, inout vec3 col) {
     vec2  dp  = uv - ep;
     float dr  = length(dp);
     float inv = 1.0 / es;
-    // Bright nucleus
-    col += exp(-dr * dr * 900.0 * inv * inv) * es * 2.5 * mg * vec3(0.42, 0.65, 1.0);
+
+    // Cosmological color palette — blends from blue (z≈0) to amber-red (high-z)
+    vec3 nuc_col  = mix(vec3(0.42, 0.65, 1.00), vec3(1.00, 0.48, 0.18), rz);
+    vec3 arm_col  = mix(vec3(0.35, 0.58, 0.90), vec3(0.85, 0.38, 0.12), rz);
+    vec3 halo_col = mix(vec3(0.10, 0.22, 0.48), vec3(0.32, 0.12, 0.04), rz);
+    vec3 ring_col = mix(vec3(0.28, 0.52, 0.90), vec3(0.80, 0.32, 0.08), rz);
+
+    // Bright nucleus — redshifted toward amber-red for distant universes
+    col += exp(-dr * dr * 900.0 * inv * inv) * es * 2.5 * mg * nuc_col;
     // Two-arm logarithmic spiral (same technique as the main universe-particle)
     float ang  = atan(dp.y, dp.x) - dr * 5.0 * inv + u_time * sp;
     float arm1 = pow(max(cos(ang),           0.0), 8.0);
     float arm2 = pow(max(cos(ang + 3.14159), 0.0), 8.0);
     float env  = exp(-dr * dr * 200.0 * inv * inv) * exp(-dr * 12.0 * inv);
-    col += (arm1 + arm2) * env * mg * vec3(0.35, 0.58, 0.90) * 1.8;
+    col += (arm1 + arm2) * env * mg * arm_col * 1.8;
     // Soft atmospheric halo
-    col += exp(-dr * dr * 80.0 * inv * inv) * mg * vec3(0.10, 0.22, 0.48) * es * 1.8;
+    col += exp(-dr * dr * 80.0 * inv * inv) * mg * halo_col * es * 1.8;
     // Single slow pulse ring — each universe breathes at its own rate
     float ring_t = fract(u_time * sp * 0.55);
     float ring_r = ring_t * 0.32 * es;
     float ring_f = (1.0 - ring_t) * mg * 0.55;
-    col += ring_f * smoothstep(0.007, 0.0, abs(dr - ring_r)) * vec3(0.28, 0.52, 0.90);
+    col += ring_f * smoothstep(0.007, 0.0, abs(dr - ring_r)) * ring_col;
 }
 
 // ─── Volumetric portal fog ─────────────────────────────────────────────────────
@@ -628,12 +637,14 @@ void main() {
         const vec2 MP2 = vec2( 0.95, -0.62);
         const vec2 MP3 = vec2(-0.38,  0.68);
         const vec2 MP4 = vec2( 1.22,  0.20);
-        // ep = screen-UV position, es = visual scale, sp = spiral speed
-        uni_mini(uv, MP0, 0.28, 0.38, mg, col);
-        uni_mini(uv, MP1, 0.33, 0.25, mg, col);
-        uni_mini(uv, MP2, 0.22, 0.45, mg, col);
-        uni_mini(uv, MP3, 0.30, 0.32, mg, col);
-        uni_mini(uv, MP4, 0.26, 0.41, mg, col);
+        // ep = screen-UV position, es = visual scale, sp = spiral speed, rz = Hubble redshift
+        // Redshift proportional to distance from reveal centre (0.30, 0.20):
+        // MP3 nearest (rz=0.42, warm orange); MP1 farthest (rz=1.00, deep amber-red)
+        uni_mini(uv, MP0, 0.28, 0.38, mg, 0.72, col);  // dist≈0.97 → orange-red
+        uni_mini(uv, MP1, 0.33, 0.25, mg, 1.00, col);  // dist≈1.35 → deep red (most distant)
+        uni_mini(uv, MP2, 0.22, 0.45, mg, 0.84, col);  // dist≈1.13 → amber-red
+        uni_mini(uv, MP3, 0.30, 0.32, mg, 0.42, col);  // dist≈0.78 → warm orange (nearest)
+        uni_mini(uv, MP4, 0.26, 0.41, mg, 0.92, col);  // dist≈1.24 → red-orange
 
         // Faint multiverse filaments — 5-segment web connecting the nearest neighbors.
         // Extremely dim (0.009) — context rather than foreground; readable as
