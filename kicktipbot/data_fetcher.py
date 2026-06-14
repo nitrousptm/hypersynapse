@@ -13,14 +13,196 @@ from bs4 import BeautifulSoup
 import config
 
 
+DE_TO_EN = {
+    "deutschland": "germany", "frankreich": "france", "spanien": "spain",
+    "niederlande": "netherlands", "belgien": "belgium", "brasilien": "brazil",
+    "argentinien": "argentina", "portugal": "portugal", "kroatien": "croatia",
+    "schweiz": "switzerland", "österreich": "austria", "schweden": "sweden",
+    "dänemark": "denmark", "norwegen": "norway", "türkei": "turkey", "türkiye": "turkey",
+    "serbien": "serbia", "ukraine": "ukraine", "polen": "poland", "schottland": "scotland",
+    "tschechien": "czech republic", "ungarn": "hungary", "griechenland": "greece",
+    "albanien": "albania", "marokko": "morocco", "senegal": "senegal",
+    "nigeria": "nigeria", "ghana": "ghana", "kamerun": "cameroon", "tunesien": "tunisia",
+    "algerien": "algeria", "ägypten": "egypt", "elfenbeinküste": "ivory coast",
+    "südafrika": "south africa", "mali": "mali",
+    "demokratische republik kongo": "dr congo", "dr kongo": "dr congo",
+    "mexiko": "mexico", "usa": "usa", "kanada": "canada",
+    "kolumbien": "colombia", "brasilien": "brazil", "argentinien": "argentina",
+    "chile": "chile", "ecuador": "ecuador", "uruguay": "uruguay", "bolivien": "bolivia",
+    "paraguay": "paraguay", "peru": "peru", "venezuela": "venezuela",
+    "costa rica": "costa rica", "panama": "panama", "honduras": "honduras",
+    "el salvador": "el salvador", "jamaika": "jamaica", "haiti": "haiti",
+    "kap verde": "cape verde", "curaçao": "curacao",
+    "japan": "japan", "südkorea": "south korea", "australien": "australia",
+    "saudi-arabien": "saudi arabia", "iran": "iran", "irak": "iraq",
+    "jordanien": "jordan", "oman": "oman", "katar": "qatar",
+    "neuseeland": "new zealand", "usa": "united states",
+    "bosnien": "bosnia", "bosnien-herzegowina": "bosnia and herzegovina",
+}
+
+
+def _normalize_team(name: str) -> str:
+    n = name.lower().strip()
+    return DE_TO_EN.get(n, n)
+
+
+def _teams_match(espn_name: str, our_name: str) -> bool:
+    a = _normalize_team(espn_name)
+    b = _normalize_team(our_name)
+    return a == b or a in b or b in a
+
+
 class DataFetcher:
     def __init__(self):
         self.headers = {
-            "User-Agent": "kicktipbot/1.0 (educational)",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
             "Accept": "application/json"
         }
         # Cache für die Session - vermeidet doppelte Requests
         self._cache = {}
+
+    # ============== ESPN ==============
+
+    def _get_espn_events(self, date_str=None):
+        """Holt ESPN Scoreboard für ein Datum (YYYYMMDD), cached pro Session."""
+        key = f"espn_{date_str or 'today'}"
+        if key in self._cache:
+            return self._cache[key]
+        url = "http://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard"
+        if date_str:
+            url += f"?dates={date_str}"
+        try:
+            resp = requests.get(url, timeout=10)
+            if resp.status_code != 200:
+                return []
+            events = resp.json().get("events", [])
+            self._cache[key] = events
+            return events
+        except Exception as e:
+            print(f"[DataFetcher] ESPN error: {e}")
+            return []
+
+    def _find_espn_event(self, team1, team2):
+        """Sucht ESPN-Event für gegebene Teams (heute + morgen)."""
+        from datetime import datetime, timedelta
+        today = datetime.utcnow()
+        for offset in (0, 1, -1):
+            d = (today + timedelta(days=offset)).strftime("%Y%m%d")
+            for ev in self._get_espn_events(d):
+                comps = ev.get("competitions", [{}])
+                if not comps:
+                    continue
+                comp = comps[0]
+                competitors = comp.get("competitors", [])
+                if len(competitors) < 2:
+                    continue
+                names = [c.get("team", {}).get("displayName", "") for c in competitors]
+                if _teams_match(names[0], team1) and _teams_match(names[1], team2):
+                    return ev, comp, competitors
+                if _teams_match(names[0], team2) and _teams_match(names[1], team1):
+                    return ev, comp, list(reversed(competitors))
+        return None, None, None
+
+    @staticmethod
+    def _american_to_decimal(odds_str):
+        """Konvertiert amerikanische Moneyline zu dezimalen Quoten."""
+        try:
+            o = int(str(odds_str).replace("+", ""))
+            if o > 0:
+                return round(o / 100 + 1, 3)
+            else:
+                return round(100 / abs(o) + 1, 3)
+        except Exception:
+            return None
+
+    def get_odds_espn(self, team1, team2):
+        """Holt echte DraftKings-Quoten via ESPN API (kein API-Key nötig)."""
+        _, comp, competitors = self._find_espn_event(team1, team2)
+        if comp is None:
+            return None
+        try:
+            odds_list = comp.get("odds", [None])
+            odds = odds_list[0] if odds_list else None
+            if not odds:
+                return None
+            ml = odds.get("moneyline", {})
+            home = self._american_to_decimal(ml.get("home", {}).get("close", {}).get("odds"))
+            away = self._american_to_decimal(ml.get("away", {}).get("close", {}).get("odds"))
+            draw = self._american_to_decimal(ml.get("draw", {}).get("close", {}).get("odds"))
+            if home and away:
+                return {
+                    "home": home,
+                    "draw": draw or 3.5,
+                    "away": away,
+                    "source": "espn_draftkings",
+                    "timestamp": datetime.now().isoformat()
+                }
+        except Exception as e:
+            print(f"[DataFetcher] ESPN odds parse error: {e}")
+        return None
+
+    def get_form_espn(self, team1, team2):
+        """Holt Team-Form aus ESPN (letzte Ergebnisse W/L/T)."""
+        _, comp, competitors = self._find_espn_event(team1, team2)
+        if not competitors:
+            return {"home_form": "neutral", "away_form": "neutral"}
+
+        def parse_form(c):
+            form_str = c.get("form", "")
+            if not form_str:
+                records = c.get("records", [{}])
+                rec = records[0] if records else {}
+                w = int(rec.get("wins", 0) or 0)
+                d = int(rec.get("ties", 0) or 0)
+                l = int(rec.get("losses", 0) or 0)
+                total = w + d + l
+                if total == 0:
+                    return "neutral", 0.5
+                score = (w * 3 + d) / (total * 3)
+                return ("good" if score > 0.6 else "bad" if score < 0.3 else "neutral"), round(score, 2)
+            wins = form_str.upper().count("W")
+            losses = form_str.upper().count("L")
+            n = len(form_str)
+            if n == 0:
+                return "neutral", 0.5
+            score = wins / n
+            return ("good" if score > 0.6 else "bad" if score < 0.3 else "neutral"), round(score, 2)
+
+        home_form, home_score = parse_form(competitors[0])
+        away_form, away_score = parse_form(competitors[1])
+        return {
+            "home_form": home_form,
+            "away_form": away_form,
+            "home_details": {"form": home_form, "form_score": home_score},
+            "away_details": {"form": away_form, "form_score": away_score},
+            "timestamp": datetime.now().isoformat()
+        }
+
+    def get_expert_espn(self, team1, team2):
+        """Nutzt ESPN Win-Probability (aus Odds) als Experten-Proxy."""
+        odds = self.get_odds_espn(team1, team2)
+        if not odds:
+            return None
+        try:
+            h = 1 / odds["home"]
+            a = 1 / odds["away"]
+            d = 1 / odds.get("draw", 3.5)
+            total = h + a + d
+            ph, pd, pa = h / total, d / total, a / total
+            if ph > pa and ph > pd:
+                consensus, conf = 1, ph
+            elif pa > ph and pa > pd:
+                consensus, conf = 2, pa
+            else:
+                consensus, conf = 0, pd
+            return {
+                "expert_consensus": consensus,
+                "confidence": round(conf, 3),
+                "source": "espn_implied_probability",
+                "sample_size": 1
+            }
+        except Exception:
+            return None
 
     # ============== QUOTEN ==============
 
@@ -263,28 +445,34 @@ class DataFetcher:
         """Holt Quoten - probiert MEHRERE Quellen mit Fallbacks"""
         print(f"[DataFetcher] Getting odds: {team1} vs {team2}")
 
-        # 1. The Odds API (best quality)
+        # 1. The Odds API (best quality, wenn API-Key vorhanden)
         odds = self.get_odds_the_odds_api(team1, team2)
         if odds:
             print(f"[DataFetcher] ✓ Odds from The Odds API")
             odds["timestamp"] = datetime.now().isoformat()
             return odds
 
-        # 2. OddsPortal scraping
+        # 2. ESPN / DraftKings (kostenlos, kein API-Key nötig)
+        odds = self.get_odds_espn(team1, team2)
+        if odds:
+            print(f"[DataFetcher] ✓ Odds from ESPN/DraftKings")
+            return odds
+
+        # 3. OddsPortal scraping
         odds = self.get_odds_oddsportal(team1, team2)
         if odds:
             print(f"[DataFetcher] ✓ Odds from OddsPortal")
             odds["timestamp"] = datetime.now().isoformat()
             return odds
 
-        # 3. Betano
+        # 4. Betano
         odds = self.get_odds_betano(team1, team2)
         if odds:
             print(f"[DataFetcher] ✓ Odds from Betano")
             odds["timestamp"] = datetime.now().isoformat()
             return odds
 
-        # 4. Heuristik
+        # 5. Heuristik (letzter Fallback)
         odds = self.get_odds_heuristic(team1, team2)
         print(f"[DataFetcher] ⚠ Using heuristic odds (FIFA ranking based)")
         odds["timestamp"] = datetime.now().isoformat()
@@ -480,32 +668,49 @@ class DataFetcher:
         except Exception:
             return None
 
+    def get_team_stats(self, team1, team2=None):
+        """Holt Form für beide Teams — ESPN zuerst, dann OpenLigaDB-Fallback"""
+        # ESPN Form (primär)
+        if team2:
+            espn_form = self.get_form_espn(team1, team2)
+            if espn_form.get("home_form") != "neutral" or espn_form.get("away_form") != "neutral":
+                return espn_form
+        # Fallback: alte OpenLigaDB-Methode
+        home_form = self.get_team_form(team1)
+        if team2:
+            away_form = self.get_team_form(team2)
+            return {
+                "home_form": home_form["form"],
+                "away_form": away_form["form"],
+                "home_details": home_form,
+                "away_details": away_form,
+                "timestamp": datetime.now().isoformat()
+            }
+        return {"form": home_form["form"], "details": home_form, "timestamp": datetime.now().isoformat()}
+
     def get_expert_predictions(self, team1, team2):
         """Aggregiert Experten-Predictions aus MEHREREN Quellen"""
         print(f"[DataFetcher] Getting expert predictions: {team1} vs {team2}")
 
         predictions = []
 
-        # Quellen in Priorität:
+        # 1. ESPN implied probability (schnell, zuverlässig)
+        espn_expert = self.get_expert_espn(team1, team2)
+        if espn_expert:
+            predictions.append(espn_expert)
+            print(f"[DataFetcher] ✓ ESPN: consensus={espn_expert['expert_consensus']}, conf={espn_expert['confidence']:.2%}")
+
+        # 2. Reddit
         reddit = self.get_reddit_predictions(team1, team2)
         if reddit:
             predictions.append(reddit)
             print(f"[DataFetcher] ✓ Reddit: consensus={reddit['expert_consensus']}, conf={reddit['confidence']}")
 
+        # 3. Sportschau
         sportschau = self.get_sportschau_predictions(team1, team2)
         if sportschau:
             predictions.append(sportschau)
             print(f"[DataFetcher] ✓ Sportschau: consensus={sportschau['expert_consensus']}")
-
-        sky = self.get_sky_expert_predictions(team1, team2)
-        if sky:
-            predictions.append(sky)
-            print(f"[DataFetcher] ✓ Sky: consensus={sky['expert_consensus']}")
-
-        tipico = self.get_tipico_predictions(team1, team2)
-        if tipico:
-            predictions.append(tipico)
-            print(f"[DataFetcher] ✓ Tipico: consensus={tipico['expert_consensus']}")
 
         if not predictions:
             return {
@@ -588,22 +793,3 @@ class DataFetcher:
 
         return {"form": "neutral", "form_score": 0.5, "last_5": {}}
 
-    def get_team_stats(self, team1, team2=None):
-        """Holt Form für beide Teams"""
-        home_form = self.get_team_form(team1)
-
-        if team2:
-            away_form = self.get_team_form(team2)
-            return {
-                "home_form": home_form["form"],
-                "away_form": away_form["form"],
-                "home_details": home_form,
-                "away_details": away_form,
-                "timestamp": datetime.now().isoformat()
-            }
-
-        return {
-            "form": home_form["form"],
-            "details": home_form,
-            "timestamp": datetime.now().isoformat()
-        }

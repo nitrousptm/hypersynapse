@@ -56,32 +56,21 @@ class TippsEngine:
         """
         Schätzt erwartete Tore (Lambda für Poisson) aus 1X2-Wahrscheinlichkeiten.
 
-        Kalibriert auf WM 2026 Gruppenphase (~2.9 Tore/Spiel historisch).
-        Lambda-Verhältnisse so gewählt, dass die Engine realistische Tipps
-        produziert (2:0, 2:1, 1:1 statt immer 1:0):
-        - Klarer Favorit (diff > 0.35): λH=2.30, λA=0.60 → Tipp: 2:0
-        - Heim-Favorit   (diff > 0.15): λH=1.95, λA=1.10 → Tipp: 2:1
-        - Ausgeglichen   (diff < 0.15): λH=1.55, λA=1.45 → Tipp: 1:1
+        Kontinuierliche Formel statt 5 fixer Stufen:
+        - Basis: λH=1.45, λA=1.25 (WM-Schnitt ~2.7 Tore/Spiel, Heimvorteil)
+        - Skalierungsfaktor 1.6 auf strength_diff (p_home - p_away, -1..+1)
+        - Clipping auf [0.35, 3.8] für realistische Bandbreite
         """
         p_home = probabilities["home"]
         p_away = probabilities["away"]
         strength_diff = p_home - p_away
 
-        if strength_diff > 0.35:
-            # Klarer Heim-Favorit → 2:0
-            lambda_home, lambda_away = 2.30, 0.60
-        elif strength_diff > 0.15:
-            # Leichter Heim-Favorit → 2:1
-            lambda_home, lambda_away = 1.95, 1.10
-        elif strength_diff > -0.15:
-            # Ausgeglichen → 1:1
-            lambda_home, lambda_away = 1.55, 1.45
-        elif strength_diff > -0.35:
-            # Leichter Auswärts-Favorit → 1:2
-            lambda_home, lambda_away = 1.10, 1.95
-        else:
-            # Klarer Auswärts-Favorit → 0:2
-            lambda_home, lambda_away = 0.60, 2.30
+        base_home = 1.45
+        base_away = 1.25
+        scale = 1.6
+
+        lambda_home = max(0.35, min(3.8, base_home + strength_diff * scale))
+        lambda_away = max(0.35, min(3.8, base_away - strength_diff * scale))
 
         return lambda_home, lambda_away
 
