@@ -324,7 +324,7 @@ vec3 frozen_starfield(vec2 uv) {
         float scale = mix(55.0, 140.0, fi / 3.0);
         vec2 cell   = floor((uv + seed) * scale);
         vec2 frac   = fract((uv + seed) * scale) - 0.5;
-        float h     = hash(dot(cell, vec2(127.1, 311.7)));
+        float h     = hash(cell);
         if (h < 0.18) {
             float sz      = 0.004 + h * 0.022;
             float twinkle = 1.0;  // time is frozen — no twinkle
@@ -341,7 +341,7 @@ vec3 frozen_starfield(vec2 uv) {
         vec2 seed = vec2(float(i) * 7.13, float(i) * 3.97);
         vec2 cell = floor((uv + seed) * 30.0);
         vec2 frac = fract((uv + seed) * 30.0) - 0.5;
-        float h   = hash(dot(cell, vec2(127.1, 311.7)));
+        float h   = hash(cell);
         if (h < 0.08) {
             float d = length(frac);
             col += vec3(0.70, 0.85, 1.00) * 0.022 / (d + 0.002);
