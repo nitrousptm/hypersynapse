@@ -455,6 +455,99 @@ vec3 julia_morph(vec2 uv, float gate) {
     return fcol * brightness * 0.38 * gate * beat_boost;
 }
 
+// ─── Riemann sphere — Julia set on the compactified complex plane ─────────────
+// The Riemann sphere maps ℂ onto S² via stereographic projection from the south
+// pole: w = (px + i·py) / (1 + pz).  The north pole is the unique point that
+// maps to complex INFINITY.  A Julia set lives on this sphere — its escaping
+// filaments spiral ever closer to the north pole, which IS the demo's singularity.
+// The sphere rotates slowly so the audience understands 3D topology, then the
+// bright north-pole cap locks onto screen center as the vortex takes over.
+// Gate: scene_norm 0.67→0.87 — bridges Julia (0.52–0.76) → convergence (0.50+).
+vec3 riemann_sphere(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    float asp = u_res.x / u_res.y;
+
+    // Work in circular (aspect-correct) space so the sphere looks round
+    vec2  sc       = vec2(uv.x / asp, uv.y);
+    float sphere_r = 0.36 * smoothstep(0.0, 0.30, gate);
+    float halo_r   = sphere_r * 1.06;
+
+    float r2 = dot(sc, sc);
+    if (r2 > halo_r * halo_r) return vec3(0.0);
+
+    bool  on_sphere = (r2 <= sphere_r * sphere_r);
+    float dlen      = length(sc) / sphere_r;           // 0..1 within disc
+    float z3        = on_sphere ? sqrt(max(0.0, 1.0 - dlen * dlen)) : 0.0;
+    vec3  n3        = vec3(sc.x / sphere_r, sc.y / sphere_r, z3);
+
+    // Slow Y-axis rotation to reveal 3D structure, slight forward pitch
+    float rot_t = u_time * 0.13;
+    float cr = cos(rot_t), sr = sin(rot_t);
+    vec3 p3 = vec3(n3.x * cr + n3.z * sr, n3.y, -n3.x * sr + n3.z * cr);
+    float pitch = 0.30, cp = cos(pitch), sp_ = sin(pitch);
+    p3 = vec3(p3.x, p3.y * cp - p3.z * sp_, p3.y * sp_ + p3.z * cp);
+
+    // Stereographic projection → complex plane coordinate w
+    float denom = max(1.0 + p3.z, 0.001);
+    vec2  w     = p3.xy / denom * 1.55;
+
+    // Julia set evaluation — same morphing c as julia_morph() for continuity
+    float t_j   = clamp((u_scene_norm - 0.52) / 0.24, 0.0, 1.0);
+    float c_ang = u_time * 0.055 + t_j * 1.80;
+    vec2  c_val = vec2(-0.7269 + 0.13 * cos(c_ang),
+                        0.1889 + 0.11 * sin(c_ang * 1.31));
+    vec2  zz  = w;
+    float si  = 0.0;
+    bool  esc = false;
+    for (int i = 0; i < 48; i++) {
+        zz = vec2(zz.x * zz.x - zz.y * zz.y, 2.0 * zz.x * zz.y) + c_val;
+        float l2 = dot(zz, zz);
+        if (l2 > 16.0) {
+            si  = float(i) + 1.0 - log2(log2(l2) * 0.5);
+            esc = true;
+            break;
+        }
+    }
+
+    vec3  col      = vec3(0.0);
+    float color_t  = smoothstep(0.28, 0.85, t_j);
+    vec3  fcol     = mix(vec3(0.10, 0.62, 1.00), vec3(0.60, 0.08, 0.96), color_t);
+
+    if (on_sphere) {
+        // ── Julia filaments on sphere surface ──────────────────────────────────
+        if (esc) {
+            float band   = si / 48.0;
+            float ripple = sin(band * 3.14159 * 14.0 - u_time * 1.60) * 0.5 + 0.5;
+            float bright = pow(ripple, 3.5)
+                         * smoothstep(0.0, 0.04, band)
+                         * (1.0 - smoothstep(0.82, 1.0, band));
+            col += fcol * bright * 0.60;
+        }
+
+        // Subtle sphere-surface ambient + diffuse
+        vec3 ldir = normalize(vec3(-0.4, 0.7, 0.5));
+        col += (0.06 + max(dot(n3, ldir), 0.0) * 0.18) * vec3(0.04, 0.02, 0.10);
+
+        // North pole = ∞ = singularity: glowing bright cap where all orbits converge.
+        // After rotation p3.z tells us how directly the "north" faces the camera.
+        float north_glow = smoothstep(0.50, 0.92, p3.z);
+        col += vec3(0.82, 0.88, 1.00) * north_glow * north_glow * 2.8;
+
+        // Fresnel rim — edge of the sphere silhouette
+        float rim = pow(1.0 - z3, 3.5);
+        col += fcol * rim * 0.52;
+    } else {
+        // Atmospheric corona just outside the sphere disc
+        float edge_dist = sqrt(r2) - sphere_r;
+        float corona    = exp(-edge_dist / (sphere_r * 0.06)) * 0.24;
+        col += fcol * corona;
+    }
+
+    float beat_boost = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.55;
+    return col * gate * beat_boost;
+}
+
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
 float sdSeg2D(vec2 q, vec2 a, vec2 b) {
@@ -943,6 +1036,18 @@ void main() {
         float julia_gate = smoothstep(0.52, 0.62, u_scene_norm)
                          * (1.0 - smoothstep(0.68, 0.76, u_scene_norm));
         col += julia_morph(uv, julia_gate);
+    }
+
+    // Riemann sphere — the complex plane compactified.
+    // The same Julia set from above now wraps onto a sphere via stereographic
+    // projection from the south pole.  The north pole of the sphere = complex
+    // infinity = the singularity.  Escaping orbits spiral toward the north pole;
+    // the bright cap reveals where the singularity LIVES on the sphere.
+    // Appears after Julia's 2D form fades (0.67) and bridges into the vortex (0.87).
+    {
+        float rs_gate = smoothstep(0.67, 0.74, u_scene_norm)
+                      * (1.0 - smoothstep(0.82, 0.87, u_scene_norm));
+        col += riemann_sphere(uv, rs_gate);
     }
 
     // Light tendrils growing outward from center.
