@@ -46,6 +46,39 @@ vec3  hash31(float n)     {
     return vec3(hash11(n), hash11(n * 1.3 + 17.0), hash11(n * 2.7 + 53.0));
 }
 
+// 3D value noise (trilinear) — used for curl noise field
+float vnoise3_c(vec3 p) {
+    vec3 i = floor(p), f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float n = dot(i, vec3(1.0, 57.0, 113.0));
+    return mix(mix(mix(hash11(n),       hash11(n+1.0),   f.x),
+                   mix(hash11(n+57.0),  hash11(n+58.0),  f.x), f.y),
+               mix(mix(hash11(n+113.0), hash11(n+114.0), f.x),
+                   mix(hash11(n+170.0), hash11(n+171.0), f.x), f.y), f.z);
+}
+
+// Curl noise: divergence-free 3D flow field from finite-difference Jacobian
+// of three independent value-noise fields (Bridson et al., 2007).
+// No particle pile-ups (zero divergence) — creates organic swirling flows.
+vec3 curl_noise(vec3 p, float t) {
+    const float eps = 0.07;
+    // Slowly advected sample position so the field evolves with time
+    vec3 q  = p * 0.38 + vec3(t * 0.07, t * 0.05, t * 0.03);
+    vec3 q2 = q + vec3(31.41, 17.28,  0.00);  // offset for noise field 2
+    vec3 q3 = q + vec3( 0.00, 37.61, 53.24);  // offset for noise field 3
+
+    // 12 noise evaluations: finite differences on three independent fields
+    float n1_dy = vnoise3_c(q  + vec3(0,eps,0)) - vnoise3_c(q  - vec3(0,eps,0));
+    float n1_dz = vnoise3_c(q  + vec3(0,0,eps)) - vnoise3_c(q  - vec3(0,0,eps));
+    float n2_dx = vnoise3_c(q2 + vec3(eps,0,0)) - vnoise3_c(q2 - vec3(eps,0,0));
+    float n2_dz = vnoise3_c(q2 + vec3(0,0,eps)) - vnoise3_c(q2 - vec3(0,0,eps));
+    float n3_dx = vnoise3_c(q3 + vec3(eps,0,0)) - vnoise3_c(q3 - vec3(eps,0,0));
+    float n3_dy = vnoise3_c(q3 + vec3(0,eps,0)) - vnoise3_c(q3 - vec3(0,eps,0));
+
+    // curl(F) = (∂F3/∂y − ∂F2/∂z,  ∂F1/∂z − ∂F3/∂x,  ∂F2/∂x − ∂F1/∂y)
+    return vec3(n3_dy - n2_dz, n1_dz - n3_dx, n2_dx - n1_dy) / (2.0 * eps);
+}
+
 bool is_dead(Particle p) { return p.pos_age.w > p.col_life.w; }
 
 // Sphere surface sample (uniform distribution)
@@ -101,14 +134,23 @@ void main() {
     vec3 outward     = normalize(p.pos_age.xyz + vec3(0.0001));
     p.vel_type.xyz  += outward * kick_pulse * kick_str * u_dt * 60.0;
 
-    // Act III vortex: particles spiral upward as geometry blooms
+    // Act III: vortex + curl noise — particles trace organic swirling paths through
+    // the fractal garden. Pure vortex alone gives mechanical spirals; curl noise
+    // adds complexity so each particle carves a unique 3D curve through space.
     if (u_act_idx == 2) {
         vec3 pos = p.pos_age.xyz;
-        float dist_xz = length(pos.xz) + 0.001;
-        vec3 tangent = vec3(-pos.z, 0.0, pos.x) / dist_xz;
-        float vortex_str = smoothstep(0.4375, 0.75, u_act_norm) * 2.0;
-        p.vel_type.xyz += tangent * vortex_str * u_dt;
-        p.vel_type.y   += 0.5 * u_dt;  // gentle upward drift
+
+        // Tangential vortex (reduced: curl noise takes over some of the swirl)
+        float dist_xz    = length(pos.xz) + 0.001;
+        vec3  tangent    = vec3(-pos.z, 0.0, pos.x) / dist_xz;
+        float vortex_str = smoothstep(0.4375, 0.75, u_act_norm) * 1.3;
+        p.vel_type.xyz  += tangent * vortex_str * u_dt;
+        p.vel_type.y    += 0.5 * u_dt;  // gentle upward drift
+
+        // Curl noise: divergence-free flow field sculpts individual particle
+        // trajectories into complex 3D curves — "living mathematics" aesthetic.
+        float curl_str  = smoothstep(0.4375, 0.75, u_act_norm) * 2.0;
+        p.vel_type.xyz += curl_noise(pos, u_time) * curl_str * u_dt;
     }
 
     // Act IV pull-to-center: particles converge for the singularity
