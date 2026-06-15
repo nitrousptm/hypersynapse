@@ -179,6 +179,88 @@ float geo_connection(vec2 uv) {
     return acc;
 }
 
+// ─── cosmic double helix ──────────────────────────────────────────────────────
+// Two interleaved sinusoidal strands viewed from a slight angle: the mathematical
+// structure of life seen at cosmic scale. Rises during early Act IV (scene_norm
+// 0.05→0.42) before the tendrils consume all space. Connected by "rung" segments.
+// Strand A: amber-gold (organic); Strand B: electric cyan (cosmic information).
+// The helix slowly rotates around its vertical axis, revealing its 3D nature.
+vec3 cosmic_helix(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    const float FREQ  = 3.8;   // spatial frequency of helix turns
+    const float AMP   = 0.30;  // lateral amplitude in screen space
+    const float W_STR = 0.0055;// strand tube half-width
+
+    float rot_t = u_time * 0.12;
+    float c_rot = cos(rot_t), s_rot = sin(rot_t);
+
+    // uv.x is already aspect-corrected (×res.x/res.y) — use directly for iso distances.
+    vec2  uv_h = uv;
+
+    // Early exit: skip pixels outside helix bounding box
+    if (abs(uv_h.x) > AMP * 2.2 || abs(uv_h.y) > 1.12) return vec3(0.0);
+
+    vec3 col_h = vec3(0.0);
+
+    // Two strands: 22 segments each (smooth enough for a 0.3-unit amplitude helix)
+    const int NS = 22;
+    for (int si = 0; si < 2; si++) {
+        float phase = float(si) * 3.14159265;
+        vec3  s_col = (si == 0)
+            ? vec3(0.95, 0.68, 0.18)   // amber-gold — organic strand
+            : vec3(0.12, 0.72, 0.98);  // electric cyan — information strand
+
+        for (int k = 0; k < NS; k++) {
+            float t1 = -1.0 + float(k)   / float(NS - 1) * 2.0;
+            float t2 = -1.0 + float(k+1) / float(NS - 1) * 2.0;
+
+            float x1 = AMP * cos(FREQ * t1 + rot_t + phase);
+            float z1 = AMP * sin(FREQ * t1 + rot_t + phase);
+            float x2 = AMP * cos(FREQ * t2 + rot_t + phase);
+            float z2 = AMP * sin(FREQ * t2 + rot_t + phase);
+
+            // Orthographic projection: z gives depth cue via brightness
+            vec2  p1 = vec2(x1 * c_rot - z1 * s_rot * 0.35, t1);
+            vec2  p2 = vec2(x2 * c_rot - z2 * s_rot * 0.35, t2);
+            float dep = 0.62 + 0.38 * (z1 * c_rot + x1 * s_rot * 0.35 + 0.5);
+
+            vec2  pa = uv_h - p1;
+            vec2  ba = p2 - p1;
+            float hf = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+            float d  = length(pa - ba * hf);
+
+            col_h += s_col * W_STR / (d + W_STR) * dep * gate * 0.20;
+        }
+    }
+
+    // Rungs: 9 cross-links connecting the two strands (base-pair rungs)
+    float beat_r = 1.0 + exp(-u_beat * 7.0) * 1.40;
+    const int NR = 9;
+    for (int r = 0; r < NR; r++) {
+        float ty   = -0.85 + float(r) / float(NR - 1) * 1.70;
+        float rp   = FREQ * ty + rot_t;
+
+        vec2 pA = vec2( AMP * cos(rp)              * c_rot - AMP * sin(rp)              * s_rot * 0.35, ty);
+        vec2 pB = vec2( AMP * cos(rp + 3.14159265) * c_rot - AMP * sin(rp + 3.14159265) * s_rot * 0.35, ty);
+
+        vec2  pa  = uv_h - pA;
+        vec2  ba  = pB - pA;
+        float hf  = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        float d   = length(pa - ba * hf);
+
+        const float W_R = 0.0032;
+        col_h += vec3(0.62, 0.70, 0.60) * W_R / (d + W_R) * gate * 0.24 * beat_r;
+
+        // Node glows at rung endpoints
+        vec2 dA = uv_h - pA, dB = uv_h - pB;
+        col_h += vec3(0.95, 0.68, 0.18) * exp(-dot(dA,dA) * 80.0) * gate * beat_r * 0.15;
+        col_h += vec3(0.12, 0.72, 0.98) * exp(-dot(dB,dB) * 80.0) * gate * beat_r * 0.15;
+    }
+
+    return col_h;
+}
+
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
 float sdSeg2D(vec2 q, vec2 a, vec2 b) {
@@ -638,6 +720,16 @@ void main() {
     // Geometric star connections (like a cosmic graph)
     float geo = geo_connection(uv * (1.0 - pullback * 0.3));
     col += geo * vec3(0.3, 0.6, 1.0) * (0.5 + 0.5 * u_scene_norm);
+
+    // Cosmic double helix — mathematical structure of life at cosmic scale.
+    // Rises in early Act IV (scene_norm 0.05→0.42) before the tendrils take over.
+    // Two counter-phased sinusoidal strands with rung cross-links, rotating slowly
+    // to reveal their 3D helical nature. Strand A: amber (organic); B: cyan (data).
+    {
+        float helix_gate = smoothstep(0.05, 0.16, u_scene_norm)
+                         * (1.0 - smoothstep(0.30, 0.44, u_scene_norm));
+        col += cosmic_helix(uv, helix_gate);
+    }
 
     // Light tendrils growing outward from center.
     // Scale UV inward as scene progresses so tendrils expand to fill the frame —

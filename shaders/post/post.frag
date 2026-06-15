@@ -1190,6 +1190,55 @@ void main() {
         }
     }
 
+    // 4o. Einstein ring — Scene 4 (Time Fracture, singularity body 0.45→0.80).
+    // When background temporal-energy sources align with the Kerr black hole from
+    // the camera's perspective, gravitational lensing focuses them into a complete
+    // ring of light at the photon sphere radius. Occurs occasionally — every ~8s as
+    // the orbiting camera sweeps through near-alignment — mimicking real lensing events.
+    // Chromatic: R/G/B peaks at slightly different radii (wavelength-dependent deflection).
+    // Beat-reactive: ring surges on each 133 BPM kick at peak alignment.
+    if (u_scene_idx == 3) {
+        float eg = smoothstep(0.45, 0.62, u_scene_norm)
+                 * (1.0 - smoothstep(0.74, 0.82, u_scene_norm));
+        if (eg > 0.01) {
+            // BH projects slightly below centre (camera looks down at slight angle).
+            // Aspect-correct the distance so the ring appears circular on screen.
+            vec2 bh_c  = vec2(0.0, -0.08);
+            float asp  = u_res.x / u_res.y;
+            vec2  d_bh = vec2((ctr.x - bh_c.x) * asp, ctr.y - bh_c.y);
+            float r_bh = length(d_bh);
+
+            // Near-alignment pulse: slow sine with sharp exponent gives rare bright peaks.
+            // sin period ~8.3s → ~3 full alignment events during the 30s scene window.
+            float align_t  = pow(max(sin(u_time * 0.76 + 0.80), 0.0), 7.0);
+            // Beat boost: ring brightens on each 133 BPM kick
+            align_t *= 1.0 + exp(-u_beat * 6.0) * 0.55;
+            float ering_str = align_t * eg;
+
+            if (ering_str > 0.001) {
+                // Chromatic Einstein ring radii: shorter wavelengths (blue) deflect more →
+                // orbit closer; longer wavelengths (red) orbit wider — visible spectral split.
+                const float r_E = 0.335;          // green photon sphere (mid wavelength)
+                float w_ring    = 0.011;          // ring width (tight Gaussian)
+                float ring_R = exp(-pow((r_bh - r_E * 1.040) / w_ring, 2.0));
+                float ring_G = exp(-pow((r_bh - r_E         ) / w_ring, 2.0));
+                float ring_B = exp(-pow((r_bh - r_E * 0.962) / w_ring, 2.0));
+                // Compose into chromatic arc: full ring shows white with chromatic fringe
+                col.r += ring_R * ering_str * 1.05;
+                col.g += ring_G * ering_str * 0.92;
+                col.b += ring_B * ering_str * 1.18;
+
+                // Inner halo: scattered light inside the ring (source partially resolved)
+                float halo_in = smoothstep(r_E * 1.04, 0.0, r_bh) * 0.08;
+                col += vec3(0.30, 0.52, 1.00) * halo_in * ering_str;
+
+                // Outer scatter: some photons deflected to wide angles (Airy-disk-like)
+                float outer = exp(-pow((r_bh - r_E * 1.22) / 0.035, 2.0)) * 0.28;
+                col += vec3(0.50, 0.68, 1.00) * outer * ering_str;
+            }
+        }
+    }
+
     // 4m. City corruption AI power-grid beat ring — Scene 3 body (0.12→0.78).
     // Each 133 BPM kick propagates an electric-blue wavefront outward through
     // the corrupted city grid — "the AI cycling power through the urban network"
