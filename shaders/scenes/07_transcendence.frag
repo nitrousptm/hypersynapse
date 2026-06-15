@@ -392,6 +392,69 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
     return col;
 }
 
+// ─── Julia set morphing fractal (scene_norm 0.52→0.76) ───────────────────────
+// After the Lorenz attractor (chaos) and before singularity convergence: the Julia
+// set morphs as its parameter c traces the Mandelbrot seahorse valley — spectacular
+// filamentary shapes that are each unique, organically complex, and unmistakably
+// mathematical. Narrative: "every chaotic orbit traces a Julia set — the boundary
+// between stability and escape. All boundaries collapse into the singularity."
+// Rendered as glowing filaments (escape bands near boundary) not a solid block,
+// so it blends additively over the galaxy and tendril background.
+vec3 julia_morph(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    float asp = u_res.x / u_res.y;
+    float t   = clamp((u_scene_norm - 0.52) / 0.24, 0.0, 1.0);  // 0→1 over gate window
+
+    // c traces a slow closed path near the Mandelbrot seahorse valley (−0.74, 0.11i)
+    // — every point on this circle gives a visually distinct Julia fractal.
+    float c_ang = u_time * 0.055 + t * 1.80;
+    vec2  c_val = vec2(-0.7269 + 0.13 * cos(c_ang),
+                        0.1889 + 0.11 * sin(c_ang * 1.31));
+
+    // Square coordinates — Julia sets are symmetric, needs unscaled x for correct shape.
+    float zoom = 1.08 + t * 0.70;   // zoom in gently over the gate window
+    vec2  z    = vec2(uv.x / asp, uv.y) / zoom;
+
+    // 48-step escape-time Julia iteration with smooth continuous coloring.
+    const int MAX_IT = 48;
+    float si   = 0.0;
+    bool  esc  = false;
+    for (int i = 0; i < MAX_IT; i++) {
+        z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + c_val;
+        float len2 = dot(z, z);
+        if (len2 > 16.0) {
+            // Normalized iteration count: continuous smooth banding (no boxy rings)
+            si  = float(i) + 1.0 - log2(log2(len2) * 0.5);
+            esc = true;
+            break;
+        }
+    }
+
+    // Interior (non-escaping orbit) = black/transparent in additive blend
+    if (!esc) return vec3(0.0);
+
+    float band = si / float(MAX_IT);
+
+    // Filament coloring: high-contrast thin bands right at the boundary.
+    // sin with high frequency picks out thin equi-escape rings;
+    // pow sharpens them to fine glowing filaments (HYPERSYNAPSE neural-filament look).
+    float ripple     = sin(band * 3.14159 * 14.0 - u_time * 1.60) * 0.5 + 0.5;
+    float brightness = pow(ripple, 3.5)
+                     * smoothstep(0.0, 0.04, band)           // suppress solid interior halo
+                     * (1.0 - smoothstep(0.82, 1.0, band));  // keep filaments, fade outer noise
+
+    // Color arc: electric cyan (Lorenz hand-off at 0.52) → violet-magenta (0.76)
+    float color_t = smoothstep(0.28, 0.85, t);
+    vec3 col_a    = vec3(0.10, 0.62, 1.00);   // electric cyan
+    vec3 col_b    = vec3(0.60, 0.08, 0.96);   // violet-magenta (approaching singularity)
+    vec3 fcol     = mix(col_a, col_b, color_t);
+
+    float beat_boost = 1.0 + smoothstep(0.07, 0.0, u_beat) * 0.55;
+
+    return fcol * brightness * 0.38 * gate * beat_boost;
+}
+
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
 float sdSeg2D(vec2 q, vec2 a, vec2 b) {
@@ -871,6 +934,16 @@ void main() {
     // Lorenz strange attractor — chaos mathematics made visible.
     // Bridges the helix (life) → tendrils (growth) → singularity narrative.
     col += lorenz_attractor(uv, u_scene_norm);
+
+    // Julia set morphing — the boundary between stability and chaos.
+    // Appears as Lorenz fades (0.52) and dissolves before convergence rings dominate (0.76).
+    // Parameter c orbits the Mandelbrot seahorse valley: each position yields a unique
+    // fractal of glowing filaments — the attractor of "every complex orbit".
+    {
+        float julia_gate = smoothstep(0.52, 0.62, u_scene_norm)
+                         * (1.0 - smoothstep(0.68, 0.76, u_scene_norm));
+        col += julia_morph(uv, julia_gate);
+    }
 
     // Light tendrils growing outward from center.
     // Scale UV inward as scene progresses so tendrils expand to fill the frame —
