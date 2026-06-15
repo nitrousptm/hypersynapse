@@ -261,6 +261,80 @@ vec3 cosmic_helix(vec2 uv, float gate) {
     return col_h;
 }
 
+// ─── Lorenz chaotic attractor — order emerging from chaos ────────────────────
+// The Lorenz system (σ=10, ρ=28, β=8/3) generates a butterfly-shaped strange
+// attractor: deterministic chaos that nonetheless obeys strict mathematical law.
+// Appears between the cosmic helix and singularity rings (scene_norm 0.22→0.52)
+// as a visual metaphor for the AI discovering that chaos *is* mathematics.
+// Euler integration, 80 visible steps after 40 warmup — all pixels run the same
+// loop so there is zero warp divergence; total ~1500 float ops per pixel.
+vec3 lorenz_attractor(vec2 uv, float scene_norm) {
+    float gate = smoothstep(0.22, 0.34, scene_norm)
+               * (1.0 - smoothstep(0.44, 0.54, scene_norm));
+    if (gate < 0.001) return vec3(0.0);
+
+    const float sigma = 10.0, rho = 28.0, beta = 8.0 / 3.0;
+    const float dt    = 0.012;
+
+    // Slowly rotate the projection to reveal the 3D butterfly shape over time.
+    float ang = u_time * 0.07;
+    float ca = cos(ang), sa = sin(ang);
+
+    // Seed drifts gently so the visible segment shifts without sudden jumps.
+    float ts = u_time * 0.035;
+    vec3 p = vec3(0.10 + sin(ts) * 0.14,
+                  0.00 + cos(ts * 0.71) * 0.08,
+                  14.0);
+
+    // Warmup: push point onto the attractor manifold before drawing.
+    for (int i = 0; i < 40; i++) {
+        vec3 dp = vec3(sigma * (p.y - p.x),
+                       p.x * (rho - p.z) - p.y,
+                       p.x * p.y - beta * p.z);
+        p += dp * dt;
+    }
+
+    vec3  col     = vec3(0.0);
+    vec2  prev_sc = vec2(-9.0);   // previous segment endpoint in screen space
+    float beat_b  = 1.0 + exp(-u_beat * 7.0) * 0.60;
+
+    // Scale: attractor occupies x≈±22, z≈1-49 (centre z≈25). Map to ±0.40 screen.
+    const float inv_sx = 1.0 / 22.0;
+    const float inv_sz = 1.0 / 25.0;
+    const float scl    = 0.38;
+
+    for (int i = 0; i < 80; i++) {
+        vec3 dp = vec3(sigma * (p.y - p.x),
+                       p.x * (rho - p.z) - p.y,
+                       p.x * p.y - beta * p.z);
+        p += dp * dt;
+
+        // Project: rotate in XY plane, use Z as screen-Y.
+        float px_r = p.x * ca - p.y * sa;
+        vec2  cur  = vec2(px_r * inv_sx, (p.z - 25.0) * inv_sz) * scl;
+
+        if (i > 0) {
+            // Segment SDF (shared helper sdSeg2D not yet defined — inline here).
+            vec2 ab = cur - prev_sc, ap = uv - prev_sc;
+            float tc = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-7), 0.0, 1.0);
+            float d  = length(ap - ab * tc);
+
+            // Left wing (x < 0) amber-gold; right wing (x > 0) electric cyan.
+            float wing   = smoothstep(-3.0, 3.0, p.x);
+            vec3  w_col  = mix(vec3(0.95, 0.62, 0.12),    // amber-gold
+                               vec3(0.08, 0.72, 0.98),    // electric cyan
+                               wing);
+
+            // Depth cue: points behind the projection plane (rotated y < 0) dimmer.
+            float depth = 0.55 + 0.45 * clamp((p.x * sa + p.y * ca) / 22.0 * 0.5 + 0.5, 0.0, 1.0);
+
+            col += w_col * exp(-d * d * 5000.0) * gate * beat_b * depth * 0.65;
+        }
+        prev_sc = cur;
+    }
+    return col;
+}
+
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
 float sdSeg2D(vec2 q, vec2 a, vec2 b) {
@@ -730,6 +804,10 @@ void main() {
                          * (1.0 - smoothstep(0.30, 0.44, u_scene_norm));
         col += cosmic_helix(uv, helix_gate);
     }
+
+    // Lorenz strange attractor — chaos mathematics made visible.
+    // Bridges the helix (life) → tendrils (growth) → singularity narrative.
+    col += lorenz_attractor(uv, u_scene_norm);
 
     // Light tendrils growing outward from center.
     // Scale UV inward as scene progresses so tendrils expand to fill the frame —
