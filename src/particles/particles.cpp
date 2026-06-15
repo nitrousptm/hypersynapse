@@ -28,15 +28,15 @@ bool ParticleSystem::init(uint32_t max_particles) {
     glBindVertexArray(particle_vao_);
 
     // Load compute shader
-    compute_program_ = shader::load_compute("shaders/compute/particles_update.comp");
+    compute_program_ = shader::load_compute(HYP_SHADER_DIR "/compute/particles_update.comp");
     if (!compute_program_) {
         std::fprintf(stderr, "[particles] failed to load compute shader\n");
         return false;
     }
 
     // Load render shader
-    render_program_ = shader::load_program("shaders/compute/particles_render.vert",
-                                           "shaders/compute/particles_render.frag");
+    render_program_ = shader::load_program(HYP_SHADER_DIR "/compute/particles_render.vert",
+                                           HYP_SHADER_DIR "/compute/particles_render.frag");
     if (!render_program_) {
         std::fprintf(stderr, "[particles] failed to load render shader\n");
         return false;
