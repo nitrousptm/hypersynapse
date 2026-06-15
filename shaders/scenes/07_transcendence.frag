@@ -335,6 +335,63 @@ vec3 lorenz_attractor(vec2 uv, float scene_norm) {
     return col;
 }
 
+// ─── Fibonacci phyllotaxis — the golden seed spiral ──────────────────────────
+// The n-th seed sits at angle n × GA (golden angle, 2π/φ²) and radius sqrt(n).
+// This is the mathematical pattern behind sunflower seeds, pinecones, and all
+// natural spiraling growth. Two interlocking Fibonacci spiral families emerge:
+// 8-arm (clockwise) and 13-arm (counter-clockwise) — consecutive Fibonacci nums.
+// Gate: scene_norm 0.0→0.26 — the FIRST mathematical structure in Act IV,
+// the golden seed from which all later patterns (helix, Lorenz, tendrils) grow.
+//
+// Uses sdSeg2D — declared right after this function.
+float sdSeg2D(vec2 q, vec2 a, vec2 b);  // forward-declare for phyllotaxis use
+
+vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
+    float gate = smoothstep(0.0, 0.09, snorm)
+               * (1.0 - smoothstep(0.17, 0.28, snorm));
+    if (gate < 0.001) return vec3(0.0);
+
+    const float GA   = 2.39996322972865332;  // golden angle = 2π(2−φ) ≈ 137.508°
+    float beat_b     = 1.0 + exp(-u_beat * 6.0) * 0.60;
+    float rot        = u_time * 0.038;          // slow rotation reveals 3D nature
+    const float r0   = 0.055;                  // radial scale factor
+    const int   N    = 65;                     // seed count (13th Fibonacci after 55)
+
+    // Pre-compute all seed screen positions
+    vec2 seeds[65];
+    for (int i = 0; i < N; i++) {
+        float fi  = float(i);
+        float ang = fi * GA + rot;
+        float rad = sqrt(fi + 0.5) * r0;
+        seeds[i]  = vec2(cos(ang), sin(ang)) * rad;
+    }
+
+    vec3 col = vec3(0.0);
+
+    for (int i = 0; i < N; i++) {
+        float t     = float(i) / float(N - 1);
+        // Amber-gold (inner, organic origin) → electric cyan (outer, cosmic extent)
+        vec3  scol  = mix(vec3(0.95, 0.62, 0.12), vec3(0.12, 0.72, 0.98), t);
+
+        // 8-arm Fibonacci spiral connections (8 = Fib(6))
+        if (i + 8 < N) {
+            float d8 = sdSeg2D(uv, seeds[i], seeds[i + 8]);
+            col += scol * exp(-d8 * 390.0) * 0.18 * gate * beat_b;
+        }
+        // 13-arm Fibonacci spiral connections (13 = Fib(7))
+        if (i + 13 < N) {
+            float d13 = sdSeg2D(uv, seeds[i], seeds[i + 13]);
+            col += scol * exp(-d13 * 350.0) * 0.16 * gate * beat_b;
+        }
+
+        // Seed node glow — inner seeds larger, outer smaller (natural packing density)
+        float d  = length(uv - seeds[i]);
+        float sz = mix(0.028, 0.011, t);
+        col += scol * (sz / (d + sz)) * sz * gate * beat_b * 0.85;
+    }
+    return col;
+}
+
 // ─── light grows like plants (fractal tendrils) ───────────────────────────────
 
 float sdSeg2D(vec2 q, vec2 a, vec2 b) {
@@ -794,6 +851,12 @@ void main() {
     // Geometric star connections (like a cosmic graph)
     float geo = geo_connection(uv * (1.0 - pullback * 0.3));
     col += geo * vec3(0.3, 0.6, 1.0) * (0.5 + 0.5 * u_scene_norm);
+
+    // Fibonacci phyllotaxis — golden seed spiral (scene_norm 0→0.26).
+    // The golden angle GA=2π/φ² produces two interlocking Fibonacci spiral families
+    // (8-arm CW + 13-arm CCW) — the same pattern sunflowers and galaxies share.
+    // First mathematical structure of Act IV: the seed from which all patterns grow.
+    col += fibonacci_phyllotaxis(uv, u_scene_norm);
 
     // Cosmic double helix — mathematical structure of life at cosmic scale.
     // Rises in early Act IV (scene_norm 0.05→0.42) before the tendrils take over.
