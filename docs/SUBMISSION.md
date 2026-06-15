@@ -21,13 +21,13 @@ cd hypersynapse
 **Acceptance:**
 - [ ] CMake configuration completes without errors
 - [ ] All FetchContent dependencies download successfully
-- [ ] Build produces `.\build\Release\hypersynapse.exe`
+- [ ] Build produces `.\build_win\Release\hypersynapse.exe`
 - [ ] Binary size reasonable (< 100 MB)
 - [ ] No linker warnings (treat as errors)
 
 ### Phase 2: Runtime Verification (Interactive)
 ```powershell
-.\build\Release\hypersynapse.exe assets\music\Concrete-Syncope.wav
+.\build_win\Release\hypersynapse.exe assets\music\Concrete-Syncope.wav
 ```
 
 **Visual Inspection:**
@@ -56,7 +56,7 @@ cd hypersynapse
 ```powershell
 # Generate frame sequence (~4 minutes wall-clock, bandwidth-limited)
 # No audio arg needed — defaults to assets\music\Concrete-Syncope.wav for ffmpeg mix-in
-.\build\Release\hypersynapse.exe --capture
+.\build_win\Release\hypersynapse.exe --capture
 
 # Expected output:
 # [hypersynapse] capture mode enabled

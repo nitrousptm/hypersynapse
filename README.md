@@ -139,6 +139,22 @@ hypersynapse/
 
 ## Build & Run
 
+### Windows (Primärtarget)
+
+```powershell
+# Build
+.\build_windows.ps1
+
+# Run
+.\build_win\Release\hypersynapse.exe
+
+# Build + Run in einem Schritt
+.\build_windows.ps1 -Run
+
+# Clean Rebuild
+.\build_windows.ps1 -Clean
+```
+
 ### Linux / macOS
 
 ```bash
@@ -146,33 +162,26 @@ hypersynapse/
 ./build/hypersynapse
 ```
 
-### Windows
+### CMake Manual (Windows)
 
 ```powershell
-.\build_windows.ps1
-.\build\Release\hypersynapse.exe
+cmake -S . -B build_win -DCMAKE_BUILD_TYPE=Release
+cmake --build build_win --config Release -j
+.\build_win\Release\hypersynapse.exe
 ```
 
-### CMake Manual
-
-```bash
-cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-./build/hypersynapse
-```
-
-Requires: C++20 compiler, OpenGL 4.6 capable GPU. All other deps (GLFW, GLM, GLAD, miniaudio) are fetched automatically via CMake FetchContent.
+Requires: C++20 compiler (MSVC 2022+), OpenGL 4.6 GPU. Alle Deps (GLFW, GLM, GLAD, miniaudio) werden automatisch via CMake FetchContent geladen.
 
 ### Capture & Export
 
-```bash
-# Generate 14,400 frame PPM sequence
-./build/hypersynapse --capture
+```powershell
+# Frame-Sequenz generieren (14.400 Frames, ~4 Min)
+.\build_win\Release\hypersynapse.exe --capture
 
-# Encode to VP9 WebM (two-pass, 10 Mbps)
-ffmpeg -framerate 60 -i captures/frame_%06d.ppm \
-  -c:v libvpx-vp9 -b:v 10000k -pass 1 -f null /dev/null
-ffmpeg -framerate 60 -i captures/frame_%06d.ppm \
+# WebM encodieren (two-pass VP9)
+ffmpeg -framerate 60 -i captures\frame_%06d.ppm ^
+  -c:v libvpx-vp9 -b:v 10000k -pass 1 -f null NUL
+ffmpeg -framerate 60 -i captures\frame_%06d.ppm ^
   -c:v libvpx-vp9 -b:v 10000k -pass 2 SINGULARITY_GARDEN.webm
 
 # Verify
@@ -180,7 +189,7 @@ ffprobe SINGULARITY_GARDEN.webm
 # Expected: 00:04:00.00, VP9, 1920x1080, 60fps
 ```
 
-See [BUILD.md](BUILD.md) and [SUBMISSION.md](SUBMISSION.md) for full details.
+Vollständige Anleitung: [docs/BUILD.md](docs/BUILD.md) | Submission-Checkliste: [docs/SUBMISSION.md](docs/SUBMISSION.md)
 
 ---
 

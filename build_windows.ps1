@@ -31,8 +31,8 @@ if (Test-Path "$BuildDir\CMakeCache.txt") {
 }
 
 if ($needsConfigure) {
-    Write-Host "Configuring CMake for Visual Studio 2026..." -ForegroundColor Yellow
-    cmake -S . -B $BuildDir -G "Visual Studio 18 2026" -DCMAKE_BUILD_TYPE=Release
+    Write-Host "Configuring CMake (auto-detect Visual Studio)..." -ForegroundColor Yellow
+    cmake -S . -B $BuildDir -DCMAKE_BUILD_TYPE=Release
     if ($LASTEXITCODE -ne 0) {
         Write-Host "CMake configuration failed!" -ForegroundColor Red
         exit 1
