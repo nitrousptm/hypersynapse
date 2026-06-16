@@ -543,6 +543,125 @@ vec3 julia_morph(vec2 uv, float gate) {
     return fcol * brightness * 0.38 * gate * beat_boost;
 }
 
+// ─── Hopf Fibration (S³ → S²) ─────────────────────────────────────────────────
+// π: S³ → S² is a principal circle-bundle: every point q on S² has exactly one
+// preimage circle (fiber) in S³. Any two distinct fibers link exactly once
+// (the Hopf link). Under stereographic projection S³ → R³, each fiber becomes a
+// circle or line, and fibers over a latitude band of S² form a torus in R³.
+// The full structure is S³ decomposed into a one-parameter family of linked tori.
+//
+// Mathematical bridge in Act IV:
+//   Lorenz (chaotic orbits in R³) → Hopf (ordered S³ fibers over S²)
+//   → Julia (ℂ-plane chaos boundary) → Riemann (S² compactification) → singularity
+//
+// The Riemann sphere IS the base space S² of this fibration — showing the fibers
+// before showing S² gives the audience the full π: S³ → S² structure in sequence.
+//
+// Gate: scene_norm 0.44→0.67 — bridges the Lorenz fade-out and Julia's flat form.
+
+vec3 hopf_fibration(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    vec3 col = vec3(0.0);
+
+    // Camera: slow Y rotation reveals the interlocking ring structure over time
+    float rot_y = u_time * 0.11;
+    float rot_x = 0.35 + sin(u_time * 0.06) * 0.10;  // gentle nod
+    float cry = cos(rot_y), sry = sin(rot_y);
+    float crx = cos(rot_x), srx = sin(rot_x);
+
+    const float FOCAL = 2.5;   // perspective focal length (camera at z = -FOCAL)
+    const float SCALE = 0.28;  // world-space scale: south-pole fiber has radius 0.28
+    const int   N_B   = 22;    // number of Hopf fibers to draw
+    const int   N_T   = 52;    // discrete samples per fiber circle
+
+    float beat_boost = 1.0 + exp(-u_beat * 5.5) * 0.55;
+
+    // Distribute base directions uniformly on S² via Fibonacci sphere spiral.
+    // The golden angle (≈2.3999 rad) ensures no two points share a meridian.
+    for (int b = 0; b < N_B; b++) {
+        float fb = (float(b) + 0.5) / float(N_B);
+
+        float cos_lat = 1.0 - 2.0 * fb;   // uniform in solid angle: +1=north, -1=south
+        float sin_lat = sqrt(max(0.0, 1.0 - cos_lat * cos_lat));
+        float lon     = float(b) * 2.39996;  // golden angle
+
+        // Fiber over the north pole of S² is a straight line (maps to infinity).
+        // Skip its neighborhood to avoid unbounded stereographic projections.
+        if (cos_lat > 0.85) continue;
+
+        vec3 base_dir = vec3(sin_lat * cos(lon), sin_lat * sin(lon), cos_lat);
+
+        // Hopf quaternion parametrisation: z₁ = cos(θ/2), z₂ = sin(θ/2)·e^{iφ}
+        // The fiber over base_dir is the circle t → (z₁·eⁱᵗ, z₂·eⁱᵗ) on S³.
+        float theta = acos(clamp(base_dir.z, -1.0, 1.0));
+        float phi   = atan(base_dir.y, base_dir.x);
+        float ar    = cos(theta * 0.5);             // z₁ (real, no im part)
+        float br    = sin(theta * 0.5) * cos(phi); // z₂.re
+        float bi    = sin(theta * 0.5) * sin(phi); // z₂.im
+
+        // Color by latitude: south pole = electric cyan, equator = amber-gold,
+        // north = violet-magenta — aligned with the active tendril color arc.
+        float lt = (cos_lat + 1.0) * 0.5;  // 0 = south, 1 = north
+        vec3 fc = lt < 0.5
+            ? mix(vec3(0.08, 0.72, 0.98), vec3(0.95, 0.68, 0.18), lt * 2.0)
+            : mix(vec3(0.95, 0.68, 0.18), vec3(0.65, 0.10, 0.90), (lt - 0.5) * 2.0);
+
+        // Render fiber as connected glow segments (Lorenz-style segment SDF)
+        vec2 prev_proj = vec2(-9.0);
+        bool have_prev = false;
+
+        for (int ti = 0; ti <= N_T; ti++) {
+            // ti == N_T closes the circle back to t=0
+            float t  = float(ti % N_T) * (6.28318 / float(N_T));
+            float ct = cos(t), st = sin(t);
+
+            // S³ point in R⁴: (z₁·eⁱᵗ, z₂·eⁱᵗ) split into real coords
+            float x0 = ar * ct;
+            float x1 = ar * st;
+            float x2 = br * ct - bi * st;
+            float x3 = br * st + bi * ct;
+
+            // Stereographic projection from north pole (1,0,0,0) of S³ to R³:
+            // p = (x1, x2, x3) / (1 - x0)
+            float denom = 1.0 - x0;
+            if (denom < 0.04) { have_prev = false; continue; }  // near-pole guard
+            vec3 p = vec3(x1, x2, x3) * (SCALE / denom);
+
+            // Camera rotation: Y-axis yaw then X-axis pitch
+            float px2 = p.x * cry + p.z * sry;
+            float pz2 = -p.x * sry + p.z * cry;
+            p = vec3(px2, p.y, pz2);
+            float py3 = p.y * crx - p.z * srx;
+            float pz3 = p.y * srx + p.z * crx;
+            p = vec3(p.x, py3, pz3);
+
+            // Perspective projection (camera at z = -FOCAL)
+            float depth = p.z + FOCAL;
+            if (depth < 0.15) { have_prev = false; continue; }
+            vec2 proj = p.xy * (FOCAL / depth);
+
+            // Clip off-screen early — no glow contribution from distant projected points
+            if (abs(proj.x) > 1.95 || abs(proj.y) > 1.75) { have_prev = false; continue; }
+
+            // Depth attenuation: far points appear dimmer for 3D depth cue
+            float z_fade = 1.0 / (1.0 + max(p.z, 0.0) * 0.40);
+
+            if (have_prev) {
+                vec2 ab = proj - prev_proj;
+                vec2 ap = uv   - prev_proj;
+                float tc = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-7), 0.0, 1.0);
+                float d  = length(ap - ab * tc);
+                col += fc * exp(-d * d * 3800.0) * z_fade * gate * beat_boost * 0.52;
+            }
+            prev_proj = proj;
+            have_prev = true;
+        }
+    }
+
+    return col;
+}
+
 // ─── Riemann sphere — Julia set on the compactified complex plane ─────────────
 // The Riemann sphere maps ℂ onto S² via stereographic projection from the south
 // pole: w = (px + i·py) / (1 + pz).  The north pole is the unique point that
@@ -1181,6 +1300,19 @@ void main() {
         float mm_gate = smoothstep(0.53, 0.60, u_scene_norm)
                       * (1.0 - smoothstep(0.69, 0.76, u_scene_norm));
         col += mandelbrot_minimap(uv, mm_gate);
+    }
+
+    // Hopf fibration — S³ fiber bundle over S².
+    // Interlocking circles: each base point on S² determines one Hopf fiber (circle)
+    // in S³. Stereographically projected to R³, the 22 fibers form a nested-tori
+    // arrangement. Any two fibers in this drawing are topologically linked once.
+    // Mathematical narrative: Lorenz chaos in R³ gives way to ordered S³ topology
+    // before the complex plane's Julia boundary and Riemann compactification appear.
+    // The S² base space of this fibration IS the Riemann sphere shown next.
+    {
+        float hopf_gate = smoothstep(0.44, 0.56, u_scene_norm)
+                        * (1.0 - smoothstep(0.61, 0.67, u_scene_norm));
+        col += hopf_fibration(uv, hopf_gate);
     }
 
     // Riemann sphere — the complex plane compactified.
