@@ -261,13 +261,14 @@ vec3 cosmic_helix(vec2 uv, float gate) {
     return col_h;
 }
 
-// ─── Lorenz chaotic attractor — order emerging from chaos ────────────────────
+// ─── Lorenz chaotic attractor — butterfly effect: two diverging orbits ────────
 // The Lorenz system (σ=10, ρ=28, β=8/3) generates a butterfly-shaped strange
 // attractor: deterministic chaos that nonetheless obeys strict mathematical law.
-// Appears between the cosmic helix and singularity rings (scene_norm 0.22→0.52)
-// as a visual metaphor for the AI discovering that chaos *is* mathematics.
-// Euler integration, 80 visible steps after 40 warmup — all pixels run the same
-// loop so there is zero warp divergence; total ~1500 float ops per pixel.
+// Appears between the cosmic helix and singularity rings (scene_norm 0.22→0.52).
+// TWO simultaneous trajectories with different phase seeds fill both wings of the
+// butterfly more densely. Trajectory B fades in at 0.29→0.37 — the attractor's
+// full shape emerges as two independent chaotic orbits converge on the same manifold.
+// Euler integration: Traj A = 40 warmup + 80 draw; Traj B = 40 warmup + 60 draw.
 vec3 lorenz_attractor(vec2 uv, float scene_norm) {
     float gate = smoothstep(0.22, 0.34, scene_norm)
                * (1.0 - smoothstep(0.44, 0.54, scene_norm));
@@ -276,62 +277,78 @@ vec3 lorenz_attractor(vec2 uv, float scene_norm) {
     const float sigma = 10.0, rho = 28.0, beta = 8.0 / 3.0;
     const float dt    = 0.012;
 
-    // Slowly rotate the projection to reveal the 3D butterfly shape over time.
     float ang = u_time * 0.07;
     float ca = cos(ang), sa = sin(ang);
-
-    // Seed drifts gently so the visible segment shifts without sudden jumps.
-    float ts = u_time * 0.035;
-    vec3 p = vec3(0.10 + sin(ts) * 0.14,
-                  0.00 + cos(ts * 0.71) * 0.08,
-                  14.0);
-
-    // Warmup: push point onto the attractor manifold before drawing.
-    for (int i = 0; i < 40; i++) {
-        vec3 dp = vec3(sigma * (p.y - p.x),
-                       p.x * (rho - p.z) - p.y,
-                       p.x * p.y - beta * p.z);
-        p += dp * dt;
-    }
-
-    vec3  col     = vec3(0.0);
-    vec2  prev_sc = vec2(-9.0);   // previous segment endpoint in screen space
     float beat_b  = 1.0 + exp(-u_beat * 7.0) * 0.60;
-
-    // Scale: attractor occupies x≈±22, z≈1-49 (centre z≈25). Map to ±0.40 screen.
     const float inv_sx = 1.0 / 22.0;
     const float inv_sz = 1.0 / 25.0;
     const float scl    = 0.38;
 
-    for (int i = 0; i < 80; i++) {
-        vec3 dp = vec3(sigma * (p.y - p.x),
-                       p.x * (rho - p.z) - p.y,
-                       p.x * p.y - beta * p.z);
-        p += dp * dt;
+    vec3 col = vec3(0.0);
 
-        // Project: rotate in XY plane, use Z as screen-Y.
-        float px_r = p.x * ca - p.y * sa;
-        vec2  cur  = vec2(px_r * inv_sx, (p.z - 25.0) * inv_sz) * scl;
-
-        if (i > 0) {
-            // Segment SDF (shared helper sdSeg2D not yet defined — inline here).
-            vec2 ab = cur - prev_sc, ap = uv - prev_sc;
-            float tc = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-7), 0.0, 1.0);
-            float d  = length(ap - ab * tc);
-
-            // Left wing (x < 0) amber-gold; right wing (x > 0) electric cyan.
-            float wing   = smoothstep(-3.0, 3.0, p.x);
-            vec3  w_col  = mix(vec3(0.95, 0.62, 0.12),    // amber-gold
-                               vec3(0.08, 0.72, 0.98),    // electric cyan
-                               wing);
-
-            // Depth cue: points behind the projection plane (rotated y < 0) dimmer.
-            float depth = 0.55 + 0.45 * clamp((p.x * sa + p.y * ca) / 22.0 * 0.5 + 0.5, 0.0, 1.0);
-
-            col += w_col * exp(-d * d * 5000.0) * gate * beat_b * depth * 0.65;
+    // ── Trajectory A: amber-gold (left wing) / electric cyan (right wing) ───────
+    {
+        float ts = u_time * 0.035;
+        vec3 p = vec3(0.10 + sin(ts) * 0.14,
+                      0.00 + cos(ts * 0.71) * 0.08,
+                      14.0);
+        for (int i = 0; i < 40; i++) {
+            vec3 dp = vec3(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+            p += dp * dt;
         }
-        prev_sc = cur;
+        vec2 prev_sc = vec2(-9.0);
+        for (int i = 0; i < 80; i++) {
+            vec3 dp = vec3(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+            p += dp * dt;
+            float px_r = p.x*ca - p.y*sa;
+            vec2  cur  = vec2(px_r*inv_sx, (p.z-25.0)*inv_sz) * scl;
+            if (i > 0) {
+                vec2 ab = cur-prev_sc, ap = uv-prev_sc;
+                float tc = clamp(dot(ap,ab)/max(dot(ab,ab),1e-7), 0.0, 1.0);
+                float d  = length(ap - ab*tc);
+                float wing  = smoothstep(-3.0, 3.0, p.x);
+                vec3  w_col = mix(vec3(0.95,0.62,0.12), vec3(0.08,0.72,0.98), wing);
+                float depth = 0.55 + 0.45*clamp((p.x*sa+p.y*ca)/22.0*0.5+0.5, 0.0, 1.0);
+                col += w_col * exp(-d*d*5000.0) * gate * beat_b * depth * 0.65;
+            }
+            prev_sc = cur;
+        }
     }
+
+    // ── Trajectory B: π phase-shifted seed — same manifold, different orbit ─────
+    // Two independent chaotic orbits on the Lorenz attractor fill the butterfly
+    // wings with denser coverage, making the fractal structure visible sooner.
+    // Violet-rose tint distinguishes it from trajectory A's amber/cyan palette.
+    float traj_b = smoothstep(0.29, 0.37, scene_norm);
+    if (traj_b > 0.001) {
+        float ts = u_time * 0.035 + 3.14159;  // π phase → fully decorrelated orbit
+        vec3 p = vec3(0.10 + sin(ts) * 0.14,
+                      0.00 + cos(ts * 0.71) * 0.08,
+                      14.0);
+        for (int i = 0; i < 40; i++) {
+            vec3 dp = vec3(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+            p += dp * dt;
+        }
+        vec2 prev_sc = vec2(-9.0);
+        for (int i = 0; i < 60; i++) {
+            vec3 dp = vec3(sigma*(p.y-p.x), p.x*(rho-p.z)-p.y, p.x*p.y-beta*p.z);
+            p += dp * dt;
+            float px_r = p.x*ca - p.y*sa;
+            vec2  cur  = vec2(px_r*inv_sx, (p.z-25.0)*inv_sz) * scl;
+            if (i > 0) {
+                vec2 ab = cur-prev_sc, ap = uv-prev_sc;
+                float tc = clamp(dot(ap,ab)/max(dot(ab,ab),1e-7), 0.0, 1.0);
+                float d  = length(ap - ab*tc);
+                float wing  = smoothstep(-3.0, 3.0, p.x);
+                // Violet-rose (left wing) / warm-gold (right wing) — contrasts with A
+                vec3  w_col = mix(vec3(0.78,0.15,0.90), vec3(0.98,0.80,0.15), wing);
+                float depth = 0.55 + 0.45*clamp((p.x*sa+p.y*ca)/22.0*0.5+0.5, 0.0, 1.0);
+                col += w_col * exp(-d*d*5000.0) * gate * traj_b * beat_b * depth * 0.52;
+            }
+            prev_sc = cur;
+        }
+    }
+
     return col;
 }
 
@@ -389,6 +406,77 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
         float sz = mix(0.028, 0.011, t);
         col += scol * (sz / (d + sz)) * sz * gate * beat_b * 0.85;
     }
+    return col;
+}
+
+// ─── Mandelbrot mini-map (scene_norm 0.52→0.76) ──────────────────────────────
+// Small corner visualization of the Mandelbrot parameter space shown alongside
+// the Julia set window. A glowing amber dot marks the current c value used in
+// julia_morph() as it orbits the seahorse valley (−0.73+0.19i).
+// Demoscene viewers who know complex dynamics can read exactly which Julia set
+// is displayed — a sophisticated nod to mathematical context.
+// Position: lower-left corner in aspect-corrected UV space.
+vec3 mandelbrot_minimap(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    const vec2  mm_center = vec2(-1.10, -0.68);  // center in aspect-corrected UV
+    const float mm_hw     = 0.172;               // half-width (screen units)
+    const float mm_hh     = 0.112;               // half-height
+
+    vec2 mm_local = uv - mm_center;
+    if (abs(mm_local.x) > mm_hw || abs(mm_local.y) > mm_hh)
+        return vec3(0.0);
+
+    // Map mm_local → Mandelbrot complex plane: x∈[−2.2, 0.8], y∈[−1.2, 1.2]
+    const vec2 c_min = vec2(-2.2, -1.2);
+    const vec2 c_max = vec2( 0.8,  1.2);
+    vec2 t2 = mm_local / vec2(mm_hw, mm_hh) * 0.5 + 0.5;
+    vec2 c  = mix(c_min, c_max, t2);
+
+    // Mandelbrot escape-time (24 iterations: sufficient for boundary detail)
+    vec2  zmb  = vec2(0.0);
+    float si_mb = 0.0;
+    bool  esc_mb = false;
+    for (int i = 0; i < 24; i++) {
+        zmb = vec2(zmb.x*zmb.x - zmb.y*zmb.y, 2.0*zmb.x*zmb.y) + c;
+        float l2 = dot(zmb, zmb);
+        if (l2 > 4.0) {
+            si_mb = float(i) + 1.0 - log2(log2(l2));
+            esc_mb = true;
+            break;
+        }
+    }
+
+    vec3 col = vec3(0.005, 0.010, 0.028) * gate;  // dim interior
+
+    if (esc_mb) {
+        float band  = si_mb / 24.0;
+        float ripple = sin(band * 3.14159 * 6.0 - u_time * 0.45) * 0.5 + 0.5;
+        float bright = pow(ripple, 3.5) * smoothstep(0.0, 0.07, band);
+        col += vec3(0.04, 0.14, 0.48) * bright * 0.55 * gate;  // exterior: deep blue
+    }
+
+    // Current c orbit: same formula as julia_morph()
+    float tj  = clamp((u_scene_norm - 0.52) / 0.24, 0.0, 1.0);
+    float c_ang = u_time * 0.055 + tj * 1.80;
+    vec2  c_val = vec2(-0.7269 + 0.13 * cos(c_ang),
+                        0.1889 + 0.11 * sin(c_ang * 1.31));
+
+    // Map c_val back to screen UV
+    vec2 c_t    = (c_val - c_min) / (c_max - c_min);        // [0,1]×[0,1]
+    vec2 c_scr  = (c_t - 0.5) * 2.0 * vec2(mm_hw, mm_hh) + mm_center;
+    float c_dist = length(uv - c_scr);
+    // Amber dot + soft halo
+    col += exp(-c_dist * c_dist * 14000.0) * vec3(1.0, 0.82, 0.12) * 2.2 * gate;
+    col += exp(-c_dist * 70.0) * vec3(0.88, 0.65, 0.08) * 0.55 * gate;
+
+    // Subtle rectangle frame
+    float bx = abs(mm_local.x) - mm_hw + 0.005;
+    float by = abs(mm_local.y) - mm_hh + 0.005;
+    float bframe = max(bx, by);
+    col += smoothstep(0.005, 0.0, abs(bframe) + 0.001)
+         * vec3(0.12, 0.22, 0.60) * 0.32 * gate;
+
     return col;
 }
 
@@ -468,9 +556,18 @@ vec3 riemann_sphere(vec2 uv, float gate) {
 
     float asp = u_res.x / u_res.y;
 
+    // Collapse animation: sphere freezes rotation, north pole tilts toward viewer,
+    // then shrinks to a singularity point at scene_norm 0.82→0.87.
+    // The north pole = complex ∞ = this demo's singularity — the collapse makes
+    // the mathematical abstraction physical: ∞ becomes the convergence rings' centre.
+    float collapse_t = smoothstep(0.82, 0.87, u_scene_norm);
+
     // Work in circular (aspect-correct) space so the sphere looks round
     vec2  sc       = vec2(uv.x / asp, uv.y);
-    float sphere_r = 0.36 * smoothstep(0.0, 0.30, gate);
+    // Sphere radius shrinks quadratically during collapse → 8% of full size at t=1
+    float sphere_r = 0.36 * smoothstep(0.0, 0.30, gate)
+                   * (1.0 - collapse_t * collapse_t * 0.92);
+    if (sphere_r < 0.001) return vec3(0.0);
 
     float r2 = dot(sc, sc);
     // Extended coverage: Möbius background grid visible to 3.2× sphere radius
@@ -481,11 +578,13 @@ vec3 riemann_sphere(vec2 uv, float gate) {
     float z3        = on_sphere ? sqrt(max(0.0, 1.0 - dlen * dlen)) : 0.0;
     vec3  n3        = vec3(sc.x / sphere_r, sc.y / sphere_r, z3);
 
-    // Slow Y-axis rotation to reveal 3D structure, slight forward pitch
-    float rot_t = u_time * 0.13;
+    // Y-axis rotation slows to a stop during collapse (freeze the axis)
+    float rot_t = u_time * 0.13 * (1.0 - collapse_t * 0.96);
     float cr = cos(rot_t), sr = sin(rot_t);
     vec3 p3 = vec3(n3.x * cr + n3.z * sr, n3.y, -n3.x * sr + n3.z * cr);
-    float pitch = 0.30, cp = cos(pitch), sp_ = sin(pitch);
+    // Pitch gradually reduces during collapse: north pole tilts toward camera
+    float pitch = mix(0.30, 0.0, collapse_t * 0.85);
+    float cp = cos(pitch), sp_ = sin(pitch);
     p3 = vec3(p3.x, p3.y * cp - p3.z * sp_, p3.y * sp_ + p3.z * cp);
 
     // Stereographic projection → complex plane coordinate w
@@ -1077,6 +1176,11 @@ void main() {
         float julia_gate = smoothstep(0.52, 0.62, u_scene_norm)
                          * (1.0 - smoothstep(0.68, 0.76, u_scene_norm));
         col += julia_morph(uv, julia_gate);
+        // Mandelbrot mini-map: lower-left corner shows the c-parameter orbit
+        // in Mandelbrot space — viewers can "read" which Julia set they're seeing.
+        float mm_gate = smoothstep(0.53, 0.60, u_scene_norm)
+                      * (1.0 - smoothstep(0.69, 0.76, u_scene_norm));
+        col += mandelbrot_minimap(uv, mm_gate);
     }
 
     // Riemann sphere — the complex plane compactified.
