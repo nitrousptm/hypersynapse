@@ -543,6 +543,143 @@ vec3 julia_morph(vec2 uv, float gate) {
     return fcol * brightness * 0.38 * gate * beat_boost;
 }
 
+// ─── Clifford torus — flat T² embedded in S³ ─────────────────────────────────
+// The Clifford torus C_T ⊂ S³ ⊂ R⁴ is the preimage of the equator S¹ ⊂ S² under
+// the Hopf map π.  It is parameterised as:
+//   p(u,v) = ( cos u, sin u, cos v, sin v ) / √2,   u,v ∈ [0, 2π]
+// It is equidistant from both poles of S³ and has zero intrinsic Gaussian curvature
+// — the unique flat torus in S³.  Every u-circle is geometrically identical to
+// every v-circle: pure S¹ × S¹.
+//
+// Two independent 4D rotations (XW-plane θ₁ and YZ-plane θ₂) visibly morph the
+// projected wireframe — the torus appears to invert through itself, making the
+// intrinsic geometry of S³ tangible. This cannot happen in flat R³.
+//
+// Wireframe: 16 U-rings (constant v) + 16 V-rings (constant u), 28 segments each.
+// Gate: scene_norm 0.40→0.56 — bridges Lorenz (chaotic R³) to Hopf S³ topology.
+vec3 clifford_torus(vec2 uv, float gate) {
+    if (gate < 0.001) return vec3(0.0);
+
+    const float INV_SQRT2 = 0.70710678118;
+    const float TAU = 6.28318530718;
+
+    float beat_boost = 1.0 + smoothstep(0.08, 0.0, u_beat) * 0.65;
+
+    // Independent 4D rotations: XW-plane (theta1) and YZ-plane (theta2)
+    float c1 = cos(u_time * 0.18), s1 = sin(u_time * 0.18);
+    float c2 = cos(u_time * 0.13), s2 = sin(u_time * 0.13);
+
+    // 3D view: slow Y-axis rotation + gentle X-tilt
+    float rot_y = u_time * 0.09;
+    float rot_x = 0.28 + sin(u_time * 0.05) * 0.08;
+    float cry = cos(rot_y), sry = sin(rot_y);
+    float crx = cos(rot_x), srx = sin(rot_x);
+
+    const float FOCAL  = 2.6;
+    const int   N_RING = 16;
+    const int   N_SEG  = 28;
+    vec3 col = vec3(0.0);
+
+    // U-circles (constant v, u sweeps 0 to 2pi)
+    // Color: amber-gold (v near 0 or 2pi) to electric cyan (v near pi)
+    for (int vi = 0; vi < N_RING; vi++) {
+        float v   = float(vi) / float(N_RING) * TAU;
+        float cv  = cos(v), sv = sin(v);
+        vec3 rcol = mix(vec3(0.92, 0.60, 0.12), vec3(0.10, 0.80, 0.95),
+                        abs(sin(v * 0.5)));
+
+        vec2 prev_proj = vec2(0.0);
+        bool have_prev = false;
+
+        for (int si = 0; si <= N_SEG; si++) {
+            float u  = float(si % N_SEG) / float(N_SEG) * TAU;
+            vec4 p4  = vec4(cos(u), sin(u), cv, sv) * INV_SQRT2;
+
+            // 4D rotation: XW then YZ
+            float rx = p4.x*c1 - p4.w*s1,  rw = p4.x*s1 + p4.w*c1;
+            float ry = p4.y*c2 - p4.z*s2,  rz = p4.y*s2 + p4.z*c2;
+
+            // Stereographic projection S3 -> R3 from north pole (0,0,0,1)
+            float dn = 1.0 - rw;
+            if (abs(dn) < 0.08) { have_prev = false; continue; }
+            vec3 q = vec3(rx, ry, rz) / dn;
+
+            // 3D view rotation: X-tilt then Y-rotation
+            float qy2 = q.y*crx + q.z*srx,  qz2 = -q.y*srx + q.z*crx;
+            float qx3 = q.x*cry + qz2*sry,  qz3 = -q.x*sry + qz2*cry;
+
+            float depth = qz3 + FOCAL;
+            if (depth < 0.15) { have_prev = false; continue; }
+            vec2 proj = vec2(qx3, qy2) * (FOCAL / depth) * 0.55;
+            if (abs(proj.x) > 2.0 || abs(proj.y) > 1.9)
+                { have_prev = false; continue; }
+
+            float z_fade = 1.0 / (1.0 + max(qz3, 0.0) * 0.45);
+
+            if (have_prev) {
+                vec2 ab = proj - prev_proj;
+                float len2 = dot(ab, ab);
+                if (len2 > 1e-8) {
+                    float tc = clamp(dot(uv - prev_proj, ab) / len2, 0.0, 1.0);
+                    float d  = length(uv - prev_proj - ab * tc);
+                    col += rcol * exp(-d*d*3500.0) * z_fade * gate * beat_boost * 0.50;
+                }
+            }
+            prev_proj = proj;
+            have_prev = true;
+        }
+    }
+
+    // V-circles (constant u, v sweeps 0 to 2pi)
+    // Color: teal (u near 0) to violet-magenta (u near pi)
+    for (int ui = 0; ui < N_RING; ui++) {
+        float u   = float(ui) / float(N_RING) * TAU;
+        float cu  = cos(u), su = sin(u);
+        vec3 rcol = mix(vec3(0.12, 0.72, 0.88), vec3(0.68, 0.08, 0.90),
+                        abs(sin(u * 0.5)));
+
+        vec2 prev_proj = vec2(0.0);
+        bool have_prev = false;
+
+        for (int si = 0; si <= N_SEG; si++) {
+            float v  = float(si % N_SEG) / float(N_SEG) * TAU;
+            vec4 p4  = vec4(cu, su, cos(v), sin(v)) * INV_SQRT2;
+
+            float rx = p4.x*c1 - p4.w*s1,  rw = p4.x*s1 + p4.w*c1;
+            float ry = p4.y*c2 - p4.z*s2,  rz = p4.y*s2 + p4.z*c2;
+
+            float dn = 1.0 - rw;
+            if (abs(dn) < 0.08) { have_prev = false; continue; }
+            vec3 q = vec3(rx, ry, rz) / dn;
+
+            float qy2 = q.y*crx + q.z*srx,  qz2 = -q.y*srx + q.z*crx;
+            float qx3 = q.x*cry + qz2*sry,  qz3 = -q.x*sry + qz2*cry;
+
+            float depth = qz3 + FOCAL;
+            if (depth < 0.15) { have_prev = false; continue; }
+            vec2 proj = vec2(qx3, qy2) * (FOCAL / depth) * 0.55;
+            if (abs(proj.x) > 2.0 || abs(proj.y) > 1.9)
+                { have_prev = false; continue; }
+
+            float z_fade = 1.0 / (1.0 + max(qz3, 0.0) * 0.45);
+
+            if (have_prev) {
+                vec2 ab = proj - prev_proj;
+                float len2 = dot(ab, ab);
+                if (len2 > 1e-8) {
+                    float tc = clamp(dot(uv - prev_proj, ab) / len2, 0.0, 1.0);
+                    float d  = length(uv - prev_proj - ab * tc);
+                    col += rcol * exp(-d*d*3500.0) * z_fade * gate * beat_boost * 0.50;
+                }
+            }
+            prev_proj = proj;
+            have_prev = true;
+        }
+    }
+
+    return col;
+}
+
 // ─── Hopf Fibration (S³ → S²) ─────────────────────────────────────────────────
 // π: S³ → S² is a principal circle-bundle: every point q on S² has exactly one
 // preimage circle (fiber) in S³. Any two distinct fibers link exactly once
@@ -1286,6 +1423,15 @@ void main() {
     // Lorenz strange attractor — chaos mathematics made visible.
     // Bridges the helix (life) → tendrils (growth) → singularity narrative.
     col += lorenz_attractor(uv, u_scene_norm);
+
+    // Clifford torus — flat T² in S³, preimage of the equator under the Hopf map.
+    // The 4D rotation reveals the intrinsic S³ geometry: the torus visibly inverts
+    // through itself — impossible in flat R³. Bridges Lorenz chaos to Hopf order.
+    {
+        float ct_gate = smoothstep(0.40, 0.48, u_scene_norm)
+                      * (1.0 - smoothstep(0.50, 0.56, u_scene_norm));
+        col += clifford_torus(uv, ct_gate);
+    }
 
     // Julia set morphing — the boundary between stability and chaos.
     // Appears as Lorenz fades (0.52) and dissolves before convergence rings dominate (0.76).
