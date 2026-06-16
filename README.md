@@ -84,10 +84,27 @@ Frame Render Loop (60 fps):
 
 - **SDF Raymarching:** Shared `sdf_lib.glsl` library. Used in scenes 2, 5, 6.
 - **Recursive Portals:** Dual FBO pingpong for Scene 6 — nested universes 3 levels deep.
-- **GPU Particles:** Compute shader physics, 32k–1M pool, beat-synced burst emission.
+- **GPU Particles:** Compute shader physics, 32k–1M pool, beat-synced burst emission. Velocity-elongated sprites + curl-noise flow field (Act III).
 - **Beat Synchronization:** Timeline provides beat_phase, bar_phase, act_norm, scene_norm per frame.
 - **Procedural Geometry:** All meshes generated at runtime. No external 3D files.
-- **Post-FX:** ACES tonemapping, dual-layer bloom, lens flare, barrel CA, scanlines, grain, vignette.
+- **Post-FX:** ACES tonemapping, dual-layer bloom, lens flare, barrel CA, scanlines, grain, vignette. Per-scene entry/exit post FX on all 7 scenes.
+
+### Act IV — Mathematical Transcendence Sequence (Scene 7)
+
+Act IV presents a rigorous mathematical narrative spanning the full 60-second finale:
+
+| Time | Mathematical Structure | Significance |
+|------|----------------------|-------------|
+| 3:00 | Fibonacci phyllotaxis — golden angle seed spiral | φ encodes both sunflowers and galaxies |
+| 3:03 | DNA double helix at cosmic scale | Mathematical basis of biological life |
+| 3:13 | Lorenz strange attractor (dual orbit) | Deterministic chaos on a strange manifold |
+| 3:24 | Clifford torus — flat T² in S³ | Zero-curvature torus, preimage of equator under Hopf |
+| 3:26 | Hopf fibration π: S³ → S² | 22 Hopf fibers, any two topologically linked once |
+| 3:31 | Julia set (c orbiting Mandelbrot seahorse valley) | Boundary between bounded and escaping orbits |
+| 3:32 | Mandelbrot mini-map | Shows c-parameter orbit in real time |
+| 3:40 | Riemann sphere — ℂ∪{∞} compactification | Same Julia set wrapped onto S² via stereographic projection |
+| 3:50 | Singularity — the north pole of the Riemann sphere | Complex infinity = the singularity the AI sought |
+| 3:53 | Silence → SINGULARITY GARDEN logo | Logo: all prior data streams converge as typography |
 
 ### Performance
 
@@ -193,25 +210,28 @@ Vollständige Anleitung: [docs/BUILD.md](docs/BUILD.md) | Submission-Checkliste:
 
 ---
 
-## Implementation Status (28 May 2026)
+## Implementation Status (16 June 2026)
 
 | System | Status |
 |--------|--------|
 | All 7 scene shaders | ✅ Complete |
 | SDF raymarching library | ✅ Complete |
-| GPU particle system | ✅ Complete |
-| Post-FX pipeline (ACES, bloom, lens flare, CA, scanlines, grain) | ✅ Complete |
+| GPU particle system (curl noise + velocity sprites) | ✅ Complete |
+| Post-FX pipeline — ACES, bloom, CA, scanlines, grain, vignette | ✅ Complete |
+| Per-scene entry + exit post FX (all 7 scenes) | ✅ Complete |
+| Act IV mathematical concept transition flashes (post.frag) | ✅ Complete |
 | Recursive portal FBOs (Scene 6) | ✅ Complete |
-| Audio integration (miniaudio) | ✅ Complete |
+| Scene 7 Act IV mathematical sequence (8 structures) | ✅ Complete |
+| Audio integration (miniaudio, 133 BPM locked, fade-out) | ✅ Complete |
 | Beat sync + timeline | ✅ Complete |
 | Procedural mesh generation | ✅ Complete |
-| Frame capture + ffmpeg WebM | ✅ Complete |
+| Frame capture + ffmpeg WebM (audio mix-in) | ✅ Complete |
 | Debug stats overlay | ✅ Complete |
-| Build scripts (Linux + Windows) | ✅ Complete |
+| Build scripts (Linux + Windows MSVC) | ✅ Complete |
 | NFO file | ✅ Complete |
-| **Windows RTX compile + runtime test** | ⏳ Pending |
-| **WebM capture validation (14,400 frames)** | ⏳ Pending |
-| **Assembly portal upload** | ⏳ Pending |
+| **Windows RTX compile + runtime test** | ⏳ Pending (user action) |
+| **WebM capture validation (14,400 frames)** | ⏳ Pending (user action) |
+| **Assembly portal upload** | ⏳ Pending (user action, deadline 2026-07-28) |
 
 ---
 

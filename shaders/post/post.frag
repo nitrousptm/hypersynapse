@@ -1466,6 +1466,29 @@ void main() {
         }
     }
 
+    // 8n. Act IV mathematical concept transition flashes — Scene 7 (Transcendence).
+    // Each mathematical structure in Act IV announces itself with a brief coloured flash.
+    // Palette matches mathematical character: life=amber, chaos=orange, S³=violet,
+    // bundle=cyan, complex=blue-violet, compactification=blue-white.
+    // One-sided decay: fires at the scene_norm when the structure first appears, fades
+    // over ~0.5 real seconds (K=220 on a 60s scene). Gated well below silence/logo.
+    if (u_scene_idx == 6) {
+        float sn = u_scene_norm;
+        const float K = 220.0;
+        // Helix (0.05): life structure / DNA — warm amber-gold
+        if (sn >= 0.05 && sn < 0.14) col += exp(-(sn - 0.05) * K) * vec3(0.95, 0.65, 0.18) * 0.55;
+        // Lorenz (0.22): deterministic chaos — amber-orange heat
+        if (sn >= 0.22 && sn < 0.31) col += exp(-(sn - 0.22) * K) * vec3(0.92, 0.38, 0.10) * 0.60;
+        // Clifford torus (0.40): flat T² in S³ — deep violet (S³ topology)
+        if (sn >= 0.40 && sn < 0.49) col += exp(-(sn - 0.40) * K) * vec3(0.52, 0.06, 0.92) * 0.60;
+        // Hopf fibration (0.44): S³→S² fiber bundle — cyan (ordered structure)
+        if (sn >= 0.44 && sn < 0.53) col += exp(-(sn - 0.44) * K) * vec3(0.10, 0.72, 0.95) * 0.55;
+        // Julia set (0.52): complex boundary — blue-violet (complex analysis)
+        if (sn >= 0.52 && sn < 0.61) col += exp(-(sn - 0.52) * K) * vec3(0.38, 0.10, 0.96) * 0.60;
+        // Riemann sphere (0.67): ℂ∪{∞} compactification — blue-white (pure topology)
+        if (sn >= 0.67 && sn < 0.76) col += exp(-(sn - 0.67) * K) * vec3(0.62, 0.80, 1.00) * 0.65;
+    }
+
     // 9. ACES tonemapping
     col = aces(col);
 
