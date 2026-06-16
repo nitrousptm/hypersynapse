@@ -471,13 +471,13 @@ vec3 riemann_sphere(vec2 uv, float gate) {
     // Work in circular (aspect-correct) space so the sphere looks round
     vec2  sc       = vec2(uv.x / asp, uv.y);
     float sphere_r = 0.36 * smoothstep(0.0, 0.30, gate);
-    float halo_r   = sphere_r * 1.06;
 
     float r2 = dot(sc, sc);
-    if (r2 > halo_r * halo_r) return vec3(0.0);
+    // Extended coverage: Möbius background grid visible to 3.2× sphere radius
+    if (r2 > sphere_r * sphere_r * 10.24) return vec3(0.0);  // 3.2² = 10.24
 
     bool  on_sphere = (r2 <= sphere_r * sphere_r);
-    float dlen      = length(sc) / sphere_r;           // 0..1 within disc
+    float dlen      = length(sc) / sphere_r;
     float z3        = on_sphere ? sqrt(max(0.0, 1.0 - dlen * dlen)) : 0.0;
     vec3  n3        = vec3(sc.x / sphere_r, sc.y / sphere_r, z3);
 
@@ -492,21 +492,24 @@ vec3 riemann_sphere(vec2 uv, float gate) {
     float denom = max(1.0 + p3.z, 0.001);
     vec2  w     = p3.xy / denom * 1.55;
 
-    // Julia set evaluation — same morphing c as julia_morph() for continuity
+    // Julia set evaluation — same morphing c as julia_morph() for visual continuity.
+    // Only run the 48-step iteration for sphere-surface pixels (not background).
     float t_j   = clamp((u_scene_norm - 0.52) / 0.24, 0.0, 1.0);
     float c_ang = u_time * 0.055 + t_j * 1.80;
     vec2  c_val = vec2(-0.7269 + 0.13 * cos(c_ang),
                         0.1889 + 0.11 * sin(c_ang * 1.31));
-    vec2  zz  = w;
     float si  = 0.0;
     bool  esc = false;
-    for (int i = 0; i < 48; i++) {
-        zz = vec2(zz.x * zz.x - zz.y * zz.y, 2.0 * zz.x * zz.y) + c_val;
-        float l2 = dot(zz, zz);
-        if (l2 > 16.0) {
-            si  = float(i) + 1.0 - log2(log2(l2) * 0.5);
-            esc = true;
-            break;
+    if (on_sphere) {
+        vec2 zz = w;
+        for (int i = 0; i < 48; i++) {
+            zz = vec2(zz.x * zz.x - zz.y * zz.y, 2.0 * zz.x * zz.y) + c_val;
+            float l2 = dot(zz, zz);
+            if (l2 > 16.0) {
+                si  = float(i) + 1.0 - log2(log2(l2) * 0.5);
+                esc = true;
+                break;
+            }
         }
     }
 
@@ -525,12 +528,28 @@ vec3 riemann_sphere(vec2 uv, float gate) {
             col += fcol * bright * 0.60;
         }
 
+        // ── Spherical coordinate grid (lat/lon lines every 30°) ────────────────
+        // Makes the sphere's topology explicit: 7 latitude parallels + 12 meridians
+        // laid over the Julia filaments as a faint coordinate framework.
+        // Shows the viewer that these filaments are WRAPPING around a sphere, not flat.
+        {
+            float sph_lat = asin(clamp(p3.z, -0.999, 0.999));  // -π/2 to +π/2
+            float sph_lon = atan(p3.y, p3.x);                   // -π to +π
+            // sin(lat*6)=0 at each k*30° of latitude (7 parallels including poles)
+            float par_line = smoothstep(0.14, 0.0, abs(sin(sph_lat * 6.0)));
+            // sin(lon*6)=0 at each k*30° of longitude (12 meridians)
+            float mer_line = smoothstep(0.14, 0.0, abs(sin(sph_lon * 6.0)));
+            // Equator gets a slightly brighter accent line
+            float eq_line  = smoothstep(0.05, 0.0, abs(sph_lat));
+            float grid_val = max(par_line, mer_line) * 0.12 + eq_line * 0.06;
+            col += mix(vec3(0.35, 0.58, 1.0), fcol, 0.40) * grid_val;
+        }
+
         // Subtle sphere-surface ambient + diffuse
         vec3 ldir = normalize(vec3(-0.4, 0.7, 0.5));
         col += (0.06 + max(dot(n3, ldir), 0.0) * 0.18) * vec3(0.04, 0.02, 0.10);
 
         // North pole = ∞ = singularity: glowing bright cap where all orbits converge.
-        // After rotation p3.z tells us how directly the "north" faces the camera.
         float north_glow = smoothstep(0.50, 0.92, p3.z);
         col += vec3(0.82, 0.88, 1.00) * north_glow * north_glow * 2.8;
 
@@ -538,10 +557,32 @@ vec3 riemann_sphere(vec2 uv, float gate) {
         float rim = pow(1.0 - z3, 3.5);
         col += fcol * rim * 0.52;
     } else {
-        // Atmospheric corona just outside the sphere disc
-        float edge_dist = sqrt(r2) - sphere_r;
+        float bg_r = sqrt(r2);
+        // ── Atmospheric corona (near edge) ────────────────────────────────────
+        float edge_dist = bg_r - sphere_r;
         float corona    = exp(-edge_dist / (sphere_r * 0.06)) * 0.24;
         col += fcol * corona;
+
+        // ── Möbius conformal grid (complex plane ℂ surrounding the sphere) ────
+        // In stereographic projection, latitude circles on S² map to CONCENTRIC
+        // CIRCLES in ℂ, and longitude meridians map to RADIAL LINES through the
+        // origin. Together they form the Möbius coordinate grid — every circle
+        // and line in ℂ is a Möbius circle, and this conformal structure is what
+        // makes S²≅ℂ∪{∞} the foundation of complex analysis.
+        // Meridian rays: great circles through poles → lines radiating from origin
+        float bg_ang  = atan(sc.y, sc.x);
+        float ray_v   = abs(sin(bg_ang * 6.0));  // 12 meridian lines at 30° spacing
+        float ray_w   = 0.22 / (bg_r / sphere_r + 0.55);  // width tapers outward
+        float ray_fade = exp(-edge_dist / sphere_r * 0.55)
+                       * (1.0 - smoothstep(sphere_r * 2.4, sphere_r * 3.2, bg_r));
+        float ray_val  = smoothstep(ray_w, 0.0, ray_v) * ray_fade;
+        // Latitude circles: parallels on S² → concentric circles in ℂ
+        // Approximate stereographic radii for 30°/60°/equator parallels
+        float circles = 0.0;
+        circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 1.60)) * 0.80;  // ~equator
+        circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 2.20)) * 0.50;  // ~30° N
+        circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 3.00)) * 0.28;  // ~60° N
+        col += fcol * (ray_val * 0.052 + circles * 0.060);
     }
 
     float beat_boost = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.55;
