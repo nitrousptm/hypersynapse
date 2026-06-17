@@ -7,6 +7,7 @@ uniform float u_beat;
 uniform float u_bar;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 uniform sampler2D u_prev_frame;  // previous frame feedback
 
 // ─── utils ────────────────────────────────────────────────────────────────────
@@ -828,6 +829,10 @@ void main() {
     // ── Vignette ──────────────────────────────────────────────────────────────
     float vig = 1.0 - dot(uv * 0.45, uv * 0.45);
     col *= vig;
+
+    // Audio energy: frozen time debris and singularity glow scale with audio RMS —
+    // the temporal disaster feels more cataclysmic during loud passages.
+    col *= 0.82 + u_rms * 0.42;
 
     // ── Chromatic aberration (grows with scene progress) ─────────────────────
     float ca  = 0.003 + u_scene_norm * 0.008;

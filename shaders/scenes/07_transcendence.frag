@@ -8,6 +8,7 @@ uniform float u_bar;
 uniform int   u_bar_cnt;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;         // audio RMS amplitude [0,1] from precomputed envelope
 
 // ─── utils ────────────────────────────────────────────────────────────────────
 
@@ -1566,6 +1567,12 @@ void main() {
             col += spokes1 * star_r * vgate * vec3(0.60, 0.10, 0.96) * 0.09;
         }
     }
+
+    // ─── Audio-energy luminance scale ────────────────────────────────────────
+    // Calibrated so 0.38 RMS (Concrete-Syncope track average) ≈ 1.0× (baseline).
+    // Loud peaks push up to +28% above baseline; near-silence dims to 0.83×.
+    // The silence_fade below already handles logo-reveal cleanliness.
+    col *= 0.83 + u_rms * 0.45;
 
     // ─── Silence + Logo (final ~10s, scene_norm > 0.875) ─────────────────────
     float logo_t = smoothstep(0.875, 0.92, u_scene_norm);

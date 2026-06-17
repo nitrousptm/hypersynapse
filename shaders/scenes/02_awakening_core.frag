@@ -13,6 +13,7 @@ uniform float u_beat;
 uniform float u_bar;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 
 // ─── Hash / Noise ─────────────────────────────────────────────────────────────
 float hash11(float p) { return fract(sin(p*127.1)*43758.5453); }
@@ -563,6 +564,10 @@ void main() {
     // Opening crack light (floods the screen at split moment)
     float split_flood = smoothstep(0.85, 1.0, reveal) * 0.8;
     col += split_flood * vec3(0.4, 0.7, 1.0) * exp(-length(uv) * 1.5);
+
+    // Audio energy: the awakening monolith pulses in sync with actual audio energy,
+    // not just the beat clock — quiet buildups are dim, the bass drop hits full power.
+    col *= 0.82 + u_rms * 0.44;
 
     // Vignette
     col *= 1.0 - dot(uv*0.4, uv*0.4);

@@ -162,7 +162,7 @@ void Renderer::render(const Timeline& tl, float rms) {
     emit_particles(tl);
 
     if (particles_) {
-        particles_->update(tl, 1.0f / 60.0f);
+        particles_->update(tl, 1.0f / 60.0f, rms_);
     }
 
     // Copy current FBO to prev before rendering new frame (for feedback)
@@ -229,7 +229,7 @@ void Renderer::draw_scene(const Timeline& tl) {
         glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
 
         glUseProgram(next_prog);
-        set_standard_uniforms(next_prog, tl, width_, height_);
+        set_standard_uniforms(next_prog, tl, width_, height_, rms_);
 
         // Bind prev_fbo_tex as u_prev_frame for feedback shaders
         glActiveTexture(GL_TEXTURE0);
@@ -262,7 +262,7 @@ void Renderer::draw_scene(const Timeline& tl) {
 
 void Renderer::draw_fullscreen_scene(uint32_t prog, const Timeline& tl) {
     glUseProgram(prog);
-    set_standard_uniforms(prog, tl, width_, height_);
+    set_standard_uniforms(prog, tl, width_, height_, rms_);
 
     // Bind prev frame for Scene 4 feedback
     glActiveTexture(GL_TEXTURE0);
@@ -331,7 +331,7 @@ void Renderer::draw_mesh_scene(const Timeline& tl) {
     glUseProgram(mesh_program_);
     glUniformMatrix4fv(glGetUniformLocation(mesh_program_, "u_view"), 1, GL_FALSE, glm::value_ptr(view));
     glUniformMatrix4fv(glGetUniformLocation(mesh_program_, "u_proj"), 1, GL_FALSE, glm::value_ptr(proj));
-    set_standard_uniforms(mesh_program_, tl, width_, height_);
+    set_standard_uniforms(mesh_program_, tl, width_, height_, rms_);
 
     glBindVertexArray(city_vao_);
     glDrawElements(GL_TRIANGLES, city_index_count_, GL_UNSIGNED_INT, nullptr);
@@ -349,7 +349,7 @@ void Renderer::draw_impossible_space(const Timeline& tl) {
     // Now render the main scene with portal textures
     uint32_t prog = scene_programs_[static_cast<int>(Scene::ImpossibleSpace)];
     glUseProgram(prog);
-    set_standard_uniforms(prog, tl, width_, height_);
+    set_standard_uniforms(prog, tl, width_, height_, rms_);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, portal_fbos_[0].tex);
@@ -389,7 +389,7 @@ void Renderer::render_portal_level(int depth, const Timeline& tl) {
     // Offset time slightly per level for visual distinction
     Timeline shifted_tl = tl;
     shifted_tl.update(tl.time() + double(depth) * 0.3);
-    set_standard_uniforms(prog, shifted_tl, width_ / 2, height_ / 2);
+    set_standard_uniforms(prog, shifted_tl, width_ / 2, height_ / 2, rms_);
 
     // Bind sub-levels as portal textures
     for (int i = 0; i < kPortalDepth; i++) {
@@ -427,7 +427,7 @@ void Renderer::draw_particles(const Timeline& tl) {
         0.1f, 100.0f);
 
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_);
-    particles_->render(fbo_, tl, view, proj);
+    particles_->render(fbo_, tl, view, proj, rms_);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 

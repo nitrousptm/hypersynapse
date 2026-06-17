@@ -31,6 +31,7 @@ uniform float u_scene_norm;
 uniform int   u_beat_cnt;
 uniform int   u_bar_cnt;
 uniform int   u_act_idx;     // 0=Act I  1=Act II  2=Act III  3=Act IV
+uniform float u_rms;         // audio RMS amplitude [0,1]
 
 // ─── Simulation Parameters ───────────────────────────────────────────────────
 uniform float u_gravity;
@@ -149,7 +150,8 @@ void main() {
 
         // Curl noise: divergence-free flow field sculpts individual particle
         // trajectories into complex 3D curves — "living mathematics" aesthetic.
-        float curl_str  = smoothstep(0.4375, 0.75, u_act_norm) * 2.0;
+        // u_rms: loud sections push curl energy up 35% for more turbulent, alive motion.
+        float curl_str  = smoothstep(0.4375, 0.75, u_act_norm) * 2.0 * (0.80 + u_rms * 0.35);
         p.vel_type.xyz += curl_noise(pos, u_time) * curl_str * u_dt;
     }
 

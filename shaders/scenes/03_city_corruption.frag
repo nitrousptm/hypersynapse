@@ -11,6 +11,7 @@ uniform float u_beat;
 uniform float u_bar;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 
 // Passed from mesh.vert
 in vec3 v_world_pos;
@@ -208,6 +209,10 @@ void main() {
     vec3 wf_col = mix(vec3(0.08, 0.46, 1.00), vec3(0.20, 0.90, 1.00), u_scene_norm);
     float wf_pulse = exp(-u_beat * 5.2) * 0.75;
     col += wf * wf_col * (2.6 + wf_pulse * 2.8);
+
+    // Audio energy: city surfaces blaze brighter during loud passages —
+    // AI power surge reflected in every illuminated building face.
+    col *= 0.80 + u_rms * 0.48;
 
     // Distance fog: deep atmospheric perspective
     float fog = 1.0 - exp(-length(v_world_pos) * 0.04);

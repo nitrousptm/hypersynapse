@@ -13,6 +13,7 @@ uniform float u_beat;
 uniform float u_bar;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 
 uniform sampler2D u_portal_0;  // deepest recursion (smallest universe)
 uniform sampler2D u_portal_1;  // mid recursion
@@ -666,6 +667,12 @@ void main() {
     // Reality-fracture flash: brief white burst exactly when zoom begins (scene_norm 0.80)
     float fracture = exp(-abs(u_scene_norm - 0.80) * 60.0) * 1.5;
     col += fracture * vec3(0.6, 0.8, 1.0);
+
+    // Audio energy: impossible-space architecture glows more intensely during loud passages.
+    // The holy-shit zoom-out (scene_norm > 0.78) is excluded so the cosmic reveal
+    // stays at calibrated brightness — only the room/portal phase is affected.
+    float room_phase = 1.0 - smoothstep(0.72, 0.80, u_scene_norm);
+    col *= (0.82 + u_rms * 0.40) * room_phase + (1.0 - room_phase);
 
     // Vignette (stronger during zoom-out for dramatic effect)
     float vig_str = mix(0.4, 0.6, zoom);

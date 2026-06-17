@@ -16,9 +16,9 @@ struct alignas(16) Particle {
 class ParticleSystem {
 public:
     bool init(uint32_t max_particles);
-    void update(const Timeline& tl, float dt);
+    void update(const Timeline& tl, float dt, float rms = 0.5f);
     void render(uint32_t target_fbo, const Timeline& tl,
-                const glm::mat4& view, const glm::mat4& proj);
+                const glm::mat4& view, const glm::mat4& proj, float rms = 0.5f);
     void shutdown();
 
     void emit(const glm::vec3& pos, const glm::vec3& vel, uint32_t type, float lifetime, const glm::vec3& color);
@@ -26,7 +26,7 @@ public:
     uint32_t alive_count() const { return alive_count_; }
 
 private:
-    void update_compute(const Timeline& tl, float dt);
+    void update_compute(const Timeline& tl, float dt, float rms);
     void compact();
 
     // GPU buffers

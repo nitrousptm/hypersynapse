@@ -16,6 +16,7 @@ out vec4 frag;
 
 uniform float u_beat;
 uniform float u_act_norm;
+uniform float u_rms;
 
 // ─── circular soft glow disc ─────────────────────────────────────────────────
 float soft_disc(float r) {
@@ -75,8 +76,11 @@ void main() {
     float speed      = length(v_velocity);
     float speed_glow = 1.0 + smoothstep(0.0, 4.0, speed) * 0.6;
 
+    // Audio-energy scale: loud passages push particle brightness up to 40% above baseline
+    float rms_scale = 0.75 + u_rms * 0.50;
+
     vec3 col = act_tint(v_color.rgb, u_act_norm);
-    col *= brightness * life_fade * speed_glow;
+    col *= brightness * life_fade * speed_glow * rms_scale;
     col *= 1.0 + kick * 0.5;
     col *= 1.4;
 

@@ -14,6 +14,7 @@ uniform float u_bar;
 uniform int   u_bar_cnt;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 
 // ─── Multi-layer Hash / Noise ─────────────────────────────────────────────────
 float hash11(float p) { return fract(sin(p * 127.1) * 43758.5453); }
@@ -651,6 +652,8 @@ void main() {
 
     // ── Overall Brightness and Tone ──
     col *= 0.2 + 0.8 * smoothstep(0.0, 0.4, u_scene_norm);
+    // Audio energy: circuit traces and terminal text glow more during loud moments.
+    col *= 0.85 + u_rms * 0.38;
 
     // HDR output — post.frag handles ACES tonemapping (no pre-tonemap here)
     frag_color = vec4(col, 1.0);

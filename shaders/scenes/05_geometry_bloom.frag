@@ -7,6 +7,7 @@ uniform float u_beat;
 uniform float u_bar;
 uniform float u_act_norm;
 uniform float u_scene_norm;
+uniform float u_rms;
 
 // ─── utils ────────────────────────────────────────────────────────────────────
 
@@ -732,6 +733,10 @@ void main() {
                            sin(u_time * 0.24) * 0.5 + 0.5);
         col += web * syn_col * syn_gate * syn_beat * 0.35;
     }
+
+    // Audio energy: fractal geometry blazes 35% brighter at audio peaks;
+    // dims slightly (0.82×) during quiet inter-phrase drops.
+    col *= 0.82 + u_rms * 0.42;
 
     // Vignette
     float vig = 1.0 - dot(uv*0.4, uv*0.4);

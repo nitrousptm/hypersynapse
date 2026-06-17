@@ -47,14 +47,14 @@ bool ParticleSystem::init(uint32_t max_particles) {
     return true;
 }
 
-void ParticleSystem::update(const Timeline& tl, float dt) {
+void ParticleSystem::update(const Timeline& tl, float dt, float rms) {
     if (!active_) return;
 
-    update_compute(tl, dt);
+    update_compute(tl, dt, rms);
     compact();
 }
 
-void ParticleSystem::update_compute(const Timeline& tl, float dt) {
+void ParticleSystem::update_compute(const Timeline& tl, float dt, float rms) {
     if (!compute_program_ || alive_count_ == 0) return;
 
     glUseProgram(compute_program_);
@@ -69,6 +69,7 @@ void ParticleSystem::update_compute(const Timeline& tl, float dt) {
     glUniform1i(glGetUniformLocation(compute_program_, "u_beat_cnt"),   tl.beat_count());
     glUniform1i(glGetUniformLocation(compute_program_, "u_bar_cnt"),    tl.bar_count());
     glUniform1i(glGetUniformLocation(compute_program_, "u_act_idx"),    static_cast<int>(tl.act()));
+    glUniform1f(glGetUniformLocation(compute_program_, "u_rms"),        rms);
     glUniform1ui(glGetUniformLocation(compute_program_, "u_alive_count"), alive_count_);
 
     // Simulation parameters
@@ -89,7 +90,7 @@ void ParticleSystem::compact() {
 }
 
 void ParticleSystem::render(uint32_t target_fbo, const Timeline& tl,
-                            const glm::mat4& view, const glm::mat4& proj) {
+                            const glm::mat4& view, const glm::mat4& proj, float rms) {
     if (!active_ || alive_count_ == 0 || !render_program_) return;
 
     glBindFramebuffer(GL_FRAMEBUFFER, target_fbo);
@@ -100,6 +101,7 @@ void ParticleSystem::render(uint32_t target_fbo, const Timeline& tl,
     glUniform1f(glGetUniformLocation(render_program_, "u_act_norm"),      static_cast<float>(tl.act_norm()));
     glUniform1f(glGetUniformLocation(render_program_, "u_time"),          static_cast<float>(tl.time()));
     glUniform1f(glGetUniformLocation(render_program_, "u_particle_size"), 18.0f);
+    glUniform1f(glGetUniformLocation(render_program_, "u_rms"),           rms);
 
     // Camera matrices
     glUniformMatrix4fv(glGetUniformLocation(render_program_, "u_view"), 1, GL_FALSE, glm::value_ptr(view));
