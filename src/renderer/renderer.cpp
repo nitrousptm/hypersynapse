@@ -20,7 +20,7 @@ Renderer::~Renderer() = default;
 
 namespace {
 
-void set_standard_uniforms(uint32_t prog, const Timeline& tl, int w, int h) {
+void set_standard_uniforms(uint32_t prog, const Timeline& tl, int w, int h, float rms = 0.5f) {
     glUniform1f(glGetUniformLocation(prog, "u_time"),       static_cast<float>(tl.time()));
     glUniform2f(glGetUniformLocation(prog, "u_res"),        static_cast<float>(w), static_cast<float>(h));
     glUniform1f(glGetUniformLocation(prog, "u_beat"),       static_cast<float>(tl.beat_phase()));
@@ -29,6 +29,7 @@ void set_standard_uniforms(uint32_t prog, const Timeline& tl, int w, int h) {
     glUniform1f(glGetUniformLocation(prog, "u_scene_norm"), static_cast<float>(tl.scene_norm()));
     glUniform1i(glGetUniformLocation(prog, "u_beat_cnt"),   tl.beat_count());
     glUniform1i(glGetUniformLocation(prog, "u_bar_cnt"),    tl.bar_count());
+    glUniform1f(glGetUniformLocation(prog, "u_rms"),        rms);
 }
 
 bool make_fbo(int w, int h, uint32_t& fbo, uint32_t& tex) {
@@ -149,7 +150,9 @@ bool Renderer::init_portal_fbos(int w, int h) {
 
 // ─── render ───────────────────────────────────────────────────────────────────
 
-void Renderer::render(const Timeline& tl) {
+void Renderer::render(const Timeline& tl, float rms) {
+    rms_ = rms;
+
     stats_.update();
     stats_.set_timeline_metrics(Stats::TimelineMetrics{
         tl.time(), tl.beat_phase(), tl.bar_phase(),
@@ -439,7 +442,7 @@ void Renderer::draw_post(const Timeline& tl) {
     glBindTexture(GL_TEXTURE_2D, fbo_tex_);
     glUniform1i(glGetUniformLocation(post_program_, "u_scene"), 0);
 
-    set_standard_uniforms(post_program_, tl, width_, height_);
+    set_standard_uniforms(post_program_, tl, width_, height_, rms_);
     glUniform1i(glGetUniformLocation(post_program_, "u_scene_idx"),
                 static_cast<int>(tl.scene()));
 

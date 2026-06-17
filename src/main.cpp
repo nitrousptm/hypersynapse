@@ -114,7 +114,8 @@ int main(int argc, char** argv) {
         if (t >= kDemoDurationSec) break;
 
         timeline.update(t);
-        renderer.render(timeline);
+        float rms = audio.amplitude_at(t);
+        renderer.render(timeline, rms);
 
         // Audio fade-out: silence starts ~3:48 (228s), fully silent by ~3:55 (235s).
         // Mirrors the visual black-out in 07_transcendence.frag (scene_norm 0.875→0.895).

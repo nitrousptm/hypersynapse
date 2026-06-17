@@ -22,7 +22,7 @@ public:
     ~Renderer();
 
     bool init(int width, int height);
-    void render(const Timeline& tl);
+    void render(const Timeline& tl, float rms = 0.5f);
     void shutdown();
 
     ParticleSystem* particles() { return particles_.get(); }
@@ -97,6 +97,10 @@ private:
 
     // Track last scene for transition detection
     uint8_t last_scene_ = 0;
+
+    // Current-frame audio RMS amplitude [0,1], set at start of render().
+    // Used by draw_post() to scale beat-reactive bloom and flash effects.
+    float rms_ = 0.5f;
 };
 
 }  // namespace hyp

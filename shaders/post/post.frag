@@ -14,6 +14,7 @@ uniform float     u_act_norm;
 uniform float     u_scene_norm;
 uniform int       u_bar_cnt;
 uniform int       u_scene_idx;   // current scene 0–6
+uniform float     u_rms;         // audio RMS amplitude [0,1] from precomputed envelope
 
 // ─── hash ─────────────────────────────────────────────────────────────────────
 float hash21(vec2 p) {
@@ -587,10 +588,14 @@ void main() {
         }
     }
 
-    // 2. Dual-layer bloom (richer in Acts III/IV)
-    float bloom_thresh   = mix(0.82, 0.50, demo_norm);
+    // 2. Dual-layer bloom (richer in Acts III/IV; audio-reactive via u_rms)
+    // u_rms scales bloom strength: quiet passages bloom gently, loud peaks bloom hard.
+    // rms_scale maps [0,1] → [0.6, 1.4] so there's always some bloom but loud moments
+    // are noticeably more dramatic.
+    float rms_scale      = 0.60 + u_rms * 0.80;
+    float bloom_thresh   = mix(0.82, 0.50, demo_norm) + (1.0 - u_rms) * 0.12;
     float bloom_radius   = mix(5.0, 14.0, demo_norm) + kick * 6.0;
-    float bloom_strength = mix(0.35, 1.10, demo_norm);
+    float bloom_strength = mix(0.35, 1.10, demo_norm) * rms_scale;
     col += bloom(uv, bloom_thresh, bloom_radius, bloom_strength);
 
     // 2c. Zodiacal scatter — Scene 7 (Transcendence): soft luminous starfield haze.
@@ -1080,13 +1085,14 @@ void main() {
     // 7. Vignette — intense in I/II, open in III/IV + beat-pulse heartbeat
     float vig_str = mix(2.0, 0.8, smoothstep(0.4375, 0.75, demo_norm));
     // Beat-driven tightening: vignette briefly clamps inward on strong kicks
-    float vig_pulse = kick * 0.6 * smoothstep(0.1875, 0.75, demo_norm);
+    float vig_pulse = kick * 0.6 * smoothstep(0.1875, 0.75, demo_norm) * (0.4 + u_rms * 0.6);
     float vig = 1.0 - dot(ctr * 1.5, ctr * 1.5);
     vig = clamp(pow(clamp(vig, 0.0, 1.0), vig_str + vig_pulse), 0.0, 1.0);
     col *= vig;
 
-    // 8. Beat-sync white flash (strong beats in Acts II/III)
-    float flash_str = smoothstep(0.1875, 0.75, demo_norm);
+    // 8. Beat-sync white flash (strong beats in Acts II/III; audio-reactive)
+    // u_rms scales the flash: quiet passages barely flash, loud beats punch hard.
+    float flash_str = smoothstep(0.1875, 0.75, demo_norm) * (0.5 + u_rms * 0.5);
     col += exp(-u_beat * 20.0) * flash_str * 0.08;
 
     // 8b. Scene 7 "big-bang" entry flash: universe-particle explodes at Act III→IV cut.

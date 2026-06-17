@@ -210,19 +210,20 @@ Vollständige Anleitung: [docs/BUILD.md](docs/BUILD.md) | Submission-Checkliste:
 
 ---
 
-## Implementation Status (16 June 2026)
+## Implementation Status (17 June 2026)
 
 | System | Status |
 |--------|--------|
 | All 7 scene shaders | ✅ Complete |
 | SDF raymarching library | ✅ Complete |
-| GPU particle system (curl noise + velocity sprites) | ✅ Complete |
+| GPU particle system (curl noise + velocity sprites + Act IV color arc) | ✅ Complete |
 | Post-FX pipeline — ACES, bloom, CA, scanlines, grain, vignette | ✅ Complete |
 | Per-scene entry + exit post FX (all 7 scenes) | ✅ Complete |
 | Act IV mathematical concept transition flashes (post.frag) | ✅ Complete |
 | Recursive portal FBOs (Scene 6) | ✅ Complete |
-| Scene 7 Act IV mathematical sequence (8 structures) | ✅ Complete |
+| Scene 7 Act IV mathematical sequence (10 structures: φ, helix, Lorenz×2, Clifford T², Hopf, Julia+Mandelbrot, Riemann+Möbius) | ✅ Complete |
 | Audio integration (miniaudio, 133 BPM locked, fade-out) | ✅ Complete |
+| Audio RMS amplitude envelope — `u_rms` uniform (bloom + flash + vignette audio-reactive) | ✅ Complete |
 | Beat sync + timeline | ✅ Complete |
 | Procedural mesh generation | ✅ Complete |
 | Frame capture + ffmpeg WebM (audio mix-in) | ✅ Complete |

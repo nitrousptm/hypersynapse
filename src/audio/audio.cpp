@@ -1,5 +1,6 @@
 #define MINIAUDIO_IMPLEMENTATION
 #include "audio/audio.h"
+#include <cmath>
 #include <cstdint>
 #include <cstdio>
 
@@ -28,6 +29,10 @@ void Audio::play(const char* path) {
         ma_sound_uninit(&sound_);
         sound_loaded_ = false;
     }
+
+    // Precompute RMS envelope before starting playback — decodes the file once
+    // using a separate decoder so we don't delay the playback start.
+    precompute_envelope(path);
 
     if (ma_sound_init_from_file(&engine_, path, MA_SOUND_FLAG_DECODE, nullptr, nullptr, &sound_) != MA_SUCCESS) {
         std::fprintf(stderr, "[audio] failed to load: %s\n", path);
@@ -72,6 +77,73 @@ void Audio::shutdown() {
     }
     ma_engine_uninit(&engine_);
     valid_ = false;
+}
+
+// ─── Amplitude envelope (precomputed at load time) ───────────────────────────
+
+void Audio::precompute_envelope(const char* path) {
+    rms_envelope_.clear();
+    envelope_peak_ = 1.0f;
+
+    // Decode the WAV independently at f32/stereo/48 kHz so we get raw samples.
+    ma_decoder_config cfg = ma_decoder_config_init(ma_format_f32, 2, 48000);
+    ma_decoder dec{};
+    if (ma_decoder_init_file(path, &cfg, &dec) != MA_SUCCESS) {
+        std::fprintf(stderr, "[audio] envelope: failed to open %s\n", path);
+        return;
+    }
+
+    // One envelope sample every kEnvelopeStep seconds.
+    const int kFramesPerWindow = static_cast<int>(48000 * kEnvelopeStep + 0.5);
+    const int kChannels        = 2;
+    const int kBufFrames       = kFramesPerWindow;
+
+    std::vector<float> buf(static_cast<size_t>(kBufFrames * kChannels));
+    float peak = 0.0f;
+
+    while (true) {
+        ma_uint64 frames_read = 0;
+        ma_result r = ma_decoder_read_pcm_frames(&dec, buf.data(),
+                                                  static_cast<ma_uint64>(kBufFrames),
+                                                  &frames_read);
+        if (frames_read == 0) break;
+
+        // RMS over all samples in this window
+        double sum_sq = 0.0;
+        const size_t n = static_cast<size_t>(frames_read) * kChannels;
+        for (size_t i = 0; i < n; ++i) {
+            double s = buf[i];
+            sum_sq += s * s;
+        }
+        float rms = static_cast<float>(std::sqrt(sum_sq / static_cast<double>(n)));
+        rms_envelope_.push_back(rms);
+        if (rms > peak) peak = rms;
+
+        if (r != MA_SUCCESS) break;  // end-of-file
+    }
+
+    ma_decoder_uninit(&dec);
+
+    // Normalise so the loudest window = 1.0
+    envelope_peak_ = (peak > 1e-6f) ? peak : 1.0f;
+    for (float& v : rms_envelope_) v /= envelope_peak_;
+
+    std::printf("[audio] envelope: %zu windows (%.1f s, peak=%.4f)\n",
+                rms_envelope_.size(),
+                rms_envelope_.size() * kEnvelopeStep,
+                envelope_peak_);
+}
+
+float Audio::amplitude_at(double t) const {
+    if (rms_envelope_.empty()) return 0.5f;
+    double idx_f  = t / kEnvelopeStep;
+    if (idx_f < 0.0) return rms_envelope_.front();
+    auto   idx_lo = static_cast<size_t>(idx_f);
+    if (idx_lo >= rms_envelope_.size()) return rms_envelope_.back();
+    size_t idx_hi = idx_lo + 1;
+    if (idx_hi >= rms_envelope_.size()) return rms_envelope_.back();
+    float  frac   = static_cast<float>(idx_f - static_cast<double>(idx_lo));
+    return rms_envelope_[idx_lo] * (1.0f - frac) + rms_envelope_[idx_hi] * frac;
 }
 
 }  // namespace hyp
