@@ -153,10 +153,20 @@ void main() {
         p.vel_type.xyz += curl_noise(pos, u_time) * curl_str * u_dt;
     }
 
-    // Act IV pull-to-center: particles converge for the singularity
+    // Act IV: big-bang entry burst + singularity pull-to-center
     if (u_act_idx == 3) {
+        // Big-bang entry burst (scene_norm 0→0.055, ~3s): particles explode outward
+        // mirroring the UV expansion burst in post.frag (section 0a) — spatial coherence.
+        float bang_t = 1.0 - smoothstep(0.0, 0.055, u_scene_norm);
+        if (bang_t > 0.001) {
+            vec3 bang_dir = normalize(p.pos_age.xyz + vec3(0.0, 0.001, 0.0));
+            p.vel_type.xyz += bang_dir * bang_t * 9.0 * u_dt;
+        }
+
+        // Singularity pull-to-center: ramps up over Act IV then silenced before logo
+        float pull_str = smoothstep(0.75, 1.0, u_act_norm) *
+                         (1.0 - smoothstep(0.80, 0.82, u_scene_norm)) * 3.0;
         vec3 to_center = -p.pos_age.xyz;
-        float pull_str = smoothstep(0.75, 1.0, u_act_norm) * 3.0;
         p.vel_type.xyz += to_center * pull_str * u_dt;
     }
 
@@ -185,8 +195,25 @@ void main() {
         vec3 bloom_col  = mix(vec3(1.0, 0.3, 0.9), vec3(1.0, 0.8, 0.2), hue_shift);
         p.col_life.xyz  = mix(p.col_life.xyz, bloom_col, color_drift * 1.5);
     } else {
-        // Act IV: pure white / starlight — cosmic transcendence
-        p.col_life.xyz = mix(p.col_life.xyz, vec3(0.9, 0.95, 1.0), color_drift * 0.5);
+        // Act IV: color arc synchronized with the mathematical concept timeline —
+        // mirrors the tendril color arc in 07_transcendence.frag.
+        // amber-gold (Fibonacci/helix, organic birth, 0–0.44)
+        //   → electric cyan (Clifford/Hopf, cosmic topology, 0.44–0.67)
+        //   → violet-magenta (Julia/Riemann, complex analysis, 0.67–0.875)
+        //   → pure white (singularity convergence, 0.875+)
+        float sn = u_scene_norm;
+        vec3 act4_col;
+        if (sn < 0.44) {
+            act4_col = mix(vec3(0.95, 0.68, 0.18), vec3(0.08, 0.72, 0.98),
+                           smoothstep(0.22, 0.44, sn));
+        } else if (sn < 0.67) {
+            act4_col = mix(vec3(0.08, 0.72, 0.98), vec3(0.60, 0.10, 0.96),
+                           smoothstep(0.44, 0.67, sn));
+        } else {
+            act4_col = mix(vec3(0.60, 0.10, 0.96), vec3(0.90, 0.95, 1.00),
+                           smoothstep(0.67, 0.875, sn));
+        }
+        p.col_life.xyz = mix(p.col_life.xyz, act4_col, color_drift * 0.8);
     }
 
     particles_rw.particles[idx] = p;

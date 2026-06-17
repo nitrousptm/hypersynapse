@@ -621,14 +621,32 @@ void Renderer::emit_particles(const Timeline& tl) {
         // particles age out (~4s lifetime) by the time the logo materialises at ~0.905.
         float sn_t = static_cast<float>(tl.scene_norm());
         if (sn_t > 0.82f) break;
+
+        // Spawn color matches the Act IV mathematical concept timeline:
+        //   amber-gold (Fibonacci/helix, 0–0.44) → electric cyan (Hopf, 0.44–0.67)
+        //   → violet-magenta (Julia/Riemann, 0.67–0.875) → white (convergence)
+        // Mirrors the tendril color arc and the particle compute color_drift target.
+        glm::vec3 base_col;
+        if (sn_t < 0.44f) {
+            float t = glm::smoothstep(0.22f, 0.44f, sn_t);
+            base_col = glm::mix(glm::vec3(0.95f, 0.68f, 0.18f), glm::vec3(0.08f, 0.72f, 0.98f), t);
+        } else if (sn_t < 0.67f) {
+            float t = glm::smoothstep(0.44f, 0.67f, sn_t);
+            base_col = glm::mix(glm::vec3(0.08f, 0.72f, 0.98f), glm::vec3(0.60f, 0.10f, 0.96f), t);
+        } else {
+            float t = glm::smoothstep(0.67f, 0.875f, sn_t);
+            base_col = glm::mix(glm::vec3(0.60f, 0.10f, 0.96f), glm::vec3(0.90f, 0.95f, 1.00f), t);
+        }
+
         int burst = 200;
         for (int i = 0; i < burst; i++) {
             glm::vec3 pos = glm::ballRand(0.1f);
             glm::vec3 vel = glm::normalize(pos + glm::sphericalRand(0.1f)) * glm::linearRand(0.5f, 3.0f);
-            glm::vec3 col = glm::vec3(
-                glm::linearRand(0.6f, 1.0f),
-                glm::linearRand(0.6f, 1.0f),
-                1.0f);
+            // Small per-particle hue variation around the base color
+            glm::vec3 col = base_col + glm::vec3(glm::linearRand(-0.08f, 0.08f),
+                                                  glm::linearRand(-0.06f, 0.06f),
+                                                  glm::linearRand(-0.06f, 0.06f));
+            col = glm::clamp(col, glm::vec3(0.0f), glm::vec3(1.0f));
             particles_->emit(pos, vel, 0, 4.0f, col);
         }
         break;
