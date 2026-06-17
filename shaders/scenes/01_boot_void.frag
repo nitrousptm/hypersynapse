@@ -161,7 +161,7 @@ float data_column(vec2 uv, float col_x, float layer) {
     float dist_x = abs(uv.x - col_x - layer*0.02);
     if (dist_x > cell_w * 0.8) return 0.0;
 
-    float speed = 0.5 + hash11(col_x * 13.7 + layer) * 1.8;
+    float speed = (0.5 + hash11(col_x * 13.7 + layer) * 1.8) * (0.80 + u_rms * 0.45);
     float offset = layer * 0.5;
     float scroll = fract(uv.y / cell_h + u_time * speed + offset);
     vec2 cell_id = vec2(floor(uv.x / cell_w), floor(uv.y / cell_h));
@@ -453,7 +453,7 @@ void main() {
     vec3 col = vec3(0.003, 0.005, depth * 3.0);
 
     // ── Recursive Hex Grid (7 layers) ──
-    float hex_scale = 8.0 + sin(u_time * 0.1) * 1.0;
+    float hex_scale = 8.0 + sin(u_time * 0.1) * (1.0 + u_rms * 1.2);
     vec4 hi_main = hex_recursive(uv * hex_scale, 1.0);
     float hex_edge = smoothstep(0.0, 0.04, -hi_main.x);
 
@@ -475,13 +475,13 @@ void main() {
     vec3 hex_col2 = mix(vec3(0.05, 0.08, 0.16), vec3(0.03, 0.06, 0.12), hash21(hi2.zw));
 
     col += hex_edge * hex_col * (0.5 + 0.5 * u_scene_norm);
-    col += cell_glow * cell_pulse * vec3(0.1, 0.25, 0.9) * 0.4 * u_scene_norm;
+    col += cell_glow * cell_pulse * vec3(0.1, 0.25, 0.9) * 0.4 * u_scene_norm * (0.70 + u_rms * 0.65);
     col += inner_glow * vec3(0.15, 0.3, 1.0) * 0.3;
     col += hex2_edge * hex_col2 * 0.6;
     col += hex3_edge * vec3(0.02, 0.04, 0.1) * 0.3;
 
     // ── Advanced Circuit Traces (branching networks) ──
-    float trace_density = u_scene_norm * u_scene_norm;
+    float trace_density = u_scene_norm * u_scene_norm * (0.75 + u_rms * 0.65);
     float traces = 0.0;
     for (int i = 0; i < 18; i++) {
         traces += circuit_trace(uv, float(i) * 0.13, u_time) * trace_density;
@@ -532,7 +532,7 @@ void main() {
         sin(u_time * 0.11) * 0.3,
         cos(u_time * 0.09) * 0.2
     );
-    float reticle_rot = u_time * 0.5;
+    float reticle_rot = u_time * (0.50 + u_rms * 0.50);
     col += crosshair(uv, reticle_pos, 0.07, reticle_rot) * vec3(0.5, 0.8, 1.0) * 0.6;
 
     // Portal rings at cardinal positions

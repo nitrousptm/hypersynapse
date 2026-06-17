@@ -96,17 +96,18 @@ float sdf_room(vec3 p) {
     float beat_expand = smoothstep(0.08, 0.0, u_beat) * 0.018;
     float room = -sdBox(p, vec3(2.0, 1.5, 2.0));
 
-    // Primary recursive box
-    vec3 pp = rotate4d(fold_space(p * 0.4) * 0.5, u_time * 0.3);
+    // Primary recursive box — u_rms accelerates rotation: louder music unfolds geometry faster
+    float rms_spd = 1.0 + u_rms * 0.45;
+    vec3 pp = rotate4d(fold_space(p * 0.4) * 0.5, u_time * 0.3 * rms_spd);
     float inner = sdBox(pp, vec3(0.3, 0.5, 0.3) + beat_expand);
 
     // Secondary nested structure (smaller, faster rotation)
-    vec3 pp2 = rotate4d(fold_space(p * 0.7) * 0.3, u_time * 0.6);
+    vec3 pp2 = rotate4d(fold_space(p * 0.7) * 0.3, u_time * 0.6 * rms_spd);
     float inner2 = sdBox(pp2 - vec3(0.5, 0.2, 0.3), vec3(0.15, 0.25, 0.15) + beat_expand * 0.6);
     inner = smin(inner, inner2, 0.08);
 
     // Tertiary micro-structure (even smaller)
-    vec3 pp3 = rotate4d(p * 1.2, u_time * 0.9);
+    vec3 pp3 = rotate4d(p * 1.2, u_time * 0.9 * rms_spd);
     float inner3 = sdBox(pp3 + vec3(0.2, -0.3, 0.0), vec3(0.08, 0.12, 0.1) + beat_expand * 0.3);
     inner = smin(inner, inner3, 0.04);
 
@@ -115,12 +116,12 @@ float sdf_room(vec3 p) {
     // Their intersection traces Villarceau circles: beautiful figure-8 curves that
     // are impossible to construct in Euclidean space without tori already touching.
     // The pair slowly counter-rotates so they appear to phase through each other.
-    float ang_a = u_time * 0.12;
+    float ang_a = u_time * (0.12 + u_rms * 0.05);
     float ca = cos(ang_a), sa = sin(ang_a);
     vec3 ta = vec3(p.x * ca - p.z * sa, p.y, p.x * sa + p.z * ca);
     float torus_a = sdTorus(ta, 0.52, 0.070 + beat_expand * 0.5);
 
-    float ang_b = u_time * 0.09 + 1.5708;  // 90° out of phase
+    float ang_b = u_time * (0.09 + u_rms * 0.04) + 1.5708;  // 90° out of phase
     float cb = cos(ang_b), sb = sin(ang_b);
     // Rotated into XY plane (swapped y and z axes then Y-rotated)
     vec3 tb = vec3(p.x * cb - p.y * sb, p.x * sb + p.y * cb, p.z);
@@ -431,7 +432,7 @@ void main() {
     // Phase 1 (0→0.65): orbit at shrinking radius — exploring impossible space.
     // Phase 2 (0.65→0.80): camera aligns with portal axis, nearly enters it.
     // Phase 3 (0.80+): reality fractures; zoom_out_t() takes over.
-    float t_cam  = u_time * 0.15;
+    float t_cam  = u_time * (0.15 + u_rms * 0.06);
     float spiral = smoothstep(0.0, 0.72, u_scene_norm);
     float orbit_r = mix(1.30, 0.55, spiral * spiral);          // 1.3 → 0.55
     float orbit_h = 0.28 * sin(t_cam * 0.7) * (1.0 - spiral * 0.65);

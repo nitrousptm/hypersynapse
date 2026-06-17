@@ -412,9 +412,9 @@ vec3 frozen_trails(vec2 uv) {
 // Render frozen shard field: returns HDR colour for blending with feedback
 vec3 render_shards(vec2 uv) {
     // Slowly orbiting camera spirals slightly inward over the scene
-    float ang = u_time * 0.11 + u_scene_norm * 0.9;
+    float ang = u_time * (0.11 + u_rms * 0.05) + u_scene_norm * 0.9;
     float r   = 2.8 - 0.6 * u_scene_norm * u_scene_norm;
-    float hh  = 0.30 * sin(u_time * 0.17 + 1.0);
+    float hh  = 0.30 * sin(u_time * (0.17 + u_rms * 0.07) + 1.0);
     vec3 ro = vec3(sin(ang) * r, hh, cos(ang) * r);
     vec3 fw = normalize(-ro);
     vec3 ri = normalize(cross(fw, vec3(0.0, 1.0, 0.0)));
@@ -688,7 +688,7 @@ vec3 temporal_streams(vec2 uv) {
         float dist = abs(uv.y - y_w);
         float w    = 0.0018;
         float s    = w / (dist + w);
-        float ph   = fract(uv.x - u_time * 0.28 + fi * 0.41 + hash1(fi * 7.13 + 1.5) * 2.0);
+        float ph   = fract(uv.x - u_time * (0.28 + u_rms * 0.18) + fi * 0.41 + hash1(fi * 7.13 + 1.5) * 2.0);
         s *= ph * (1.0 - ph) * 4.0;
         col += s * vec3(0.22, 0.52, 1.00) * sn * 0.55;
     }
@@ -701,7 +701,7 @@ vec3 temporal_streams(vec2 uv) {
         float dist = abs(uv.y - y_w);
         float w    = 0.0015;
         float s    = w / (dist + w);
-        float ph   = fract(uv.x + u_time * 0.52 + fi * 0.53 + hash1(fi * 3.71 + 0.5) * 2.0);
+        float ph   = fract(uv.x + u_time * (0.52 + u_rms * 0.22) + fi * 0.53 + hash1(fi * 3.71 + 0.5) * 2.0);
         s *= ph * (1.0 - ph) * 4.0;
         col += s * vec3(0.08, 0.88, 0.78) * sn * 0.48;
     }

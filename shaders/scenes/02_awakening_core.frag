@@ -295,7 +295,7 @@ float sdf_ao(vec3 p, vec3 n, float reveal) {
 float atmosphere_density(vec3 p) {
     float h = max(0.0, 2.0 - (p.y + 2.0) * 1.5);
     float n = fbm3(p * 1.2 + vec3(u_time * 0.12, 0.0, u_time * 0.08));
-    return h * n * 0.5;
+    return h * n * (0.40 + u_rms * 0.30);
 }
 
 vec3 volumetric_fog(vec3 ro, vec3 rd, float t_max) {
@@ -318,8 +318,8 @@ vec3 volumetric_fog(vec3 ro, vec3 rd, float t_max) {
 vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     // AO + diffuse: orbiting key light gives ribs true contact shadows
     float ao_val   = sdf_ao(p, n, reveal);
-    vec3 key_light  = normalize(vec3(sin(u_time * 0.18) * 1.5, 1.8, cos(u_time * 0.18) * 1.5));
-    vec3 fill_light = normalize(vec3(-cos(u_time * 0.12), 0.5, sin(u_time * 0.12)));
+    vec3 key_light  = normalize(vec3(sin(u_time * (0.18 + u_rms * 0.07)) * 1.5, 1.8, cos(u_time * (0.18 + u_rms * 0.07)) * 1.5));
+    vec3 fill_light = normalize(vec3(-cos(u_time * (0.12 + u_rms * 0.05)), 0.5, sin(u_time * (0.12 + u_rms * 0.05))));
     float diff_key  = max(dot(n, key_light),  0.0);
     float diff_fill = max(dot(n, fill_light), 0.0) * 0.28;
     vec3 mat = vec3(0.018, 0.020, 0.028) * (0.10 + (diff_key + diff_fill) * ao_val);
@@ -330,7 +330,7 @@ vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     vec3 pl_shade = p + vec3(0.0, 3.5 * (1.0 - reveal), 0.0);
     vec2 eng_uv = pl_shade.xy * vec2(1.0/0.35, 1.0/1.75) * 0.4;
     float eng_glow = sacred_geometry_glow(eng_uv, reveal);
-    mat += eng_glow * vec3(0.1, 0.5, 1.0) * 3.0;
+    mat += eng_glow * vec3(0.1, 0.5, 1.0) * (2.4 + u_rms * 1.6);
 
     // Specular: mirror-like, tracks animated key light
     float spec = pow(max(dot(reflect(-key_light, n), -rd), 0.0), 64.0);
@@ -339,7 +339,7 @@ vec3 shade_monolith(vec3 p, vec3 n, vec3 rd, float reveal) {
     // Fresnel glow (electric edge)
     float fres = pow(1.0 - abs(dot(n, -rd)), 4.0);
     vec3 fres_col = mix(vec3(0.0, 0.2, 0.8), vec3(0.5, 0.8, 1.0), reveal);
-    mat += fres * fres_col * (0.4 + 0.8 * reveal);
+    mat += fres * fres_col * (0.4 + 0.8 * reveal + u_rms * 0.45);
 
     // Opening crack: intense white/cyan light from the split
     float split_prog = smoothstep(0.82, 1.0, reveal);
