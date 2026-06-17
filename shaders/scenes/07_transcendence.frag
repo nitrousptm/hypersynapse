@@ -193,7 +193,7 @@ vec3 cosmic_helix(vec2 uv, float gate) {
     const float AMP   = 0.30;  // lateral amplitude in screen space
     const float W_STR = 0.0055;// strand tube half-width
 
-    float rot_t = u_time * 0.12;
+    float rot_t = u_time * (0.12 + u_rms * 0.06);  // louder → helix turns faster
     float c_rot = cos(rot_t), s_rot = sin(rot_t);
 
     // uv.x is already aspect-corrected (×res.x/res.y) — use directly for iso distances.
@@ -278,7 +278,7 @@ vec3 lorenz_attractor(vec2 uv, float scene_norm) {
     const float sigma = 10.0, rho = 28.0, beta = 8.0 / 3.0;
     const float dt    = 0.012;
 
-    float ang = u_time * 0.07;
+    float ang = u_time * (0.07 + u_rms * 0.04);  // louder → faster 3D rotation reveals butterfly
     float ca = cos(ang), sa = sin(ang);
     float beat_b  = 1.0 + exp(-u_beat * 7.0) * 0.60;
     const float inv_sx = 1.0 / 22.0;
@@ -371,7 +371,7 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
 
     const float GA   = 2.39996322972865332;  // golden angle = 2π(2−φ) ≈ 137.508°
     float beat_b     = 1.0 + exp(-u_beat * 6.0) * 0.60;
-    float rot        = u_time * 0.038;          // slow rotation reveals 3D nature
+    float rot        = u_time * (0.038 + u_rms * 0.018);  // louder → golden spiral rotates faster
     const float r0   = 0.055;                  // radial scale factor
     const int   N    = 65;                     // seed count (13th Fibonacci after 55)
 
@@ -497,7 +497,7 @@ vec3 julia_morph(vec2 uv, float gate) {
 
     // c traces a slow closed path near the Mandelbrot seahorse valley (−0.74, 0.11i)
     // — every point on this circle gives a visually distinct Julia fractal.
-    float c_ang = u_time * 0.055 + t * 1.80;
+    float c_ang = u_time * (0.055 + u_rms * 0.025) + t * 1.80;  // louder → faster fractal morph
     vec2  c_val = vec2(-0.7269 + 0.13 * cos(c_ang),
                         0.1889 + 0.11 * sin(c_ang * 1.31));
 
@@ -567,11 +567,12 @@ vec3 clifford_torus(vec2 uv, float gate) {
     float beat_boost = 1.0 + smoothstep(0.08, 0.0, u_beat) * 0.65;
 
     // Independent 4D rotations: XW-plane (theta1) and YZ-plane (theta2)
-    float c1 = cos(u_time * 0.18), s1 = sin(u_time * 0.18);
-    float c2 = cos(u_time * 0.13), s2 = sin(u_time * 0.13);
+    float ct_spd = 1.0 + u_rms * 0.45;  // louder → S³ rotations accelerate
+    float c1 = cos(u_time * 0.18 * ct_spd), s1 = sin(u_time * 0.18 * ct_spd);
+    float c2 = cos(u_time * 0.13 * ct_spd), s2 = sin(u_time * 0.13 * ct_spd);
 
     // 3D view: slow Y-axis rotation + gentle X-tilt
-    float rot_y = u_time * 0.09;
+    float rot_y = u_time * 0.09 * ct_spd;
     float rot_x = 0.28 + sin(u_time * 0.05) * 0.08;
     float cry = cos(rot_y), sry = sin(rot_y);
     float crx = cos(rot_x), srx = sin(rot_x);
@@ -703,8 +704,10 @@ vec3 hopf_fibration(vec2 uv, float gate) {
     vec3 col = vec3(0.0);
 
     // Camera: slow Y rotation reveals the interlocking ring structure over time
-    float rot_y = u_time * 0.11;
-    float rot_x = 0.35 + sin(u_time * 0.06) * 0.10;  // gentle nod
+    // u_rms accelerates the rotation — louder sections unveil more fiber topology
+    float hf_spd = 1.0 + u_rms * 0.40;
+    float rot_y = u_time * 0.11 * hf_spd;
+    float rot_x = 0.35 + sin(u_time * 0.06 * hf_spd) * 0.10;  // gentle nod
     float cry = cos(rot_y), sry = sin(rot_y);
     float crx = cos(rot_x), srx = sin(rot_x);
 
@@ -835,8 +838,8 @@ vec3 riemann_sphere(vec2 uv, float gate) {
     float z3        = on_sphere ? sqrt(max(0.0, 1.0 - dlen * dlen)) : 0.0;
     vec3  n3        = vec3(sc.x / sphere_r, sc.y / sphere_r, z3);
 
-    // Y-axis rotation slows to a stop during collapse (freeze the axis)
-    float rot_t = u_time * 0.13 * (1.0 - collapse_t * 0.96);
+    // Y-axis rotation slows to a stop during collapse; u_rms adds dynamic reveal speed
+    float rot_t = u_time * (0.13 + u_rms * 0.05) * (1.0 - collapse_t * 0.96);
     float cr = cos(rot_t), sr = sin(rot_t);
     vec3 p3 = vec3(n3.x * cr + n3.z * sr, n3.y, -n3.x * sr + n3.z * cr);
     // Pitch gradually reduces during collapse: north pole tilts toward camera
@@ -938,7 +941,9 @@ vec3 riemann_sphere(vec2 uv, float gate) {
         circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 1.60)) * 0.80;  // ~equator
         circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 2.20)) * 0.50;  // ~30° N
         circles += smoothstep(0.016, 0.0, abs(bg_r - sphere_r * 3.00)) * 0.28;  // ~60° N
-        col += fcol * (ray_val * 0.052 + circles * 0.060);
+        // u_rms brightens the Möbius grid: louder passages reveal the conformal map more
+        float rms_grid = 0.70 + u_rms * 0.60;
+        col += fcol * (ray_val * 0.052 + circles * 0.060) * rms_grid;
     }
 
     float beat_boost = 1.0 + smoothstep(0.06, 0.0, u_beat) * 0.55;

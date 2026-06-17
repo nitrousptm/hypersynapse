@@ -235,10 +235,11 @@ vec3 accretion_disk(vec3 hit) {
     float dop_b  = 1.0 + v_frac * 0.72 * raw_d;  // blue:  72% swing (most sensitive)
     disk_col = disk_col * vec3(dop_r, dop_g, dop_b);
 
-    // Beat surge: on each kick the disk flares
+    // Beat surge on kicks; u_rms boosts sustained disk luminosity during loud passages
     float surge = 1.0 + smoothstep(0.06, 0.0, u_beat) * 1.20;
+    float rms_b = 0.75 + u_rms * 0.50;  // quiet: dim accretion; loud: blazing disk
 
-    return disk_col * density * surge * 3.2;
+    return disk_col * density * surge * rms_b * 3.2;
 }
 
 // ─── Kerr Ergosphere ─────────────────────────────────────────────────────────

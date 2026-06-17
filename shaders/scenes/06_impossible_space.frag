@@ -487,7 +487,7 @@ void main() {
             {
                 vec2 grid_xz    = floor(vec2(p.x, p.z) * 3.5);
                 float col_h     = hash2(grid_xz);
-                float spd       = 1.2 + col_h * 2.8;
+                float spd       = (1.2 + col_h * 2.8) * (0.70 + u_rms * 0.60);  // data flows faster during loud passages
                 float phase     = col_h * 7.3;
                 float cell_y    = fract(p.y * 5.0 - u_time * spd + phase);
                 float cell_id   = floor(p.y * 5.0 - u_time * spd + phase);
