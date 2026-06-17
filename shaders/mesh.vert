@@ -9,6 +9,7 @@ uniform mat4  u_proj;
 uniform float u_time;
 uniform float u_scene_norm;   // 0..1 within Scene 3
 uniform float u_beat;
+uniform float u_rms;
 
 out vec3  v_world_pos;
 out vec3  v_normal;
@@ -35,8 +36,9 @@ void main() {
     float rate       = 0.25 + hash1(fi * 13.7f) * 0.75f;
     float corruption = rate * u_scene_norm;
 
-    // Sinusoidal Y-axis bending — buildings warp toward mathematical forms
-    float disp_scale = corruption * corruption;
+    // Sinusoidal Y-axis bending — buildings warp toward mathematical forms.
+    // u_rms amplifies the warp during loud passages: AI control intensifies with music.
+    float disp_scale = corruption * corruption * (1.0 + u_rms * 0.55);
     float bend_x = sin(world_pos.y * 0.5 + u_time * 0.8 + fi * 0.0013) * disp_scale * 0.4;
     float bend_z = cos(world_pos.y * 0.5 + u_time * 0.7 + fi * 0.0021) * disp_scale * 0.3;
     world_pos.x += bend_x;

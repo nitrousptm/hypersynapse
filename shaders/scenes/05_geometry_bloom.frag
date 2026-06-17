@@ -172,7 +172,9 @@ float sdf_world(vec3 p) {
     p *= 1.0 - beat_surge;
 
     // Multiple flowers at different positions + temple in center
-    float t = u_time * 0.15;
+    // u_rms accelerates orbits: loud passages push flowers into energetic spirals;
+    // quiet interludes let them drift at contemplative speed (0.15 base).
+    float t = u_time * (0.15 + u_rms * 0.07);
 
     float temple = sdf_temple(p * 0.7) / 0.7;
 
@@ -331,7 +333,9 @@ vec3 floor_caustics(vec3 gp, float fshad, float gd, float lt_sh) {
     // Color: magenta-pink (key light tinted by translucent petal) → amber-gold at edges
     vec3 caus_col = mix(vec3(1.00, 0.52, 0.82), vec3(1.00, 0.82, 0.32), turb);
 
-    return caus_col * caus * edge * bb * gate * 0.22;
+    // u_rms: caustic shimmer blazes during loud passages, dims during quiet bridges
+    float rms_c = 0.65 + u_rms * 0.60;
+    return caus_col * caus * edge * bb * gate * rms_c * 0.22;
 }
 
 // ─── kaleidoscope fold for sky ray directions ─────────────────────────────────
@@ -430,7 +434,10 @@ vec3 god_rays(vec3 ro, vec3 rd, float t_hit) {
         if (transmittance < 0.005) break;  // early exit when medium is opaque
     }
 
-    return acc * beat_surge * 1.5;
+    // u_rms drives sustained volumetric intensity: quiet passages dim the rays;
+    // loud musical energy floods the scene with god-ray light (emotional peak).
+    float rms_vol = 0.70 + u_rms * 0.65;
+    return acc * beat_surge * rms_vol * 1.5;
 }
 
 // ─── main ─────────────────────────────────────────────────────────────────────
@@ -440,8 +447,9 @@ void main() {
     uv.x *= u_res.x / u_res.y;
 
     // Camera slowly spiraling inward
+    // u_rms tightens the orbital radius during loud passages (subtle immersion pull)
     float angle = u_time * 0.18;
-    float radius = 3.0 - 1.5 * u_scene_norm;
+    float radius = (3.0 - 1.5 * u_scene_norm) * (1.0 - u_rms * 0.11);
     float height = 0.3 + 0.5 * sin(u_time * 0.22);
     vec3 ro = vec3(sin(angle)*radius, height, cos(angle)*radius);
     vec3 ta = vec3(0.0);
@@ -461,7 +469,9 @@ void main() {
         // symmetry as fractal geometry reaches peak bloom). Beat kicks add +2 folds
         // momentarily — the mandala "snaps" to higher order on each 133 BPM hit.
         float beat_snap = exp(-u_beat * 8.0) * 2.0;
-        float fold_k = mix(6.0, 12.0, u_scene_norm * u_scene_norm) + beat_snap;
+        // u_rms raises the kaleidoscope fold order during loud passages: the mandala
+        // crystallises to higher symmetry at audio peaks, then relaxes during quiet bridges.
+        float fold_k = mix(6.0, 12.0, u_scene_norm * u_scene_norm) + beat_snap + u_rms * 2.8;
         float SECTOR = 6.28318530718 / fold_k;   // 2π/k
         az = mod(az + 3.14159265, 2.0 * SECTOR);
         if (az > SECTOR) az = 2.0 * SECTOR - az;
@@ -642,8 +652,10 @@ void main() {
     // Marched separately; overwrites col+t if closer than flowers/sky.
     float mb_gate = smoothstep(0.35, 0.70, u_scene_norm);
     if (mb_gate > 0.001) {
+        // u_rms expands the Mandelbulb during loud passages — more fractal surface visible
         float mb_sc = mix(0.36, 0.50, mb_gate)
-                    * (1.0 + smoothstep(0.07, 0.0, u_beat) * 0.055 * u_scene_norm);
+                    * (1.0 + smoothstep(0.07, 0.0, u_beat) * 0.055 * u_scene_norm
+                           + u_rms * 0.09);
         int   mb_steps = 0;
         float t_bulb   = march_bulb(ro, rd, mb_sc, mb_steps);
         if (t_bulb < 5.0 && t_bulb < t) {
@@ -675,6 +687,9 @@ void main() {
             // Beat self-emission: surges white-gold on each 133 BPM kick
             float beat_emit = smoothstep(0.06, 0.0, u_beat) * u_scene_norm;
             mb_base += beat_emit * vec3(1.0, 0.82, 0.40) * 1.65;
+            // u_rms sustained amber-gold emission: fractal glows warmly during the
+            // entire loud passage — not just on kicks — selling the emotional peak.
+            mb_base += u_rms * vec3(0.85, 0.60, 0.22) * 0.42 * mb_gate;
 
             // Step-count AO: high step count = deep crevice = darker
             float ao_b = 1.0 - clamp(float(mb_steps) / 72.0, 0.0, 1.0) * 0.58;

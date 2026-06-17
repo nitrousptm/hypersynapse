@@ -163,8 +163,10 @@ void main() {
     col += wins * spec * vec3(0.9, 0.85, 0.7) * 0.35;
 
     // Light arteries spreading across surface
+    // u_rms: arteries blaze harder during loud passages — AI power visibly surging
     float art = artery(v_uv + vec2(u_time * 0.02, 0.0));
-    col += art * vec3(0.0, 0.5, 1.0) * v_corruption * 2.0;
+    float art_rms = 1.4 + u_rms * 1.20;
+    col += art * vec3(0.0, 0.5, 1.0) * v_corruption * art_rms;
 
     // Corruption discoloration: building transitions to mathematical form
     // Edges and corners glow as geometry warps
@@ -192,8 +194,10 @@ void main() {
     // Roofline glow: AI energy concentrates at building tops during corruption.
     // The corona along the top edge is where mathematical structures first emerge,
     // making each building look like it's burning with electric-blue AI light.
+    // u_rms: roofline burns hotter during loud passages — sustained AI power injection.
     float roof_edge = smoothstep(0.04, 0.0, abs(v_uv.y - 1.0));
-    col += roof_edge * v_corruption * vec3(0.08, 0.50, 1.00) * 2.5;
+    float roof_rms  = 0.75 + u_rms * 0.70;
+    col += roof_edge * v_corruption * vec3(0.08, 0.50, 1.00) * 2.5 * roof_rms;
     // Vertical corner glow: building sides light up as architecture warps
     float side_edge = min(smoothstep(0.06, 0.0, v_uv.x), smoothstep(0.06, 0.0, 1.0 - v_uv.x));
     col += side_edge * v_corruption * vec3(0.04, 0.25, 0.80) * 1.4;
@@ -207,8 +211,11 @@ void main() {
     // its internal coordinate system becomes visible through the building material.
     float wf = math_wireframe(v_world_pos, v_corruption);
     vec3 wf_col = mix(vec3(0.08, 0.46, 1.00), vec3(0.20, 0.90, 1.00), u_scene_norm);
+    // u_rms: AI coordinate grid bleeds through harder during loud passages —
+    // the math wireframe is most visible when the track's energy peaks.
     float wf_pulse = exp(-u_beat * 5.2) * 0.75;
-    col += wf * wf_col * (2.6 + wf_pulse * 2.8);
+    float wf_rms   = 0.72 + u_rms * 0.56;
+    col += wf * wf_col * (2.6 + wf_pulse * 2.8) * wf_rms;
 
     // Audio energy: city surfaces blaze brighter during loud passages —
     // AI power surge reflected in every illuminated building face.
