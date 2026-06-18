@@ -184,6 +184,14 @@ vec3 color_grade(vec3 col, float demo_norm, float scene_norm) {
     float lift = mix(0.0, 0.015, smoothstep(0.4375, 0.75, t));
     col = col * col * (3.0 - 2.0 * col) + lift;
 
+    // u_rms dynamic contrast: loud passages punch +9%, quiet passages relax −4%.
+    // Centred at grey so darks get darker and brights get brighter together.
+    // Gate to Acts II–IV only (demo_norm > 0.1875) — Act I stays consistently cold.
+    if (t > 0.1875) {
+        float rms_c = 0.96 + u_rms * 0.13;  // 0.96 at silence, 1.09 at peak RMS
+        col = (col - 0.5) * rms_c + 0.5;
+    }
+
     return col;
 }
 
