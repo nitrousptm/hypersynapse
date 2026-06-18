@@ -1488,6 +1488,9 @@ void main() {
         float sn = u_scene_norm;
         float rms_boost = 0.65 + u_rms * 0.70;  // quiet≈0.65×, loud≈1.35×
         const float K = 220.0;
+        // Fibonacci phyllotaxis (0.02): golden seeds born from the big-bang — pure gold
+        // Distinct from helix amber: bright golden-yellow signals the φ origin of all spirals.
+        if (sn >= 0.02 && sn < 0.11) col += exp(-(sn - 0.02) * K) * vec3(1.00, 0.88, 0.22) * 0.45 * rms_boost;
         // Helix (0.05): life structure / DNA — warm amber-gold
         if (sn >= 0.05 && sn < 0.14) col += exp(-(sn - 0.05) * K) * vec3(0.95, 0.65, 0.18) * 0.55 * rms_boost;
         // Penrose quasicrystal (0.15): φ²-aperiodic 5-fold tiling — iridescent gold-cyan split

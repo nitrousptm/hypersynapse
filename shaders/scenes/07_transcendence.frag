@@ -438,20 +438,37 @@ vec3 penrose_quasicrystal(vec2 uv, float sn) {
 
     // Sum of 5 cosine waves at 72° intervals, spatial frequency φ².
     // The irrationality of φ makes this sum aperiodic with 5-fold symmetry.
+    // Also accumulate ∇ws for surface-relief shading (computed simultaneously).
     float ws = 0.0;
+    vec2  grad_ws = vec2(0.0);
     for (int k = 0; k < 5; k++) {
-        float a  = float(k) * PI2 / 5.0;
-        vec2  dk = vec2(cos(a), sin(a));
-        ws += cos(dot(p, dk) * PHI * PHI);
+        float a   = float(k) * PI2 / 5.0;
+        vec2  dk  = vec2(cos(a), sin(a));
+        float ph  = dot(p, dk) * PHI * PHI;
+        ws       += cos(ph);
+        grad_ws  -= sin(ph) * dk * PHI * PHI;  // ∂ws/∂p = -sin(ph)·dk·φ²
     }
-    ws *= 0.20;   // scale to [-1, 1]
+    ws       *= 0.20;   // scale to [-1, 1]
+    grad_ws  *= 0.20;   // same scale
 
-    // Edge detection at three threshold levels — these mark rhombus tile boundaries.
+    // Fake surface normal: treat ws as height field → normal = normalize(-∇ws, 1)
+    // with strength 0.55 so relief is visible but not overpowering.
+    vec3  surf_n   = normalize(vec3(-grad_ws * 0.55, 1.0));
+    vec3  light_d  = normalize(vec3(0.65, 0.50, 1.0));  // directional key light
+    float diff     = max(dot(surf_n, light_d), 0.0);
+    float spec     = pow(max(dot(reflect(-light_d, surf_n), vec3(0,0,1)), 0.0), 18.0);
+
+    // Edge detection at four threshold levels — these mark rhombus tile boundaries.
     float e0 = exp(-abs(ws)         * 20.0) * 0.60;   // boundary at ws=0  (thin↔thick)
     float e1 = exp(-abs(ws - 0.42)  * 24.0) * 0.48;   // interior thick rhombus edge
     float e2 = exp(-abs(ws + 0.42)  * 24.0) * 0.42;   // interior thin rhombus edge
     float e3 = exp(-abs(ws - 0.72)  * 30.0) * 0.32;   // outer bright vertices
     float edges = e0 + e1 + e2 + e3;
+
+    // Vertex-node sparkles — constructive interference nodes (all 5 waves in phase)
+    // occur at ws ≈ ±1.0 and mark the actual Penrose tile vertex positions.
+    float v_pos = exp(-abs(ws - 0.98) * 55.0) * 0.80;  // positive vertices (thick-tile nodes)
+    float v_neg = exp(-abs(ws + 0.98) * 55.0) * 0.55;  // negative vertices (thin-tile nodes)
 
     // Tile color: amber-gold for thick rhombus (ws>0), electric cyan for thin (ws<0).
     float tile_t  = smoothstep(-0.30, 0.30, ws);
@@ -459,15 +476,28 @@ vec3 penrose_quasicrystal(vec2 uv, float sn) {
     vec3  col_cyn = vec3(0.12, 0.65, 1.00);   // electric cyan — thin rhombus
     vec3  tcol    = mix(col_cyn, col_amb, tile_t);
 
-    // Subtle fill — each rhombus interior has a dim uniform tint so tiles read.
-    float fill = (ws * 0.5 + 0.5) * 0.04;
+    // Surface-shaded fill: relief lighting makes each rhombus interior show its
+    // 3D facet orientation — the quasicrystal reads as a physical crystal, not flat.
+    float fill_base = (ws * 0.5 + 0.5) * 0.08;
+    float fill = fill_base * (0.30 + diff * 0.70);  // Lambertian fill
+    // Specular highlight on thick-rhombus faces (near ws=+0.5)
+    float spec_mask = smoothstep(0.0, 0.5, ws);
+    fill += spec * spec_mask * 0.35;
+
+    // Vertex nodes — white-hot at the 5-fold constructive-interference nodes.
+    vec3 vcol_pos = mix(vec3(1.00, 0.95, 0.65), col_amb, 0.4);  // warm white-gold
+    vec3 vcol_neg = mix(vec3(0.70, 0.90, 1.00), col_cyn, 0.4);  // cool white-cyan
 
     // Beat-reactive glow: edges pulse brighter on each 133 BPM kick.
     float beat_b = 1.0 + exp(-u_beat * 5.8) * 0.60;
-    // u_rms: sustained loud passages increase edge contrast — quasicrystal "electrifies"
+    // u_rms: sustained loud passages increase edge contrast and relief depth.
     float rms_e  = 0.75 + u_rms * 0.50;
 
-    return (edges * tcol * rms_e + fill * tcol) * gate * beat_b;
+    vec3 c = (edges * tcol * rms_e + fill * tcol) * gate * beat_b;
+    // Vertex sparkles ride on top of the beat boost — rare alignment nodes are always
+    // the brightest features, making the 5-fold symmetry unambiguous.
+    c += (v_pos * vcol_pos + v_neg * vcol_neg) * gate * (1.0 + exp(-u_beat * 4.0) * 1.20);
+    return c;
 }
 
 // ─── Mandelbrot mini-map (scene_norm 0.52→0.76) ──────────────────────────────
