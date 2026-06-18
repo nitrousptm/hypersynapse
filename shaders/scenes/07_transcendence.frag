@@ -152,7 +152,11 @@ vec3 galaxy(vec3 rd) {
 
 float geo_connection(vec2 uv) {
     float acc = 0.0;
-    int N = 12;
+    // Beat-reactive: connections brighten on each 133 BPM kick.
+    // u_rms: sustained loud passages extend connection threshold — more stars link up.
+    float beat_b  = 1.0 + exp(-u_beat * 5.0) * 0.80;
+    float rms_thr = 0.8 + u_rms * 0.20;   // connection radius 0.80→1.00 with audio energy
+    const int N = 12;
     for (int i = 0; i < N; i++) {
         for (int j = i+1; j < N; j++) {
             float fi = float(i), fj = float(j);
@@ -165,16 +169,16 @@ float geo_connection(vec2 uv) {
             a += vec2(sin(u_time*0.05 + fi), cos(u_time*0.07 + fi)) * 0.1;
             b += vec2(cos(u_time*0.06 + fj), sin(u_time*0.04 + fj)) * 0.1;
 
-            // Only connect close stars
+            // Only connect close stars (radius expands with audio energy)
             float dist_ab = length(a - b);
-            if (dist_ab > 0.8) continue;
+            if (dist_ab > rms_thr) continue;
 
             // Line segment distance
             vec2 pa = uv - a, ba = b - a;
             float h2 = clamp(dot(pa,ba)/dot(ba,ba), 0.0, 1.0);
             float d = length(pa - ba*h2);
-            float thickness = 0.0008;
-            acc += (1.0 - dist_ab/0.8) * thickness / (d + thickness);
+            float thickness = 0.0009;
+            acc += (1.0 - dist_ab/rms_thr) * thickness / (d + thickness) * beat_b;
         }
     }
     return acc;
@@ -375,6 +379,13 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
     const float r0   = 0.055;                  // radial scale factor
     const int   N    = 65;                     // seed count (13th Fibonacci after 55)
 
+    // Seed birth progress: seeds arrive sequentially from centre outward during gate
+    // open window (snorm 0→0.09). At snorm 0.09 all 65 seeds are active.
+    // active_n in [0, N] drives the "golden spiral unfurling" feel.
+    float birth_prog = clamp(snorm / 0.09, 0.0, 1.0);
+    int   active_n   = int(float(N) * birth_prog) + 1;  // +1: center seed always visible
+    if (active_n > N) active_n = N;
+
     // Pre-compute all seed screen positions
     vec2 seeds[65];
     for (int i = 0; i < N; i++) {
@@ -387,25 +398,32 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
     vec3 col = vec3(0.0);
 
     for (int i = 0; i < N; i++) {
+        if (i >= active_n) break;  // skip seeds not yet born
+
         float t     = float(i) / float(N - 1);
         // Amber-gold (inner, organic origin) → electric cyan (outer, cosmic extent)
         vec3  scol  = mix(vec3(0.95, 0.62, 0.12), vec3(0.12, 0.72, 0.98), t);
 
+        // Birth flash: each seed arrives with a brief white-hot burst
+        // The last-born seed is the frontier — it glows brightest.
+        float frontier = exp(-float(active_n - 1 - i) * 0.35) * 0.55;
+
         // 8-arm Fibonacci spiral connections (8 = Fib(6))
-        if (i + 8 < N) {
+        if (i + 8 < active_n) {
             float d8 = sdSeg2D(uv, seeds[i], seeds[i + 8]);
             col += scol * exp(-d8 * 390.0) * 0.18 * gate * beat_b;
         }
         // 13-arm Fibonacci spiral connections (13 = Fib(7))
-        if (i + 13 < N) {
+        if (i + 13 < active_n) {
             float d13 = sdSeg2D(uv, seeds[i], seeds[i + 13]);
             col += scol * exp(-d13 * 350.0) * 0.16 * gate * beat_b;
         }
 
         // Seed node glow — inner seeds larger, outer smaller (natural packing density)
+        // Frontier glow adds extra brightness to the newest seed.
         float d  = length(uv - seeds[i]);
         float sz = mix(0.028, 0.011, t);
-        col += scol * (sz / (d + sz)) * sz * gate * beat_b * 0.85;
+        col += scol * (sz / (d + sz)) * sz * gate * beat_b * (0.85 + frontier);
     }
     return col;
 }
