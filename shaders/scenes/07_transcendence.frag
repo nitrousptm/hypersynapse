@@ -1548,9 +1548,12 @@ void main() {
         if (vgate > 0.001) {
             float r_asp = length(uv);  // centre is SG logo position in screen space
             float beat_boost = 1.0 + exp(-u_beat * 5.5) * 0.55 * u_scene_norm;
+            // u_rms: sustained energy envelope accelerates ring convergence speed and
+            // brightens them — loud passages tighten the spiral; quiet sections drift.
+            float rms_speed = 0.28 + u_rms * 0.12;  // 0.28→0.40 with audio energy
             for (int ri = 0; ri < 3; ri++) {
                 // Rings travel inward: phase starts at 1 (edge of screen) and falls to 0 (centre)
-                float phase = fract(-u_time * 0.28 + float(ri) * 0.333 + u_scene_norm * 0.6);
+                float phase = fract(-u_time * rms_speed + float(ri) * 0.333 + u_scene_norm * 0.6);
                 float ring_r = phase * 1.35;  // ring radius: 1.35 → 0.0 as phase 1→0
                 float ring_d = abs(r_asp - ring_r);
                 float ring   = smoothstep(0.020, 0.0, ring_d) * (1.0 - phase)
@@ -1563,8 +1566,10 @@ void main() {
             // Rotating radial starburst: two counter-rotating spoke systems weave together
             // as the singularity pulls inward. The dual-rotation creates a "mandala collapsing"
             // read that builds tension toward the logo reveal.
-            float ang0   = atan(uv.y, uv.x) - u_time * 0.32;  // CW slow primary
-            float ang1   = atan(uv.y, uv.x) + u_time * 0.55;  // CCW faster secondary
+            // u_rms: starburst rotation speeds up with audio energy — louder passages
+            // spin the mandala faster, selling the singularity's gravitational pull.
+            float ang0   = atan(uv.y, uv.x) - u_time * (0.32 + u_rms * 0.18);  // CW, energy-driven
+            float ang1   = atan(uv.y, uv.x) + u_time * (0.55 + u_rms * 0.25);  // CCW faster secondary
             float spokes0 = pow(max(0.0, cos(ang0 * 8.0)), 12.0);
             float spokes1 = pow(max(0.0, cos(ang1 * 12.0)), 16.0);
             float star_r  = smoothstep(1.0, 0.0, r_asp) * exp(-r_asp * 3.5);

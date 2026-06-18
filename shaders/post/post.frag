@@ -299,8 +299,10 @@ void main() {
             vec2  d      = uv - 0.5;
             float r      = length(d);
             float vkick  = exp(-u_beat * 8.0);
-            // Rotation angle: center-heavy falloff (exp) so outer stars barely move
-            float rot    = ramp * (0.06 + vkick * 0.14) * exp(-r * 4.0) * 3.14159;
+            // Rotation angle: center-heavy falloff (exp) so outer stars barely move.
+            // u_rms: sustained loud passages accelerate the inward spiral independently
+            // of individual kicks — the whole universe churns faster during climaxes.
+            float rot    = ramp * (0.06 + u_rms * 0.05 + vkick * 0.14) * exp(-r * 4.0) * 3.14159;
             float c_r  = cos(rot), s_r = sin(rot);
             vec2  dw   = vec2(d.x * c_r - d.y * s_r, d.x * s_r + d.y * c_r);
             uv = clamp(0.5 + dw, 0.001, 0.999);
@@ -485,7 +487,9 @@ void main() {
     }
 
     // 1. Chromatic aberration (barrel-distorted)
-    float ca_base = 0.003 + demo_norm * 0.005;
+    // u_rms: sustained audio energy swells the prismatic separation — loud passages
+    // breathe with visible dispersion, quiet interludes sharpen to near-clean optics.
+    float ca_base = 0.003 + demo_norm * 0.005 + u_rms * 0.003;
     float ca_beat = kick * 0.008;
     float ca_fade = 1.0 - smoothstep(0.75, 1.0, demo_norm);
     float ca_str  = (ca_base + ca_beat) * ca_fade;
@@ -1478,21 +1482,24 @@ void main() {
     // bundle=cyan, complex=blue-violet, compactification=blue-white.
     // One-sided decay: fires at the scene_norm when the structure first appears, fades
     // over ~0.5 real seconds (K=220 on a 60s scene). Gated well below silence/logo.
+    // u_rms: the music's energy envelope scales each flash — loud bass drops make the
+    // mathematical arrivals unmissable; quiet passages let them emerge gently.
     if (u_scene_idx == 6) {
         float sn = u_scene_norm;
+        float rms_boost = 0.65 + u_rms * 0.70;  // quiet≈0.65×, loud≈1.35×
         const float K = 220.0;
         // Helix (0.05): life structure / DNA — warm amber-gold
-        if (sn >= 0.05 && sn < 0.14) col += exp(-(sn - 0.05) * K) * vec3(0.95, 0.65, 0.18) * 0.55;
+        if (sn >= 0.05 && sn < 0.14) col += exp(-(sn - 0.05) * K) * vec3(0.95, 0.65, 0.18) * 0.55 * rms_boost;
         // Lorenz (0.22): deterministic chaos — amber-orange heat
-        if (sn >= 0.22 && sn < 0.31) col += exp(-(sn - 0.22) * K) * vec3(0.92, 0.38, 0.10) * 0.60;
+        if (sn >= 0.22 && sn < 0.31) col += exp(-(sn - 0.22) * K) * vec3(0.92, 0.38, 0.10) * 0.60 * rms_boost;
         // Clifford torus (0.40): flat T² in S³ — deep violet (S³ topology)
-        if (sn >= 0.40 && sn < 0.49) col += exp(-(sn - 0.40) * K) * vec3(0.52, 0.06, 0.92) * 0.60;
+        if (sn >= 0.40 && sn < 0.49) col += exp(-(sn - 0.40) * K) * vec3(0.52, 0.06, 0.92) * 0.60 * rms_boost;
         // Hopf fibration (0.44): S³→S² fiber bundle — cyan (ordered structure)
-        if (sn >= 0.44 && sn < 0.53) col += exp(-(sn - 0.44) * K) * vec3(0.10, 0.72, 0.95) * 0.55;
+        if (sn >= 0.44 && sn < 0.53) col += exp(-(sn - 0.44) * K) * vec3(0.10, 0.72, 0.95) * 0.55 * rms_boost;
         // Julia set (0.52): complex boundary — blue-violet (complex analysis)
-        if (sn >= 0.52 && sn < 0.61) col += exp(-(sn - 0.52) * K) * vec3(0.38, 0.10, 0.96) * 0.60;
+        if (sn >= 0.52 && sn < 0.61) col += exp(-(sn - 0.52) * K) * vec3(0.38, 0.10, 0.96) * 0.60 * rms_boost;
         // Riemann sphere (0.67): ℂ∪{∞} compactification — blue-white (pure topology)
-        if (sn >= 0.67 && sn < 0.76) col += exp(-(sn - 0.67) * K) * vec3(0.62, 0.80, 1.00) * 0.65;
+        if (sn >= 0.67 && sn < 0.76) col += exp(-(sn - 0.67) * K) * vec3(0.62, 0.80, 1.00) * 0.65 * rms_boost;
     }
 
     // 9. ACES tonemapping
