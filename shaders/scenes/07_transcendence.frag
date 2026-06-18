@@ -1599,11 +1599,17 @@ void main() {
     // "light grows like plants, eventually consuming all space" before the silence.
     float tendril_scale = 1.0 / (1.0 + u_scene_norm * 0.9);
     vec2  uv_t = uv * tendril_scale;
+    // Tendrils gate: fade in after the big-bang entry burst clears (sn 0.06→0.18)
+    // so the Act IV opening is clean (big-bang → Fibonacci unfurling → tendrils emerge).
+    float tendril_gate = smoothstep(0.06, 0.18, u_scene_norm)
+                       * (1.0 - smoothstep(0.82, 0.875, u_scene_norm));  // off before silence
     float tendrils_total = 0.0;
-    for (int i = 0; i < 8; i++) {
-        float seed = float(i) / 8.0;
-        float t_offset = hash(float(i) * 7.3) * 2.0;
-        tendrils_total += tendril(uv_t, seed, u_time + t_offset);
+    if (tendril_gate > 0.001) {
+        for (int i = 0; i < 8; i++) {
+            float seed = float(i) / 8.0;
+            float t_offset = hash(float(i) * 7.3) * 2.0;
+            tendrils_total += tendril(uv_t, seed, u_time + t_offset);
+        }
     }
     // Color arc: warm amber-gold (organic birth) → electric cyan-blue (cosmic energy) → violet-magenta (transcendence).
     // Driven by scene_norm so the visual narrative evolves monotonically over the 60s finale.
@@ -1617,7 +1623,7 @@ void main() {
                            smoothstep(0.0, 0.42, color_arc));
     // Gentle shimmer on top — 8% hue oscillation so petals never look static
     tendril_col     = mix(tendril_col, tendril_col.bgr, sin(u_time * 0.28) * 0.04 + 0.04);
-    col += tendrils_total * tendril_col * 1.5;
+    col += tendrils_total * tendril_col * 1.5 * tendril_gate;
 
     // Massive particle fluid: instanced stars in motion
     // (handled by particle system in renderer — here we add screen-space haze)
