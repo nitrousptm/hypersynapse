@@ -1490,6 +1490,8 @@ void main() {
         const float K = 220.0;
         // Helix (0.05): life structure / DNA — warm amber-gold
         if (sn >= 0.05 && sn < 0.14) col += exp(-(sn - 0.05) * K) * vec3(0.95, 0.65, 0.18) * 0.55 * rms_boost;
+        // Penrose quasicrystal (0.15): φ²-aperiodic 5-fold tiling — iridescent gold-cyan split
+        if (sn >= 0.15 && sn < 0.24) col += exp(-(sn - 0.15) * K) * mix(vec3(0.95, 0.68, 0.18), vec3(0.12, 0.65, 1.00), 0.5) * 0.50 * rms_boost;
         // Lorenz (0.22): deterministic chaos — amber-orange heat
         if (sn >= 0.22 && sn < 0.31) col += exp(-(sn - 0.22) * K) * vec3(0.92, 0.38, 0.10) * 0.60 * rms_boost;
         // Clifford torus (0.40): flat T² in S³ — deep violet (S³ topology)

@@ -410,6 +410,66 @@ vec3 fibonacci_phyllotaxis(vec2 uv, float snorm) {
     return col;
 }
 
+// ─── Penrose quasicrystal — 5-fold aperiodic interference (0.15→0.40) ────────
+// A 5-wave cosine sum whose directions are at multiples of 72° (2π/5) and whose
+// spatial frequency uses φ² — this makes the pattern aperiodic (never repeats).
+// The threshold structure of this interference field traces Penrose-tile-like
+// rhombus boundaries with genuine 5-fold icosahedral symmetry.
+//
+// Mathematical bridge: Fibonacci phyllotaxis (discrete φ seeds) produced the
+// integer approximations; the quasicrystal is the continuous analog where φ²
+// enters as an irrational spatial frequency, sealing the aperiodic long-range
+// order that Fibonacci only approximates.  The thick rhombuses (high wave_sum)
+// are colored amber-gold; thin rhombuses (low wave_sum) are electric cyan —
+// matching the tendril color arc and Fibonacci palette that precede this.
+vec3 penrose_quasicrystal(vec2 uv, float sn) {
+    float gate = smoothstep(0.15, 0.22, sn) * (1.0 - smoothstep(0.32, 0.40, sn));
+    if (gate < 0.001) return vec3(0.0);
+
+    const float PHI = 1.61803398875;    // golden ratio
+    const float PI2 = 6.28318530718;
+
+    // Slow rotation + gentle scale breathe so the pattern reveals itself over time.
+    float scale = 5.2 + sn * 1.8;
+    float spin  = u_time * (0.040 + u_rms * 0.020);
+    float c_sp  = cos(spin), s_sp = sin(spin);
+    vec2  p     = vec2(c_sp * uv.x - s_sp * uv.y,
+                       s_sp * uv.x + c_sp * uv.y) * scale;
+
+    // Sum of 5 cosine waves at 72° intervals, spatial frequency φ².
+    // The irrationality of φ makes this sum aperiodic with 5-fold symmetry.
+    float ws = 0.0;
+    for (int k = 0; k < 5; k++) {
+        float a  = float(k) * PI2 / 5.0;
+        vec2  dk = vec2(cos(a), sin(a));
+        ws += cos(dot(p, dk) * PHI * PHI);
+    }
+    ws *= 0.20;   // scale to [-1, 1]
+
+    // Edge detection at three threshold levels — these mark rhombus tile boundaries.
+    float e0 = exp(-abs(ws)         * 20.0) * 0.60;   // boundary at ws=0  (thin↔thick)
+    float e1 = exp(-abs(ws - 0.42)  * 24.0) * 0.48;   // interior thick rhombus edge
+    float e2 = exp(-abs(ws + 0.42)  * 24.0) * 0.42;   // interior thin rhombus edge
+    float e3 = exp(-abs(ws - 0.72)  * 30.0) * 0.32;   // outer bright vertices
+    float edges = e0 + e1 + e2 + e3;
+
+    // Tile color: amber-gold for thick rhombus (ws>0), electric cyan for thin (ws<0).
+    float tile_t  = smoothstep(-0.30, 0.30, ws);
+    vec3  col_amb = vec3(0.95, 0.68, 0.18);   // amber-gold — thick rhombus (φ-ratio area)
+    vec3  col_cyn = vec3(0.12, 0.65, 1.00);   // electric cyan — thin rhombus
+    vec3  tcol    = mix(col_cyn, col_amb, tile_t);
+
+    // Subtle fill — each rhombus interior has a dim uniform tint so tiles read.
+    float fill = (ws * 0.5 + 0.5) * 0.04;
+
+    // Beat-reactive glow: edges pulse brighter on each 133 BPM kick.
+    float beat_b = 1.0 + exp(-u_beat * 5.8) * 0.60;
+    // u_rms: sustained loud passages increase edge contrast — quasicrystal "electrifies"
+    float rms_e  = 0.75 + u_rms * 0.50;
+
+    return (edges * tcol * rms_e + fill * tcol) * gate * beat_b;
+}
+
 // ─── Mandelbrot mini-map (scene_norm 0.52→0.76) ──────────────────────────────
 // Small corner visualization of the Mandelbrot parameter space shown alongside
 // the Julia set window. A glowing amber dot marks the current c value used in
@@ -1415,6 +1475,13 @@ void main() {
     // (8-arm CW + 13-arm CCW) — the same pattern sunflowers and galaxies share.
     // First mathematical structure of Act IV: the seed from which all patterns grow.
     col += fibonacci_phyllotaxis(uv, u_scene_norm);
+
+    // Penrose quasicrystal — 5-fold aperiodic tiling (scene_norm 0.15→0.40).
+    // Five cosine waves at 72° intervals with irrational (φ²) spatial frequency
+    // produce a quasiperiodic interference field: the continuous-space analog of
+    // the Fibonacci golden-angle discrete seeds. Tile colors: amber=thick rhombus,
+    // cyan=thin rhombus — bridging the Fibonacci palette to the helix structure.
+    col += penrose_quasicrystal(uv, u_scene_norm);
 
     // Cosmic double helix — mathematical structure of life at cosmic scale.
     // Rises in early Act IV (scene_norm 0.05→0.42) before the tendrils take over.
